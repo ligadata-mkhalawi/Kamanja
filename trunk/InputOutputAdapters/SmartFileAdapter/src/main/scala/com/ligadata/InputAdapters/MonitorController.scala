@@ -715,7 +715,7 @@ class MonitorController {
       if (enqueuedgroupHandler != null && logger.isDebugEnabled) {
         logger.debug("SMART FILE CONSUMER (MonitorController):  deq group:" + enqueuedgroupHandler.fileHandlers.map(x => {
           x.fileHandler.getFullPath
-        }))
+        }).mkString(","))
       } else {
         if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
       }
@@ -731,51 +731,6 @@ class MonitorController {
       groupQ.toArray
     }
   }
-
-/*
-  private def isEnqueued(file: String): Boolean = {
-    if (isShutdown) return false
-    fileQLock.synchronized {
-      if (fileQ.isEmpty) {
-        return false
-      }
-      fileQ.exists(f => f.fileHandler.getFullPath.equals(file))
-    }
-  }
-
-  private def deQFile: EnqueuedFileHandler = {
-    if (isShutdown) return null
-    fileQLock.synchronized {
-      if (fileQ.isEmpty) {
-        return null
-      }
-      val ef = fileQ.dequeue()
-      if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.lastModifiedDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
-      return ef
-
-    }
-  }
-*/
-
-/*
-  private def waitingFilesToProcessCount: Int = {
-    fileQLock.synchronized {
-      fileQ.length
-    }
-  }
-
-  private def getFilesTobeProcessed: List[String] = {
-    fileQLock.synchronized {
-      return fileQ.map(f => f.fileHandler.getFullPath).toList
-    }
-  }
-
-  //get file name only for now
-  def getNextFileToProcess: String = {
-    val f = deQFile
-    if (f == null) null else f.fileHandler.getFullPath
-  }
-*/
 
   private def waitingGroupsToProcessCount: Int = {
     groupQLock.synchronized {

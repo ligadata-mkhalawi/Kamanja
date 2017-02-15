@@ -503,6 +503,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                           if ((status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) && !processingFiles.isEmpty) {
                             val procFileParentDir = MonitorUtils.getFileParentDir(processingFiles.head, adapterConfig)
                             val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
+                            if (LOG.isTraceEnabled) LOG.trace("procFileParentDir:" + procFileParentDir)
                             if (procFileLocationInfo.isMovingEnabled) {
                               val moveThread = new Runnable() {
                                 override def run(): Unit = {
@@ -512,7 +513,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                   var tryNo = 0
                                   val maxTrys = 10
 
-                                  var flsToMove = processingFiles.filter(flPath => !isFileExists(flPath))
+                                  var flsToMove = processingFiles.filter(flPath => isFileExists(flPath))
+                                  if (LOG.isDebugEnabled) LOG.debug("Files to move:" + flsToMove.mkString(","))
                                   while (!doneMove && !isShutdown && tryNo < maxTrys) {
                                     var lastFlPath = ""
                                     try {
@@ -521,6 +523,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                         var moved = true
                                         flsToMove.foreach(flPath => {
                                           lastFlPath = flPath
+                                          if (LOG.isDebugEnabled) LOG.debug("Moving file:" + flPath)
                                           val moved1 = moveFile(flPath)
                                           if (!moved1)
                                             moved = moved1
@@ -856,8 +859,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
           if (!isShutdown && previousStatusMap != null && (statusDataStr == null || statusDataStr.trim.length == 0)) {
             if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - current participants status in cache key {} is {}", cacheKey, statusDataStr)
-
-            LOG.error(("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status. used key is {}", filesListInProcess, partitionId, nodeId, cacheKey))
+            val errStr = "Smart File Consumer - file " + filesListInProcess + " is supposed to be processed by partition " + partitionId + " on node " + nodeId + " but not found in node updated status. used key is " + cacheKey
+            LOG.error(errStr)
 
             //participant hasn't sent any status yet. store current time, to delete from processing queue if case is still the same after limit
             failedCheckCount += 1
@@ -865,9 +868,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           }
           else if (!isShutdown && (statusDataStr == null || statusDataStr.trim.length == 0)) {
             if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - current participants status in cache is {}", statusDataStr)
-
-            LOG.error(("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status", filesListInProcess, partitionId, nodeId))
-
+            val errStr = "Smart File Consumer - file " + filesListInProcess + " is supposed to be processed by partition " + partitionId + " on node " + nodeId + " but not found in node updated status"
+            LOG.error(errStr)
             failedCheckCount += 1
             currentStatusMap.put(filesListInProcess, (System.nanoTime, failedCheckCount))
           }
@@ -882,7 +884,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
             if (!doneStatus.equals("done")) {
               if (previousStatusMap != null && !fileInStatus.equals(filesListInProcess)) {
-                if (LOG.isWarnEnabled) LOG.warn(("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status", filesListInProcess, partitionId, nodeId, fileInStatus)) //could this happen?
+                if (LOG.isWarnEnabled) {
+                  //could this happen?
+                  val warnStr = "Smart File Consumer - file " + filesListInProcess + " is supposed to be processed by partition " + partitionId + " on node " + nodeId + " but found this file " + fileInStatus + " in node updated status"
+                  LOG.warn(warnStr)
+                }
               }
               else {
                 if (previousStatusMap != null && previousStatusMap.contains(fileInStatus)) {
@@ -896,9 +902,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                     currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
                   }
                   else if (currentTimeStamp == previousTimestamp) {
-                    LOG.error(("Smart File Consumer - file {} is being processed by partition {} on node {}, but status hasn't been updated for {} ms. where currentTimeStamp={} - previousTimestamp={}, failedCheckCount={} , key is {}",
-                      fileInStatus, partitionId, nodeId, ((currentTimeStamp - previousTimestamp) / 1000).toString, currentTimeStamp.toString, previousTimestamp.toString, failedCheckCount.toString, cacheKey))
-
+                    val errStr = "Smart File Consumer - file " + fileInStatus + " is being processed by partition " + partitionId + " on node " + nodeId + ", but status hasn't been updated for " + ((currentTimeStamp - previousTimestamp) / 1000) + " ms. where currentTimeStamp=" + currentTimeStamp + " - previousTimestamp=" + previousTimestamp + ", failedCheckCount=" + failedCheckCount + " , key is " + cacheKey
+                    LOG.error(errStr)
                     failedCheckCount += 1
                     currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
                   }
@@ -910,8 +915,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               }
             } else {
               if (previousStatusMap != null && !fileInStatus.equals(filesListInProcess)) {
-                if (LOG.isWarnEnabled) LOG.warn(("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status",
-                  filesListInProcess, partitionId, nodeId, fileInStatus)) //could this happen?
+                if (LOG.isWarnEnabled) {
+                  //could this happen?
+                  val warnStr = "Smart File Consumer - file " + filesListInProcess + " is supposed to be processed by partition " + partitionId + " on node " + nodeId + " but found this file " + fileInStatus + " in node updated status"
+                  LOG.warn(warnStr)
+                }
               }
               else {
                 // Keeping the previous one as it is.
@@ -922,7 +930,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
           if (failedCheckCount > maxFailedCheckCounts) {
             //if (currentTimeStamp - previousTimestamp > maxWaitingTimeForNodeStatus) {
-            if (LOG.isDebugEnabled) LOG.debug(("Smart File Consumer - file processing item ({}) has faile count = {}. should be removed from processing queue", processStr, failedCheckCount.toString))
+            if (LOG.isDebugEnabled) {
+              val debugStr = "Smart File Consumer - file processing item (" + processStr + ") has faile count = " + failedCheckCount + ". should be removed from processing queue"
+              LOG.debug(debugStr)
+            }
             queuesToRemove.append((processStr, filesListInProcess, fileInStatus, nodeId.toString, partitionId.toString))
           }
         }
@@ -1019,6 +1030,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   def addToProcessingQueue(processingItem: String, addToHead: Boolean = false): Unit = {
+    if (LOG.isTraceEnabled) LOG.trace("addToProcessingQueue => processingItem:" + processingItem)
     processingQLock.synchronized {
       if (addToHead)
         processingFilesQueue.prepend(processingItem)
@@ -1028,6 +1040,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   def removeFromProcessingQueue(processingItem: String): Unit = {
+    if (LOG.isTraceEnabled) LOG.trace("removeFromProcessingQueue:" + processingItem)
     processingQLock.synchronized {
       processingFilesQueue -= processingItem
     }
@@ -1186,10 +1199,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                     val newProcessingItem = createProcessingItemJsonFromGroup(requestingNodeId.toInt, requestingThreadId.toInt, groupToProcess)
                     if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - Adding Processing group + " + data +
                       " to Node " + requestingNodeId + ", thread Id=" + requestingThreadId +
-                      ". fileToProcessKeyPath=" + fileToProcessKeyPath)
+                      ". fileToProcessKeyPath=" + fileToProcessKeyPath + ", newProcessingItem:" + newProcessingItem)
                     //there are files that need to process
                     addToProcessingQueue(newProcessingItem)
-
                     try {
                       //logger.warn("")
                       val cacheKey = Status_Check_Cache_KeyParent + "/" + requestingNodeId + "/" + requestingThreadId
@@ -1315,10 +1327,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
                 addToProcessingQueue(newProcessingItem) //add to processing queue
 
-                if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
-                  ") to Node " + nodeId + ", partition Id=" + partitionId)
                 val offset = fileInfo._4
                 val data = createProcessingJsonDataFromFileAndOffset(fileToProcessFullPath, offset)
+                if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
+                  ") to Node " + nodeId + ", partition Id=" + partitionId + ", data:" + data + ", newProcessingItem:" + newProcessingItem)
                 envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
               }
             }
@@ -1389,68 +1401,77 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
     //data has format <file name>|offset
-    val dataTokens = eventPathData.split("\\|")
-    if (dataTokens.length >= 2) {
-      val fileToProcessName = dataTokens(0)
-      val offset = dataTokens(1).toLong
 
-      val keyTokens = eventPath.split("/")
-      if (keyTokens.length >= 2) {
-        val processingThreadId = keyTokens(keyTokens.length - 1).toInt
-        val processingNodeId = keyTokens(keyTokens.length - 2)
+    if (eventPathData != null && eventPath != null) {
+      val processingData = createGroupFromProcessingJsonData(eventPathData)
+      if (processingData.Files != None) {
+        val filesGrp = processingData.Files.get
+        val keyTokens = eventPath.split("/")
+        if (keyTokens.length >= 2) {
+          val processingThreadId = keyTokens(keyTokens.length - 1).toInt
+          val processingNodeId = keyTokens(keyTokens.length - 2)
 
-        if (isShutdown) {
-          if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Node Id = {}, Thread Id = {} had been assigned a new file ({}), but shutdown already called. so ignore the assignment",
-            processingNodeId, processingThreadId.toString, fileToProcessName)
-          return
-        }
-
-        if (LOG.isInfoEnabled) LOG.info("Smart File Consumer - Node Id = {}, Thread Id = {}, File ({}) was assigned",
-          processingNodeId, processingThreadId.toString, fileToProcessName)
-        val partitionId = processingThreadId.toInt
-        var smartFileContext: SmartFileConsumerContext = null
-
-        smartFileContextMap_lock.synchronized {
-          if (smartFileContextMap.contains(partitionId)) {
-            val context = smartFileContextMap(partitionId)
-            if (context.nodeId.equals(processingNodeId)) //maybe this could take place if re-shuffling happened
-              smartFileContext = context
+          if (isShutdown) {
+            if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Node Id = {}, Thread Id = {} had been assigned files ({}), but shutdown already called. so ignore the assignment",
+              processingNodeId, processingThreadId.toString, filesGrp.map(f => f.Fl).mkString(","))
+            return
           }
-          if (smartFileContext == null) {
-            smartFileContext = new SmartFileConsumerContext()
-            smartFileContext.adapterName = inputConfig.Name
-            smartFileContext.partitionId = partitionId
-            smartFileContext.ignoreFirstMsg = _ignoreFirstMsg
 
-            smartFileContext.nodeId = processingNodeId
-            smartFileContext.envContext = envContext
-            //context.fileOffsetCacheKey = getFileOffsetCacheKey(fileToProcessName)
-            smartFileContext.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
-            smartFileContext.statusUpdateInterval = statusUpdateInterval
+          if (LOG.isInfoEnabled) LOG.info("Smart File Consumer - Node Id = {}, Thread Id = {}, Files ({}) was assigned",
+            processingNodeId, processingThreadId.toString, filesGrp.map(f => f.Fl).mkString(","))
+          val partitionId = processingThreadId.toInt
+          var smartFileContext: SmartFileConsumerContext = null
 
-            smartFileContextMap.put(partitionId, smartFileContext)
+          smartFileContextMap_lock.synchronized {
+            if (smartFileContextMap.contains(partitionId)) {
+              val context = smartFileContextMap(partitionId)
+              if (context.nodeId.equals(processingNodeId)) //maybe this could take place if re-shuffling happened
+                smartFileContext = context
+            }
+            if (smartFileContext == null) {
+              smartFileContext = new SmartFileConsumerContext()
+              smartFileContext.adapterName = inputConfig.Name
+              smartFileContext.partitionId = partitionId
+              smartFileContext.ignoreFirstMsg = _ignoreFirstMsg
+
+              smartFileContext.nodeId = processingNodeId
+              smartFileContext.envContext = envContext
+              //context.fileOffsetCacheKey = getFileOffsetCacheKey(fileToProcessName)
+              smartFileContext.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
+              smartFileContext.statusUpdateInterval = statusUpdateInterval
+
+              smartFileContextMap.put(partitionId, smartFileContext)
+            }
           }
-        }
-        val actualThreadId = Thread.currentThread().getThreadGroup.getName + ">" + Thread.currentThread().getId
-        if (!smartFileContext.inUse) {
-          if (logger.isDebugEnabled) logger.debug("SmartFileConsumer : context {} ready to use, partition id={}, actualThreadId={}, file={}",
-            smartFileContext, partitionId.toString, actualThreadId, fileToProcessName)
-          smartFileContext.inUse = true
-        }
-        else {
-          if (logger.isDebugEnabled) logger.debug("SmartFileConsumer : context {} already in use, partition id={}, actualThreadId={},file={}",
-            smartFileContext, partitionId.toString, actualThreadId, fileToProcessName)
-        }
+          val actualThreadId = Thread.currentThread().getThreadGroup.getName + ">" + Thread.currentThread().getId
+          if (!smartFileContext.inUse) {
+            if (logger.isDebugEnabled) logger.debug("SmartFileConsumer : context {} ready to use, partition id={}, actualThreadId={}, files={}",
+              smartFileContext, partitionId.toString, actualThreadId, filesGrp.map(f => f.Fl).mkString(","))
+            smartFileContext.inUse = true
+          }
+          else {
+            if (logger.isDebugEnabled) logger.debug("SmartFileConsumer : context {} already in use, partition id={}, actualThreadId={},files={}",
+              smartFileContext, partitionId.toString, actualThreadId, filesGrp.map(f => f.Fl).mkString(","))
+          }
 
-        //logger.error("partitionId={}, smartFileContext={}", partitionId.toString, smartFileContext)
+          //logger.error("partitionId={}, smartFileContext={}", partitionId.toString, smartFileContext)
 
-        //start processing the file
+          //start processing the file
+          val fileHanders = new Array[SmartFileHandler](filesGrp.size)
+          val fileOffsets = new Array[Long](filesGrp.size)
 
-        val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName)
-        //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
-        val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, Array(fileHandler), Array(offset), Array(smartFileContext),
-          sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
-        fileMessageExtractor.extractMessages()
+          var idx = 0
+          filesGrp.foreach(f => {
+            fileHanders(idx) = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, f.Fl)
+            fileOffsets(idx) = f.Off
+            idx += 1
+          })
+
+          //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
+          val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHanders, fileOffsets, smartFileContext,
+            sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
+          fileMessageExtractor.extractMessages()
+        }
       }
     }
 

@@ -15,7 +15,7 @@ import org.apache.commons.codec.binary.Base64
   * @param adapterConfig
   * @param fileHandlers         file to read messages from
   * @param startOffsets         offset in the file to start with
-  * @param consumerContexts     has required params
+  * @param consumerContext      has required params
   * @param messageFoundCallback to call for every read message
   * @param finishCallback       call when finished reading
   */
@@ -24,7 +24,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                            adapterConfig: SmartFileAdapterConfiguration,
                            fileHandlers: Array[SmartFileHandler],
                            startOffsets: Array[Long],
-                           consumerContexts: Array[SmartFileConsumerContext],
+                           consumerContext: SmartFileConsumerContext,
                            messageFoundCallback: (SmartFileMessage, SmartFileConsumerContext) => Unit,
                            finishCallback: (Array[SmartFileHandler], SmartFileConsumerContext, Int, InputAdapterStatus) => Unit) {
 
@@ -64,7 +64,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     }
 
     InputAdapterStatus(fileHandlers(0).getFullPath, currentMsgNum, fileProcessingStartTime, fileProcessingEndTime,
-      totalReadLen, consumerContexts(0).nodeId, statusStr)
+      totalReadLen, consumerContext.nodeId, statusStr)
   }
 
   def extractMessages(): Unit = {
@@ -91,10 +91,10 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
               //put filename~offset~timestamp
               val data = fileHandlers(0).getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~in-progress"
               if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - Node {} with partition {} is updating status to value {}",
-                consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString, data)
+                consumerContext.nodeId, consumerContext.partitionId.toString, data)
               if(!finished) {
-                consumerContexts(0).envContext.saveConfigInClusterCache(consumerContexts(0).statusUpdateCacheKey, data.getBytes)
-                Thread.sleep(consumerContexts(0).statusUpdateInterval)
+                consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
+                Thread.sleep(consumerContext.statusUpdateInterval)
               }
             }
           }
@@ -131,7 +131,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   private def readBytesChunksFromFiles(): Unit = {
     val sz = fileHandlers.size
     for (i <- 0 until sz) {
-      readBytesChunksFromFile(fileHandlers(i), consumerContexts(i), startOffsets(i))
+      readBytesChunksFromFile(fileHandlers(i), consumerContext, startOffsets(i))
     }
   }
 
@@ -410,7 +410,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   def readWholeFiles(): Unit = {
     try {
       if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
-        fileHandlers(0).getFullPath, consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString)
+        fileHandlers(0).getFullPath, consumerContext.nodeId, consumerContext.partitionId.toString)
 
       var attachmentsJson = new java.lang.StringBuilder(8 * 1024)
       attachmentsJson.append("""{"files": {""")
@@ -434,7 +434,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       }
 
       val smartFileMessage = new SmartFileMessage(attachmentsJson.toString.getBytes(), 0, fileHandlers(0), 0, 0)
-      messageFoundCallback(smartFileMessage, consumerContexts(0))
+      messageFoundCallback(smartFileMessage, consumerContext)
       // here we are really finished
       sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
     } catch {
@@ -539,7 +539,6 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
     // We are sending status for 0th element always
     val fileHandler = fileHandlers(0)
-    val consumerContext = consumerContexts(0)
     val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~done"
     if (logger.isWarnEnabled) logger.warn("Node {} before sending done status for file processing key={} , value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
