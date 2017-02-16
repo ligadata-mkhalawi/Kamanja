@@ -39,7 +39,7 @@ Command Reference Pages
    * - :ref:`jsonchecker-command-ref`
      - Ingest data into a Kafka :ref:`topic<topic-term>`
    * - :ref:`kafka-console-command-ref`
-     - :ref:`View and monitor Kafka :ref:`topics<topic-term>`
+     - :ref:`View and monitor Kafka :ref:`topic<topic-term>`
        in the cluster.
    * - :ref:`kafka-server-start-command-ref`
      - Initialize the :ref:`Kafka<kafka-term>` server.

@@ -10,11 +10,13 @@ plus the following new features:
   See :ref:`velocity-metrics-term` for more information.
 - ElasticSearch adapter
 - Ability to output data to the :ref:`Parquet<parquet-term>` file format.
-- Additional configuration options for the
-  :ref:`smart-input-config-ref`.
-  These include support for archiving (ability to move source files
+- Archiving functionality
+  (ability to move source files
   to a different location on a different file system
   after they are processed)
+  is now supported by the
+  :ref:`smart-input-config-ref`.
+- Additional configuration options for the
   and the ability to consolidate files into configured maximum size.
 
 Kamanja 1.6.1 was a limited release that includes

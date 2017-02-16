@@ -22,8 +22,8 @@ Tools are provided for monitoring the Kamanja cluster:
    * - :ref:`message-tracking-admin`
      - view message-level events such as which message was executed,
        when it was executed, and which models were executed.
-   * - :ref:`failure-tracking-admin`
-     - Understand the exception message Kamanja produces
+       This includes information about model events
+       and the exception message Kamanja produces
        when it encounters an error during execution.
    * - :ref:`RecentLogErrorsFromKamanjaCluster.sh<recentlogerrorsfromkamanjacluster-admin>`,
        :ref:`LogErrorsFromKamanjaCluster.sh<logerrorsfromkamanjacluster-admin>`
@@ -377,7 +377,8 @@ Output Adapter:
 
 - **Type** - tells whether the engine is Kamanja.
 - **Name** - name as defined in the cluster configuration file.
-- **Description** - provided by the author of the adapter implementation to give any relevant information a user may want.
+- **Description** - a meaningful description of the adapter implementation
+  to give any relevant information a user may want.
 - **LastSeen** - each component maintains its own heartbeat!
 - **StartTime** - when the component has been instantiated.
 - **Metrics**
@@ -619,201 +620,20 @@ Message-level tracking
 ---------------------- 
 
 Event-level information can be traced to one of the destinations
-that is specified in the cluster configuration file (new in v1.4).
+that is specified in the cluster configuration file.
 The information is in JSON, kBinary, or CSV format.
 It describes message-level events such as which message was executed,
 when it was executed, and which models were executed.
 
-Kamanja has a KamanjaMessageEvent internal message
+Kamanja has a :ref:`kamanjamessageevent-msg-ref` internal message
 that is created when a message comes into the Kamanja engine.
-An adapter binding is specified for the messages below.
+This includes these other messages:
 
-The overall structure of this message is as follows:
-
-::
-
-  KamanjaMessageEvent
-
-  {
-   "Message": {
-   "NameSpace": "com.ligadata.KamanjaBase",
-   "Name": "KamanjaMessageEvent",
-   "Version": "1.00",
-   "Description": "Message Execution detail",
-   "Fixed": "true",
-   "Elements": [{
-   "Field": {
-   "Name": "messageId",
-   "Type": "Long"
-   }
-   }, {
-   "Field": {
-   "Name": "modelinfo",
-   "Type": "ArrayOfKamanjaModelEvent"
-   }
-   }, {
-   "Field": {
-   "Name": "elapsedtimeinms",
-   "Type": "Float"
-   }
-   }, {
-   "Field": {
-   "Name": "messagekey",
-   "Type": "String"
-   }
-   }, {
-   "Field": {
-   "Name": "messagevalue",
-   "Type": "String"
-   }
-   }, {
-   "Field": {
-   "Name": "error",
-   "Type": "String"
-   }
-   }, {
-   "Field": {
-   "Name": "KamanjaExceptionEvent",
-   "Type": "String"
-   }
-   }]
-   }
-  }
-
-where:
-
-- **messageId** - unique message for that message type.
-  Map the messageId to its Name by directly querying the metadata data.
-  There is no API for it; it must be created.
-- **modelinfo** - array of Kamanja model events.
-  See the KamanjaModelEvent example below.
-- **elapsedtimeinms** - time in milliseconds it took
-  for the message to be processed.
-- **messagekey** - key provided from the adapter.
-- **messagevalue** - value provided from the adapter.
-- **KamanjaExceptionEvent** - exception thrown by the adapter (new in v1.5).
-
-Here is KamanjaExceptionEvent:
-
-::
-
-  KamanjaExceptionEvent
-
-  {
-   "Message": {
-   "NameSpace": "com.ligadata.KamanjaBase",
-   "Name": "KamanjaExceptionEvent",
-   "Version": "1.02",
-   "Description": "Exception Event detail",
-   "Fixed": "true",
-   "Elements": [{
-   "Field": {
-   "NameSpace": "com.ligadata.KamanjaBase",
-   "Name": "ComponentName",
-   "Type": "System.String"
-   }
-   }, {
-   "Field": {
-   "NameSpace": "com.ligadata.KamanjaBase",
-   "Name": "TimeOfErrorEpochMs",
-   "Type": "System.Long"
-   }
-   }, {
-   "Field": {
-   "NameSpace": "com.ligadata.KamanjaBase",
-   "Name": "ErrorType",
-   "Type": "System.String"
-   }
-   }, {
-   "Field": {
-   "NameSpace": "com.ligadata.KamanjaBase",
-   "Name": "ErrorString",
-   "Type": "System.String"
-   }
-   }]
-   }
-  }
-
-    
-.. _failure-tracking-admin:
-
-Failure tracking
-----------------
-
-If Kamanja encounters an error during its execution,
-it produces an exception message describing the error condition it encounters.
-
-The structure of an exception message is as follows:
-
-::
-
-  Exception Message
-
-  {
-   "Message": {
-   "NameSpace": "com.ligadata.kamanja",
-   "Name": "KamanjaExceptionEvent",
-   "Version": "00.00.01",
-   "Description": "kamanja error event description",
-   "Fixed": "true",
-   "Fields": [{
-   "Name": "componentname",
-   "Type": "String"
-   }, {
-   "Name": "timeoferrorepochms",
-   "Type": "Long"
-   }, {
-   "Name": "errortype",
-   "Type": "String"
-   }, {
-   "Name": "errorstring",
-   "Type": "String"
-   }]
-   }
-  }
-
-If an error is encountered trying to process a message,
-then the following error message is created.
-These are the expected execution failures:
-
-::
-
-  Execution Failures
-
-  {
-   "Message": {
-   "NameSpace": "com.ligadata.kamanja",
-   "Name": "KamanjaExecutionFailureEvent",
-   "Version": "00.00.01",
-   "Description": "kamanja error event description",
-   "Fixed": "true",
-   "Fields": [{
-   "Name": "msgid",
-   "Type": "Long"
-   }, {
-   "Name": "timeoferrorepochms",
-   "Type": "Long"
-   }, {
-   "Name": "msgcontent",
-   "Type": "String"
-   }, {
-   "Name": "msgadapterkey",
-   "Type": "String"
-   }, {
-   "Name": "msgadaptervalue",
-   "Type": "String"
-   }, {
-   "Name": "sourceadapter",
-   "Type": "String"
-   }, {
-   "Name": "deserializer",
-   "Type": "String"
-   }, {
-   "Name": "errordetail",
-   "Type": "String"
-   }]
-   }
-  }
+- :ref:`kamanjamodelevent-msg-ref` tracks each model event
+- :ref:`kamanjaexceptionevent-msg-ref` provides information
+  about any error Kamanja encounters while processing the message
+- :ref:`kamanjaexcecutionfailureevent-msg-ref` provides information
+  about any errors encountered while trying to process a message.
 
 
 .. _status-message-admin:
