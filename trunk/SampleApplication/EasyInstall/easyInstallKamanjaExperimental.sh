@@ -889,7 +889,7 @@ cp *.* $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
 cd $srcPath/SampleApplication/Medical/Types
 cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type
 
-cd $srcPath/SampleApplication/Medical/template/script/scala-2.10
+cd $srcPath/SampleApplication/Medical/template/script/scala-2.11
 cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
 
 cd $srcPath/SampleApplication/Medical/Configs
