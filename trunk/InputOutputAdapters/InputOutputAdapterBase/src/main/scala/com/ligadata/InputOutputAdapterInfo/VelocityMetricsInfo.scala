@@ -127,7 +127,7 @@ class VelocityMetricsInfo {
    * Create the VelocityMetricsInbstances for the VelocityMetricsInfo key types
    */
 
-  private def getVelocityMetricsInstances(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, adapConfig: AdapterConfiguration, compName: String): Array[InstanceRuntimeInfo] = {
+  def getVelocityMetricsInstances(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, adapConfig: AdapterConfiguration, compName: String): Array[InstanceRuntimeInfo] = {
 
     var velocityMetricsInstBuf = new scala.collection.mutable.ArrayBuffer[(VelocityMetricsInstanceInterface, VelocityMetricsCfg)]()
 
@@ -154,13 +154,13 @@ class VelocityMetricsInfo {
         } else {
           try {
             metricsTimeKeyFormat = new SimpleDateFormat(metricstimeformat)
-          //  println("good format: " + metricsTimeKeyFormat.getTimeZone);
+            //  println("good format: " + metricsTimeKeyFormat.getTimeZone);
             // good format
           } catch {
             // bad format
             case e: Exception => {
               metricsTimeKeyFormat = new SimpleDateFormat();
-             // println("bad format: " + metricsTimeKeyFormat.getTimeZone);
+              // println("bad format: " + metricsTimeKeyFormat.getTimeZone);
             }
           }
         }
@@ -528,7 +528,7 @@ class VelocityMetricsInfo {
           var keysString = new ArrayBuffer[String]()
           var validMsgTypes = new ArrayBuffer[String]()
           var keyType: String = ""
-          var timeIntervalInSecs: Int = 30
+          var timeIntervalInSecs: Int = 0
           var metricsTimeType: String = "LocalTime"
           var metricsTimeField: String = ""
           var metricsTimeFormat: String = ""
@@ -567,9 +567,9 @@ class VelocityMetricsInfo {
             if (metrics != null) {
               //    val mByFileName = metricsByFileName.asInstanceOf[Map[String, Any]]
 
-              val timeIntrvlInSecs = metrics.getOrElse("timeintervalinsecs", null)
-              if (timeIntrvlInSecs != null) {
-                timeIntervalInSecs = timeIntervalInSecs.asInstanceOf[Int]
+              val timeIntrvlInSecs = metrics.getOrElse("timeintervalinsecs", 0)
+              if (timeIntrvlInSecs != 0) {
+                timeIntervalInSecs = timeIntrvlInSecs.toString().toInt
               }
 
               val keysLst = metrics.getOrElse("keys", null)
