@@ -23,6 +23,9 @@
             <a href="{{ source_url_prefix }}{{ pagename }}{{ suffix }}">View page source</a>
           {% elif show_source and has_source and sourcename %}
             <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow"> View page source</a>
+            <!--Aladdin-->
+            <a href="{{ '/' + sourcename.split('.')[0] + '.pdf'}}" rel="nofollow"><span class="fa fa-file-pdf-o"></span></a>
+            <!--/Aladdin-->
           {% endif %}
         {% endif %}
       </li>

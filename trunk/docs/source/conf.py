@@ -16,7 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
+# Aladdin
+import os
+import fnmatch
+
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -29,9 +32,11 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# Aladdin added 'rst2pdf.pdfbuilder'  https://www.quora.com/How-to-create-a-PDF-out-of-Sphinx-documentation-tool
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'rst2pdf.pdfbuilder'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -353,3 +358,35 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+
+
+# Aladdin https://www.quora.com/How-to-create-a-PDF-out-of-Sphinx-documentation-tool
+# TODO: move this code to a separate file
+
+# collect all rst files
+matches = []
+for root, dirnames, filenames in os.walk(os.getcwd()):
+    for filename in fnmatch.filter(filenames, '*.rst'):
+        matches.append(os.path.join(root, filename))
+
+# for python 3.5+ we could just use glob
+# import glob
+# matches = glob.glob(path, recursive=True)
+
+
+# initially add the master document, this will generate pdf for the full docs
+pdf_documents = [('index', u'index', u'Kamanja Documentation', u'Meg McRoberts'),]
+# 1 - master document
+# 2 - name of the generated pdf
+# 3 rst2pdf doc - title of the pdf
+# 4 author name in the pdf
+
+# iterate over rst files and fill pdf_documents, this will generate pdf for each rst file
+path = "**/*.rst"
+for fname in matches:
+    fn = fname.split(os.getcwd() + '/')[1]
+    fn = fn.split('.')[0]
+    pdf_documents.insert(0,(fn,fn, fn, u'Meg McRoberts'));
+
+# /Aladdin
