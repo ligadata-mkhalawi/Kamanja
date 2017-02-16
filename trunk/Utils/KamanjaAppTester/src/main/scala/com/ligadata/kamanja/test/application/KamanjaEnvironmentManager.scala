@@ -112,8 +112,7 @@ object KamanjaEnvironmentManager {
     }
     val adaptersAPIResult = ConfigUtils.GetAllAdapters("JSON", Some("kamanja"))
     val adaptersResultData = mdMan.parseApiResult(adaptersAPIResult).resultData
-    val adaptersListMap = (parse(adaptersResultData) \\ "Adapters").extract[List[Map[String, Any]]]
-
+    val adaptersListMap = (parse(adaptersResultData) \\ "Adapters" \ "Adapter").extract[List[Map[String, Any]]]
     var adapterList: List[Adapter] = List()
 
     adaptersListMap.foreach(adapter => {
@@ -216,7 +215,7 @@ object KamanjaEnvironmentManager {
     val nodesApiResultStr = ConfigUtils.GetAllNodes("JSON", Some("kamanja"))
     var nodeList: List[NodeConfiguration] = List()
     val nodesResultData = mdMan.parseApiResult(nodesApiResultStr).resultData
-    val adaptersListMap = (parse(nodesResultData) \\ "Nodes").extract[List[Map[String, Any]]]
+    val adaptersListMap = (parse(nodesResultData) \\ "Nodes" \ "Node").extract[List[Map[String, Any]]]
 
     adaptersListMap.foreach(node => {
       val nodeId = node("NodeId").toString

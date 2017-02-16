@@ -21,6 +21,7 @@ object TestExecutor {
     "--kamanja-dir (Required: the install directory of Kamanja\n\t" +
     "--metadata-config (Optional: the metadata configuration file you'd like to use. If not given, an internal configuration will be generated automatically.\n\t" +
     "--cluster-config (Optional: the cluster configuration file you'd like to use. If not given, an internal configuration will be generated automatically.\n\t" +
+    "--app-name (Optional: the application you would like to test.\n\t" +
     "--help (Optional: Displays help text)"
 
   private type OptionMap = Map[Symbol, Any]
@@ -41,12 +42,13 @@ object TestExecutor {
             e.kvFilename match {
               case Some(file) =>
                 logger.info(s"Key-Value filename associated with container ${e.name} found. Adding data from $file")
-                if(KVInit.run(Array("--typename", s"${e.name}",
+                if (KVInit.run(Array("--typename", s"${e.name}",
                   "--config", KamanjaEnvironmentManager.metadataConfigFile,
                   "--datafiles", file,
                   "--ignorerecords", "1",
                   "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
-                  "--optionsjson", """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
+                  "--optionsjson",
+                  """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
                 )) != 0)
                   throw new TestExecutorException(s"***ERROR*** Failed to upload data from Key-Value file")
                 else {
@@ -112,12 +114,12 @@ object TestExecutor {
     }
     else if (args.length == 1) {
       val options = optionMap(Map(), args.toList)
-      if(options == null) {
+      if (options == null) {
         println(usage)
         return
       }
       val help = options.getOrElse('help, null)
-      if(help != null) {
+      if (help != null) {
         println(usage)
         return
       }
@@ -129,7 +131,6 @@ object TestExecutor {
         return
       }
       val installDir: String = options('kamanjadir).asInstanceOf[String]
-
       val metadataConfigFile: String = options.getOrElse('metadataconfig, null).asInstanceOf[String]
       val clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
       val appName: String = options.getOrElse('appname, null).asInstanceOf[String]
@@ -138,11 +139,12 @@ object TestExecutor {
       val appManager = new KamanjaApplicationManager(installDir + "/test")
 
       appManager.kamanjaApplications.foreach(app => {
-	breakable {
-	  if( appName != null && ! appName.equalsIgnoreCase(app.name)){
+        breakable {
+          if (appName != null && !appName.equalsIgnoreCase(app.name)) {
             logger.info(s"Ignore Kamanja Application '${app.name}'")
-	    break;
-	  }
+            break
+          }
+
           logger.info(s"Beginning test for Kamanja Application '${app.name}'")
           // Initializing Kamanja Environment Manager, which will deal with setting up metadata manager and
           /// generating config files and start embedded services if user doesn't provide said files.
@@ -165,7 +167,6 @@ object TestExecutor {
           val eventConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getEventKafkaAdapterConfig)
           val eventConsumerThread = new Thread(eventConsumer)
 
-
           consumerThread.start()
           errorConsumerThread.start()
           eventConsumerThread.start()
@@ -184,6 +185,7 @@ object TestExecutor {
             //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
             val expectedResults = resultsManager.parseExpectedResults(set)
 
+
             logger.info("Waiting for output results...")
             val results = Globals.waitForOutputResults(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
             if (results == null) {
@@ -191,30 +193,31 @@ object TestExecutor {
               logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
               val errors = Globals.waitForOutputResults(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
               if (errors != null) {
-		errors.foreach(error => {
+                errors.foreach(error => {
                   logger.info(s"Error Message: " + error)
-		})
+                })
               }
               else {
-		logger.warn(s"***WARN*** Failed to discover messages in error queue")
-		logger.warn(s"Checking message event queue")
+                logger.warn(s"***WARN*** Failed to discover messages in error queue")
+                logger.warn(s"Checking message event queue")
 
 		val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
 		if (events != null) {
+
                   events.foreach(event => {
                     logger.info(s"Event Message: $event")
                   })
-		}
-		else {
+                }
+                else {
                   logger.error(s"***ERROR*** No event messages found. Kamanja did not process any input messages")
-		}
+                }
               }
             }
             else if (results.length > expectedResults.length) {
               logger.error(s"***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsFile}")
               logger.error(s"Results Found: ")
               results.foreach(result => {
-		logger.error(s"Result: $result")
+                logger.error(s"Result: $result")
               })
               testResult = false
             }
@@ -223,28 +226,28 @@ object TestExecutor {
               var matchFailureCount = 0
               // If results don't match, display an error and increment the matchFailure count
               matchResults.foreach(matchResult => {
-		if (!matchResult.matched) {
+                if (!matchResult.matched) {
                   logger.error(s"***ERROR*** Actual result and expected result do not match")
                   logger.error(s"Expected Result: ${matchResult.expectedResult}")
                   logger.error(s"Actual Result:   ${matchResult.actualResult}")
                   logger.error(s"Message Number:  ${matchResult.messageNumber}")
                   matchFailureCount += 1
-		}
+                }
               })
 
               if (matchFailureCount > 0) {
-		testResult = false
-		logger.error(s"***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
-		logger.error(s"Expected Results File:   ${set.expectedResultsFile}")
-		logger.error(s"Expected Results Format: ${set.expectedResultsFormat}")
-		logger.error(s"Input Data File:         ${set.inputDataFile}")
-		logger.error(s"Input Data Format:       ${set.inputDataFormat}")
-		logger.error(s"Partition Key:           ${set.partitionKey.getOrElse("None")}")
+                testResult = false
+                logger.error(s"***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
+                logger.error(s"Expected Results File:   ${set.expectedResultsFile}")
+                logger.error(s"Expected Results Format: ${set.expectedResultsFormat}")
+                logger.error(s"Input Data File:         ${set.inputDataFile}")
+                logger.error(s"Input Data Format:       ${set.inputDataFormat}")
+                logger.error(s"Partition Key:           ${set.partitionKey.getOrElse("None")}")
               }
               else {
-		logger.info(s"Actual results match expected results")
+                logger.info(s"Actual results match expected results")
               }
-	    }
+            }
           })
 
           if (!testResult)
@@ -256,18 +259,19 @@ object TestExecutor {
           eventConsumer.shutdown
           errorConsumer.shutdown
 
-          if(KamanjaEnvironmentManager.isEmbedded) {
+          if (KamanjaEnvironmentManager.isEmbedded) {
             KamanjaEnvironmentManager.stopServices
             TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
           }
           logger.close
-	}
+        }
       })
     }
   }
 
   private def optionMap(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
+
     list match {
       case Nil => map
       case "--kamanja-dir" :: value :: tail =>

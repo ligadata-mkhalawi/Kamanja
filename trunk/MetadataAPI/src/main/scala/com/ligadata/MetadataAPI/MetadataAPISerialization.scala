@@ -656,6 +656,31 @@ object MetadataAPISerialization {
     }
   }
 
+  //def SerializeObjectListToJson[T <: BaseElemDef](obj_type: String, objList: Array[T]): String = {
+  def SerializeObjectListToJson(objList: Array[Any]): String = {
+    var json = "[ \n"
+    objList.toList.map(obj => {
+      var objJson = serializeObjectToJson(obj); json += objJson; json += ",\n"
+    })
+    json = json.stripSuffix(",\n")
+    json += " ]\n"
+    json
+  }
+
+  def SerializeObjectListToJson(objType: String, objList: Array[Any]): String = {
+    var json = "{\n" + "\"" + objType + "\" :" + SerializeObjectListToJson(objList) + "\n}"
+    json
+  }
+
+  def replaceLast(inStr: String, toReplace: String, replacement: String): String = {
+    val pos = inStr.lastIndexOf(toReplace);
+    if (pos > -1) {
+      inStr.substring(0, pos) + replacement + inStr.substring(pos + toReplace.length(), inStr.length());
+    } else {
+      inStr;
+    }
+  }
+
   def deserializeMetadata(metadataJson: String): Any = {
 
     logger.debug("Parsing json : " + metadataJson)

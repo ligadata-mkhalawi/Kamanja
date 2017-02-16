@@ -57,18 +57,26 @@
     ],
     "DataSets": [
       {
-        "InputDataFile": "inputFile1.csv",
-        "InputDataFormat": "CSV",
-        "ExpectedResultsFile": "expectedResults1.csv",
-        "ExpectedResultsFormat": "CSV",
-        "PartitionKey": "3"
+        "Input": {
+          "Filename": "inputFile1.csv",
+          "Format": "CSV",
+          "PartitionKey": "3"
+        },
+        "ExpectedResults": {
+          "Filename": "expectedResults1.csv",
+          "Format": "CSV"
+        }
       },
       {
-        "InputDataFile": "inputFile2.json",
-        "InputDataFormat": "JSON",
-        "ExpectedResultsFile": "expectedResults2.json",
-        "ExpectedResultsFormat": "JSON",
-        "PartitionKey": "com.ligadata.test.message.InputMessage:TestKey"
+        "Input": {
+          "Filename": "inputFile2.json",
+          "Format": "JSON",
+          "PartitionKey": "com.ligadata.test.message.InputMessage:TestKey"
+        },
+        "ExpectedResults": {
+          "Filename": "expectedResults2.json",
+          "Format": "JSON"
+        }
       }
     ]
   }
