@@ -14,6 +14,8 @@ Adapter Reference Pages
 
    * - Adapter
      - Description
+   * - :ref:`elastic-output-adapter-ref`
+     - Output JSON data to :ref:`elasticsearch-term`
    * - :ref:`smart-input-config-ref`
      - ingest streaming messages automatically
    * - :ref:`smart-output-config-ref`
@@ -25,6 +27,7 @@ Adapter Reference Pages
    :titlesonly:
    :maxdepth: 1
 
+   adapter-ref/elastic-output
    adapter-ref/smart-input
    adapter-ref/smart-output
 

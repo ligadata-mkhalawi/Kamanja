@@ -5,6 +5,7 @@ Reserved ports
 ==============
 
 .. list-table::
+   :class: lg-wrap-fixed-table
    :widths: 20 20 60
    :header-rows: 1
 
@@ -29,7 +30,7 @@ Reserved ports
      - Kafka
      - HortonWorks uses 6667 for Kafka
    * - 9200
-     - ElasticSearch
+     - Elasticsearch
      -
 
 

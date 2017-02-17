@@ -13,8 +13,8 @@ The following output file formats are supported:
 - HDFS
 - Parquet
 
-Adapter definition
-------------------
+Smart File Output Adapter definition
+------------------------------------
 
 ::
 

@@ -60,7 +60,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Kamanja'
 copyright = u'2017, LigaData, Inc.'
-author = u'Meg McRoberts'
+author = u''
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -278,7 +278,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Kamanja.tex', u'Kamanja Documentation',
-     u'Meg McRoberts', 'manual'),
+     u'', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -376,7 +376,7 @@ for root, dirnames, filenames in os.walk(os.getcwd()):
 
 
 # initially add the master document, this will generate pdf for the full docs
-pdf_documents = [('index', u'index', u'Kamanja Documentation', u'Meg McRoberts'),]
+pdf_documents = [('index', u'index', u'Kamanja Documentation', u''),]
 # 1 - master document
 # 2 - name of the generated pdf
 # 3 rst2pdf doc - title of the pdf
@@ -387,6 +387,6 @@ path = "**/*.rst"
 for fname in matches:
     fn = fname.split(os.getcwd() + '/')[1]
     fn = fn.split('.')[0]
-    pdf_documents.insert(0,(fn,fn, fn, u'Meg McRoberts'));
+    pdf_documents.insert(0,(fn,fn, fn, u''));
 
 # /Aladdin

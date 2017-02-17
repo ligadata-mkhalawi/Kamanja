@@ -25,6 +25,7 @@ Ligapedia
    ligapedia/a-f/csv
    ligapedia/a-f/dag
    ligapedia/a-f/deep-learning
+   ligapedia/a-f/elasticsearch
    ligapedia/a-f/engine
    ligapedia/a-f/error-capture
    ligapedia/a-f/etl
