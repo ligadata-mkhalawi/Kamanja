@@ -1,24 +1,38 @@
 
 .. _what-is-kamanja:
 
-What is Kamanja
---------------- 
+What is Kamanja?
+---------------- 
 
-Kamanja is a continuous decisioning framework.
-It is built natively on several open-source, Apache™ projects.
-It comprises:
+Kamanja is a high-performance real-time event processing engine.
+The engine provides a run-time execution environment
+to run programs to compute analytics and KPIs,
+as well as models encapsulating machine learning methods.
+It provides adapters to connect
+to both synchronous and asynchronous data sources.
+Kamanja is built ground-up as a distributed processing engine
+that can be deployed in a cluster mode
+to handle large data volumes and complex model computations.
 
-- a real-time computation engine
-- ingestion streaming operators
-- DAG rules as PMML models
-- a console for interfaces
+Kamanja includes:
+
+- Real-time computation engine
+- Input, output, and storage adapters
+- Support for Java, Python and Scala as model development languages
+- Model run-time based on Directed Acyclic Graphs (DAG)
+- Support for PMML 
+- Metrics capture across all Kamanja components
+- Support for serialization and deserialization of data
+  using JSON, CSV, or KV formats
+- Out-of-the-box support for cluster mode
+  for a scalable and fault-tolerant processing environment
 - search and resource management REST APIs and pre-built connectors
-- out-of-the-box integration with Apache™ Hadoop®,
-  data stores such as Apache HBase™ or Apache Cassandra™,
-  and messaging systems such as Apache :ref:`Kafka<kafka-term>` or IBM® MQ.
+- Out-of-the-box integration with Apache™ Hadoop®
+  and data stores such as Apache HBase™ or Apache Cassandra™
+- Out-of-the-box integration with messaging systems
+  such as Apache Kafka or IBM® MQ.
 
-The Kamanja framework is open source
-with many features that support different use cases:
+Kamanja is open sourced under the Apache™ license.
 
 1. Built bottom-up in Scala, a concise, powerful, language.
 
