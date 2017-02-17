@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ligadata.ZooKeeper.ProcessComponentByWeight;
-import com.ligadata.adapters.statusRecorders.KafkaVelocityMetricsRecorder;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +30,7 @@ public class KafkaAdapter implements Observer {
 	private boolean prevIsThisNodeToProcess = false;
 	private ProcessComponentByWeight pcbw;
 	private boolean isLockAcquired = false;
-	private KafkaVelocityMetricsRecorder velocitymetricsStats;
+	private KafkaVelocityMetrics velocitymetricsStats;
 	private VelocityMetricsFactoryInterface VMFactory = null;
 
 	public KafkaAdapter(AdapterConfiguration config) {
@@ -324,10 +323,10 @@ public class KafkaAdapter implements Observer {
 				emitTimeInSecs); // (rotationTimeInSecs, emitTimeInSecs)
 	}
 
-	private KafkaVelocityMetricsRecorder createVelocityMetricsStats(
+	private KafkaVelocityMetrics createVelocityMetricsStats(
 			AdapterConfiguration config) {
 		// What impl do they want to use
-		KafkaVelocityMetricsRecorder k_vm = new KafkaVelocityMetricsRecorder();
+		KafkaVelocityMetrics k_vm = new KafkaVelocityMetrics();
 		try {
 			String classname = configuration
 					.getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
