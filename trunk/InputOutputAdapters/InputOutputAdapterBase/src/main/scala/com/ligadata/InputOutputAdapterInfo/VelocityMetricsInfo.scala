@@ -1,5 +1,5 @@
-package com.ligadata.InputOutputAdapterInfo
-
+//package com.ligadata.InputOutputAdapterInfo
+/*
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
@@ -63,6 +63,28 @@ object VelocityMetricsInfo {
     VelocityMetrics.GetVelocityMetricsFactory(rotationTimeInSecs, emitTimeInSecs) //(rotationTimeInSecs, emitTimeInSecs)
   }
 
+  /*
+   * Create VelocityMetricsFactoryInterface 
+   */
+  def getVMFactory(rotationTmeInSecs: Int, emitTmeInSecs: Int): VelocityMetricsFactoryInterface = synchronized {
+    var rotationTimeInSecs: Int = 30
+    var emitTimeInSecs: Int = 15
+    try {
+      if (rotationTmeInSecs == null)
+        rotationTimeInSecs = rotationTmeInSecs
+      if (emitTmeInSecs == null)
+        emitTimeInSecs = emitTmeInSecs
+      LOG.info("VelocityMetrics Stats Info - RotationTimeInSecs  " + rotationTimeInSecs)
+      LOG.info("VelocityMetrics Stats Info EmitTimeInSecs  " + emitTimeInSecs)
+      val existingFactory = VelocityMetrics.GetExistingVelocityMetricsFactory
+      if (existingFactory != null) return existingFactory
+    } catch {
+      case e: Exception => LOG.error("VelocityMetrics Factory Instance" + e.getMessage)
+    }
+    return VelocityMetrics.GetVelocityMetricsFactory(rotationTimeInSecs, emitTimeInSecs) //(rotationTimeInSecs, emitTimeInSecs)
+
+  }
+
 }
 
 class VelocityMetricsInfo {
@@ -102,6 +124,31 @@ class VelocityMetricsInfo {
     return allMsgInstances.toArray
   }
 
+  /* 
+   * Get all the VM Instances and metrics info for all msgtype keys
+   */
+  def getMsgVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapName: String, adapFullConfig: String, nodeContext: NodeContext): Array[InstanceRuntimeInfo] = {
+    val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
+    try {
+      val vmetrics = getVelocityMetricsConfig(adapFullConfig)
+      val compName = adapCategory + uscore + adapName
+      // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
+      val nodeId = nodeContext.getEnvCtxt().getNodeId()
+      if (nodeId == null) throw new Exception("Node Id is null")
+      val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapFullConfig, compName)
+      if (allinstances != null && allinstances.length > 0) {
+        for (i <- 0 until allinstances.length) {
+          if (allinstances(i).typId > 1 && allinstances(i).typId < 5) {
+            allMsgInstances += allinstances(i)
+          }
+        }
+      }
+    } catch {
+      case e: Exception => LOG.error(e.getMessage)
+    }
+    return allMsgInstances.toArray
+  }
+
   def getFileVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapConfig: AdapterConfiguration, nodeContext: NodeContext): Array[InstanceRuntimeInfo] = {
     val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
     try {
@@ -123,18 +170,40 @@ class VelocityMetricsInfo {
     }
     return allMsgInstances.toArray
   }
+
+  def getFileVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapName: String, adapFullConfig: String, nodeContext: NodeContext): Array[InstanceRuntimeInfo] = {
+    val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
+    try {
+      val vmetrics = getVelocityMetricsConfig(adapFullConfig)
+      val compName = adapCategory + uscore + adapName
+      // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
+      val nodeId = nodeContext.getEnvCtxt().getNodeId()
+      if (nodeId == null) throw new Exception("Node Id is null")
+      val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapFullConfig, compName)
+      if (allinstances != null && allinstances.length > 0) {
+        for (i <- 0 until allinstances.length) {
+          if (allinstances(i).typId == 1) {
+            allMsgInstances += allinstances(i)
+          }
+        }
+      }
+    } catch {
+      case e: Exception => LOG.error(e.getMessage)
+    }
+    return allMsgInstances.toArray
+  }
   /*
    * Create the VelocityMetricsInbstances for the VelocityMetricsInfo key types
    */
 
-  def getVelocityMetricsInstances(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, adapConfig: AdapterConfiguration, compName: String): Array[InstanceRuntimeInfo] = {
+  def getVelocityMetricsInstances(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, adapFullConfig: String, compName: String): Array[InstanceRuntimeInfo] = {
 
     var velocityMetricsInstBuf = new scala.collection.mutable.ArrayBuffer[(VelocityMetricsInstanceInterface, VelocityMetricsCfg)]()
 
     val allInstances = ArrayBuffer[InstanceRuntimeInfo]()
 
     try {
-      val vmetrics = getVelocityMetricsConfig(adapConfig.fullAdapterConfig)
+      val vmetrics = getVelocityMetricsConfig(adapFullConfig)
       var componentName: String = ""
       LOG.info("vmetrics.length  " + vmetrics.length)
       vmetrics.foreach(vm => {
@@ -356,7 +425,7 @@ class VelocityMetricsInfo {
    * Increment the velocity metrics - get the VelocityMetricsInstance Factory and call increment for metrics by msgType and metrics by msg keys
    */
 
-  def incrementVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean): Unit = {
+ /* def incrementVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean): Unit = {
     LOG.info("Start Increment Velocity Metrics")
     try {
       val vm = getIAVelocityMetricsInstances(VMFactory, nodeId, adapConfig, componentName)
@@ -415,9 +484,9 @@ class VelocityMetricsInfo {
 
   }
 
-  /*
+  
    * Increment the velocity metrics - get the VelocityMetricsInstance Factory and call increment of velocity metrics by file name
-   */
+   
 
   def incrementFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
     LOG.info("Start Increment")
@@ -443,9 +512,9 @@ class VelocityMetricsInfo {
 
   }
 
-  /*
+  
    * Create the VelocityMetricsInbstances for the VelocityMetricsInfo key types
-   */
+   
 
   private def getIAVelocityMetricsInstances(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, adapConfig: AdapterConfiguration, componentName: String): Array[(VelocityMetricsInstanceInterface, VelocityMetricsCfg)] = {
 
@@ -482,7 +551,7 @@ class VelocityMetricsInfo {
     velocityMetricsInstBuf.toArray
   }
 
-  /*
+*/  /*
    * Parse the adapter json and create the Array of VelocityMetricsCfg for the metrics keys types
    */
   def getVelocityMetricsConfig(fullAdapterConfig: String): Array[VelocityMetricsCfg] = {
@@ -666,4 +735,4 @@ class VelocityMetricsInfo {
     tm.getTime
   }
 
-}
+}*/

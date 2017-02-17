@@ -48,7 +48,7 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
   private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
 
-  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   //BUGBUG:: Not validating the values in FileAdapterConfiguration 
 

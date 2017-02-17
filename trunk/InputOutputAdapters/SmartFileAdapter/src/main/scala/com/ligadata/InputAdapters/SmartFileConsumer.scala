@@ -176,7 +176,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   envContext.registerNodesChangeNotification(nodeChangeCallback)
 
   //calling the velocity metrics instances
-  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   
   private val _reent_lock = new ReentrantReadWriteLock(true)

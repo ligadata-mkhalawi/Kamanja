@@ -46,7 +46,7 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
 
   //calling the velocity metrics instances
-  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   uniqueKey.Name = "File"
 

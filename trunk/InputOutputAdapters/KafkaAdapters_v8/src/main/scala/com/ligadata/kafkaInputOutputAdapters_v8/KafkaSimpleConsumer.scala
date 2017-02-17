@@ -78,7 +78,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
 
   //calling the velocity metrics instances
-  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   var localReadOffsets: collection.mutable.Map[Int, Long] = collection.mutable.Map[Int, Long]()
 

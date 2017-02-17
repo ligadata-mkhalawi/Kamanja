@@ -365,9 +365,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   metrics("MessagesProcessed") = new AtomicLong(0)
 
   //calling the velocity metrics instances
-  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
-  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   if (fc.uri.startsWith("file://"))
     fc.uri = fc.uri.substring("file://".length() - 1)

@@ -344,7 +344,7 @@ trait ExecContext {
         execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
         val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
         if (input.getVelocityInstances == null || input.getVelocityInstances.length == 0) {
-          input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig, input.nodeContext)
+          input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig.Name, input.inputConfig.fullAdapterConfig, input.nodeContext)
         }
         getIAVelocityMetrics(input, tMsg, true)
       } else {
@@ -355,7 +355,7 @@ trait ExecContext {
         SendFailedEvent(data, tDeserializerName, failedMsg, uniqueKey, uniqueVal, ex, tempMsgInterface)
         val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
         if (input.getVelocityInstances == null || input.getVelocityInstances.length == 0) {
-          input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig, input.nodeContext)
+          input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig.Name, input.inputConfig.fullAdapterConfig, input.nodeContext)
         }
         getIAVelocityMetrics(input, tMsg, false)
       }

@@ -240,7 +240,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   metrics(KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
 
   //calling the velocity metrics instances
-  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   if (enable_adapter_retries) retryExecutor.execute(new RetryFailedMessages())
 

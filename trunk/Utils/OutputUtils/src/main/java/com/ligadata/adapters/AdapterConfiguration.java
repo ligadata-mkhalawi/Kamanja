@@ -10,15 +10,15 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 public class AdapterConfiguration {
-	static Logger logger = LogManager.getLogger(AdapterConfiguration.class); 
-	
+	static Logger logger = LogManager.getLogger(AdapterConfiguration.class);
+
 	public static final String SCHEMA_FILE = "schema.file";
 	public static final String HDFS_URI = "hdfs.uri";
 	public static final String HDFS_KERBEROS_KEYTABFILE = "hdfs.kerberos.keytabfile";
 	public static final String HDFS_KERBEROS_PRINCIPAL = "hdfs.kerberos.principal";
 	public static final String HDFS_RESOURCE_FILE = "hdfs.resource.file";
 	public static final String FILE_PREFIX = "file.prefix";
-	public static final String FILE_MODE = "file.mode";	
+	public static final String FILE_MODE = "file.mode";
 	public static final String SYNC_MESSAGE_COUNT = "sync.messages.count";
 	public static final String SYNC_INTERVAL_SECONDS = "sync.interval.seconds";
 	public static final String KAFKA_TOPIC = "kafka.topic";
@@ -59,31 +59,31 @@ public class AdapterConfiguration {
 	public static final String SQLSERVER_SHARE = "sqlserver.share";
 	public static final String INSERT_TABLE_NAME = "insert.table.name";
 	public static final String INSERT_FORMAT_FILE = "insert.format.file";
-	
-	//Start String Template Mail Properties
+
+	// Start String Template Mail Properties
 	public static final String TEMPLATE_DIRECTORY = "templates.directory";
 	public static final String TESTMAIL_RECEIPENTS = "testmail.recepients";
 	public static final String TEMPLATE_MAPPING = "templates.mapping";
 	public static final String MAIL_FROM = "mail.from";
-	
-	public static final String MAIL_PROP_SSL               = "mail.smtp.ssl.trust";
-	public static final String MAIL_PROP_HOST              = "mail.smtp.host";
-	public static final String MAIL_PROP_PORT              = "mail.smtp.port";
-	public static final String MAIL_PROP_AUTH              = "mail.smtp.auth";
-	public static final String MAIL_PROP_TTLS              = "mail.smtp.starttls.enable";
-	public static final String MAIL_PROP_TRANSPORT         = "smtp";
-	public static final String MAIL_PROP_PWD			   ="mail.senderpassword";
-	
-	public static final String TO_MAIL			   ="mail.to";
-	public static final String CC_MAIL			   ="mail.cc";
-	public static final String BCC_MAIL			   ="mail.bcc";
-	
-	public static final String SKF_PROP_KEY               = "encrypt.key";
-	public static final String SKF_CHARSET                = "UTF8";
-	public static final String SKF_ENCRY_TYPE             = "DES";
-	
-	public static final String TEST_FLAG             = "test.flag";
-	//End String Template Mail Properties
+
+	public static final String MAIL_PROP_SSL = "mail.smtp.ssl.trust";
+	public static final String MAIL_PROP_HOST = "mail.smtp.host";
+	public static final String MAIL_PROP_PORT = "mail.smtp.port";
+	public static final String MAIL_PROP_AUTH = "mail.smtp.auth";
+	public static final String MAIL_PROP_TTLS = "mail.smtp.starttls.enable";
+	public static final String MAIL_PROP_TRANSPORT = "smtp";
+	public static final String MAIL_PROP_PWD = "mail.senderpassword";
+
+	public static final String TO_MAIL = "mail.to";
+	public static final String CC_MAIL = "mail.cc";
+	public static final String BCC_MAIL = "mail.bcc";
+
+	public static final String SKF_PROP_KEY = "encrypt.key";
+	public static final String SKF_CHARSET = "UTF8";
+	public static final String SKF_ENCRY_TYPE = "DES";
+
+	public static final String TEST_FLAG = "test.flag";
+	// End String Template Mail Properties
 
 	public static final String MESSAGE_FIELD_DELIMITER = "message.field.delimiter";
 	public static final String MESSAGE_VALUE_DELIMITER = "message.value.delimiter";
@@ -105,16 +105,19 @@ public class AdapterConfiguration {
 
 	// values for StatusRecorder
 	public static final String STATUS_IMPL = "statuscollector.impl";
-	public static final String STATUS_IMPL_INIT_PARMS= "statuscollector.parms";
+	public static final String STATUS_IMPL_INIT_PARMS = "statuscollector.parms";
 
 	public static final String ENCRYPTED_ENCODED_PASSWORD = "encrypted.encoded.password";
 	public static final String PRIVATE_KEY_FILE = "private.key.file";
-        public static final String ENCRYPT_DECRYPT_ALGORITHM = "encrypt.decrypt.algorithm";
-        public static final String ENCODED_PASSWORD = "encoded.password";
+	public static final String ENCRYPT_DECRYPT_ALGORITHM = "encrypt.decrypt.algorithm";
+	public static final String ENCODED_PASSWORD = "encoded.password";
 
-        public static final String COMPONENT_NAME = "component.name";
-        public static final String NODE_ID_PREFIX = "node.id.prefix";
-        public static final String ADAPTER_WEIGHT = "adapter.weight";
+	public static final String COMPONENT_NAME = "component.name";
+	public static final String NODE_ID_PREFIX = "node.id.prefix";
+	public static final String ADAPTER_WEIGHT = "adapter.weight";
+
+	public static final String VELOCITYMETRICS_INFO = "velocitymetricsinfo";
+	public static final String VELOCITYMETRICS_KAFKA_TOPIC = "velocitymetrics.kafka.topic";
 
 	private Properties properties;
 
@@ -125,26 +128,29 @@ public class AdapterConfiguration {
 	public AdapterConfiguration(String configFileName) throws IOException {
 		logger.debug("Loading configuration from " + configFileName);
 		File configFile = new File(configFileName);
-	    FileReader reader = null;
+		FileReader reader = null;
 
 		try {
-		    reader = new FileReader(configFile);
-		    properties = new Properties();
-		    properties.load(reader);
-		    
-		    if(logger.isInfoEnabled()) {
-		    	logger.info("Adapter configuration loaded :");
-		    	Enumeration<?> e = properties.propertyNames();
+			reader = new FileReader(configFile);
+			properties = new Properties();
+			properties.load(reader);
+
+			if (logger.isInfoEnabled()) {
+				logger.info("Adapter configuration loaded :");
+				Enumeration<?> e = properties.propertyNames();
 				while (e.hasMoreElements()) {
 					String key = (String) e.nextElement();
 					String value = properties.getProperty(key);
 					logger.info(key + " = " + value);
 				}
-		    }
+			}
 
 		} finally {
-			if(reader != null)
-				try { reader.close(); } catch (Exception e){}
+			if (reader != null)
+				try {
+					reader.close();
+				} catch (Exception e) {
+				}
 		}
 	}
 

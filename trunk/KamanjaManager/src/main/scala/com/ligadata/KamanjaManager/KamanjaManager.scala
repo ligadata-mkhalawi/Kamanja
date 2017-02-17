@@ -27,7 +27,7 @@ import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.Exceptions.{ FatalAdapterException }
 import scala.actors.threadpool.{ ExecutorService }
 import com.ligadata.KamanjaVersion.KamanjaVersion
-import com.ligadata.InputOutputAdapterInfo.VelocityMetricsInfo
+import com.ligadata.VelocityMetrics.VelocityMetricsInfo
 import com.ligadata.VelocityMetrics.VelocityMetricsFactoryInterface
 import com.ligadata.VelocityMetrics.VelocityMetricsCallback
 import com.ligadata.VelocityMetrics.VelocityMetricsInstanceInterface
@@ -982,14 +982,8 @@ class KamanjaManager extends Observer {
     }
     var velocityMetricsOutput = new VelocityMetricsOutput
 
-    VelocityMetricsInfo.getVMFactory(KamanjaMetadata.gNodeContext).addEmitListener(velocityMetricsOutput)
-
-    /* inputAdapters.foreach(ia => {
-      ia.VMFactory.addEmitListener(velocityMetricsOutput)
-    })
-    outputAdapters.foreach(oa => {
-      oa.VMFactory.addEmitListener(velocityMetricsOutput)
-    })*/
+    val vmFactory = VelocityMetricsInfo.getVMFactory(KamanjaMetadata.gNodeContext)
+    vmFactory.addEmitListener(velocityMetricsOutput)
 
     val scheduledThreadPool = Executors.newScheduledThreadPool(3);
 
@@ -1101,13 +1095,7 @@ class KamanjaManager extends Observer {
         isTimerStarted = true
       }
     }
-    inputAdapters.foreach(ia => {
-      ia.VMFactory.shutdown()
-    })
-    outputAdapters.foreach(oa => {
-      oa.VMFactory.shutdown()
-    })
-
+    vmFactory.shutdown()
     scheduledThreadPool.shutdownNow()
     sh = null
     return Shutdown(0)
