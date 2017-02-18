@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Properties;
+import com.ligadata.VelocityMetrics.InstanceRuntimeInfo;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -118,6 +119,10 @@ public class AdapterConfiguration {
 
 	public static final String VELOCITYMETRICS_INFO = "velocitymetricsinfo";
 	public static final String VELOCITYMETRICS_KAFKA_TOPIC = "velocitymetrics.kafka.topic";
+	public static final String VM_CATEGORY = "velocitymetrics.category";
+	public static final String VM_COMPONENT_NAME = "velocitymetrics.component.name";
+	public static final String VM_CONFIG = "velocitymetrics.config";
+	public static final String VM_NODEID = "velocitymetrics.nodeid";
 
 	private Properties properties;
 
@@ -165,5 +170,7 @@ public class AdapterConfiguration {
 	public String getProperty(String name, String defaultValue) {
 		return properties.getProperty(name, defaultValue);
 	}
+
+	public InstanceRuntimeInfo[] VMInstances;
 
 }

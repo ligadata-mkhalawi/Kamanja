@@ -89,4 +89,8 @@ object SmartFileAdapterConstants {
   val VM_ROTATIONTIMEINSECS = "vm.rotationtimeinsecs";
   val VM_EMITTIMEINSECS = "vm.emittimeinsecs";
   val VELOCITYMETRICSINFO = "velocitymetricsinfo";
+  val VM_CATEGORY = "vm.category";
+  val VM_COMPONENTNAME = "vm.componentname";
+  val VM_KAFKA_TOPIC = "vm.kafka.topic";
+  
 }

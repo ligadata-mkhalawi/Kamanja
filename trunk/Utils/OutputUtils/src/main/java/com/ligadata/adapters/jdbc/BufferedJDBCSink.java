@@ -12,128 +12,173 @@ import org.json.simple.parser.JSONParser;
 
 import com.ligadata.adapters.StatusCollectable;
 import com.ligadata.adapters.AdapterConfiguration;
+import com.ligadata.VelocityMetrics.InstanceRuntimeInfo;
+import com.ligadata.VelocityMetrics.VelocityMetricsInfo;
 
 public class BufferedJDBCSink extends AbstractJDBCSink {
     static Logger logger = LogManager.getLogger(BufferedJDBCSink.class);
     private String insertStatement;
     private List<ParameterMapping> insertParams;
     private ArrayList<JSONObject> buffer;
+    private InstanceRuntimeInfo[] VMInstances;
 
     public BufferedJDBCSink() {
     }
 
     @Override
-    public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
-        super.init(config, sw);
+    public void init(AdapterConfiguration config, StatusCollectable sw)
+	    throws Exception {
+	super.init(config, sw);
 
-        insertParams = new ArrayList<ParameterMapping>();
-        buffer = new ArrayList<JSONObject>();
-        String insertStr = config.getProperty(AdapterConfiguration.JDBC_INSERT_STATEMENT);
-        if (insertStr == null)
-            throw new Exception("Insert statement not specified in the properties file.");
+	insertParams = new ArrayList<ParameterMapping>();
+	buffer = new ArrayList<JSONObject>();
+	String insertStr = config
+		.getProperty(AdapterConfiguration.JDBC_INSERT_STATEMENT);
+	if (insertStr == null)
+	    throw new Exception(
+		    "Insert statement not specified in the properties file.");
 
-        logger.info("Insert statement: " + insertStr);
-        insertStatement = buildStatementAndParameters(insertStr, insertParams);
-        if (logger.isInfoEnabled()) {
-            logger.info(insertParams.size() + " parameters found.");
-            int i = 1;
-            for (ParameterMapping param : insertParams)
-                logger.info("Parameter " + (i++) + ": path=" + Arrays.toString(param.path) + " type=" + param.type
-                        + " typeName=" + param.typeName);
-        }
+	logger.info("Insert statement: " + insertStr);
+	insertStatement = buildStatementAndParameters(insertStr, insertParams);
+	if (logger.isInfoEnabled()) {
+	    logger.info(insertParams.size() + " parameters found.");
+	    int i = 1;
+	    for (ParameterMapping param : insertParams)
+		logger.info("Parameter " + (i++) + ": path="
+			+ Arrays.toString(param.path) + " type=" + param.type
+			+ " typeName=" + param.typeName);
+	}
+	this.VMInstances = config.VMInstances;
     }
 
     @Override
     public boolean addMessage(String message) {
-        try {
-            JSONParser jsonParser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) jsonParser.parse(message);
+	try {
+	    JSONParser jsonParser = new JSONParser();
+	    JSONObject jsonObject = (JSONObject) jsonParser.parse(message);
 
-            if (jsonObject.get("dedup") != null && "1".equals(jsonObject.get("dedup").toString())) {
-                logger.debug("ignoring duplicate message.");
-                return false;
-            }
+	    if (jsonObject.get("dedup") != null
+		    && "1".equals(jsonObject.get("dedup").toString())) {
+		logger.debug("ignoring duplicate message.");
+		return false;
+	    }
 
-            buffer.add(jsonObject);
-        } catch (Exception e) {
-            logger.error("Error processing message: " + e.getMessage() + " - ignoring message : " + message, e);
-            return false;
-        }
+	    buffer.add(jsonObject);
+	} catch (Exception e) {
+	    logger.error("Error processing message: " + e.getMessage()
+		    + " - ignoring message : " + message, e);
+	    return false;
+	}
 
-        return true;
+	return true;
     }
 
     @Override
     public void processAll(long batchId, long retryNumber) throws Exception {
-        Connection connection = dataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(insertStatement);
-        int totalStatements = buffer.size();
-        int failedStatements = 0;
+	Connection connection = dataSource.getConnection();
+	PreparedStatement statement = connection
+		.prepareStatement(insertStatement);
+	int totalStatements = buffer.size();
+	int failedStatements = 0;
+	VelocityMetricsInfo vm = new VelocityMetricsInfo();
 
-        try {
-            for (JSONObject jsonObject : buffer) {
-                if (bindParameters(statement, insertParams, jsonObject))
-                    statement.addBatch();
-            }
+	try {
+	    for (JSONObject jsonObject : buffer) {
+		if (bindParameters(statement, insertParams, jsonObject))
+		    statement.addBatch();
+	    }
 
-            statement.executeBatch();
-        } catch (BatchUpdateException e) {
-            logger.error("Error saving messages : " + e.getMessage(), e);
-            int[] updateCounts = e.getUpdateCounts();
+	    statement.executeBatch();
 
-            for (int i = 0; i < updateCounts.length; i++) {
-                if (updateCounts[i] == Statement.EXECUTE_FAILED) {
-                    logger.error("failed to execute this statement : " + buffer.get(i));
-                    if (statusWriter != null) {
-                        statusWriter.addStatusMessage(this.STATUS_KEY, "failed to execute this statement : " + buffer.get(i), false);
-                        statusWriter.setCompletionCode(this.STATUS_KEY,"1");
-                    }
-                    failedStatements++;
-                }
-            }
-            if (statusWriter != null)
-              statusWriter.addStatusMessage(this.STATUS_KEY, "BatchUpdateException encountered " + getCauseForDisplay(e), true);
-        } finally {
-            try {
-                if ((totalStatements == failedStatements && statusWriter != null))
-                    statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
-                connection.commit();
-                if (statusWriter != null) {
-                    statusWriter.addStatus(this.STATUS_KEY, String.valueOf(totalStatements - failedStatements), String.valueOf(failedStatements));
-                    statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
-                }
-            } catch (Exception e) {
-                logger.error("Error committing messages : " + e.getMessage(), e);
-                if (statusWriter != null) {
-                    statusWriter.addStatusMessage(this.STATUS_KEY, "Error committing messages : " + getCauseForDisplay(e), true);
-                    statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0), String.valueOf(totalStatements));
-                    statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
-                    statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
-                }
-            }
-            try {
-                statement.close();
-            } catch (Exception e) {
-                logger.error("Error closing  Statement  : " + e.getMessage(), e);
+	    if (VMInstances != null && VMInstances.length > 0) {
+		for (int i = 0; i < this.VMInstances.length; i++) {
+		    if (this.VMInstances[i].typId() == 4) {
+			vm.incrementOutputUtilsVMetricsByKey(
+				this.VMInstances[i], null,
+				this.VMInstances[i].KeyStrings(), true);
+		    }
+		}
+	    }
+	} catch (BatchUpdateException e) {
+	    logger.error("Error saving messages : " + e.getMessage(), e);
+	    int[] updateCounts = e.getUpdateCounts();
 
-            }
-            try {
-                connection.close();
-            } catch (Exception e) {
-                logger.error("Error closing  Connection  : " + e.getMessage(), e);
-            }
-        }
+	    for (int i = 0; i < updateCounts.length; i++) {
+		if (updateCounts[i] == Statement.EXECUTE_FAILED) {
+		    logger.error("failed to execute this statement : "
+			    + buffer.get(i));
+		    if (statusWriter != null) {
+			statusWriter.addStatusMessage(
+				this.STATUS_KEY,
+				"failed to execute this statement : "
+					+ buffer.get(i), false);
+			statusWriter.setCompletionCode(this.STATUS_KEY, "1");
+		    }
+		    failedStatements++;
+		}
+	    }
+	    if (statusWriter != null)
+		statusWriter.addStatusMessage(this.STATUS_KEY,
+			"BatchUpdateException encountered "
+				+ getCauseForDisplay(e), true);
+	    if (VMInstances != null && VMInstances.length > 0) {
+		for (int i = 0; i < this.VMInstances.length; i++) {
+		    if (this.VMInstances[i].typId() == 4) {
+			vm.incrementOutputUtilsVMetricsByKey(
+				this.VMInstances[i], null,
+				this.VMInstances[i].KeyStrings(), false);
+		    }
+		}
+	    }
+	} finally {
+	    try {
+		if ((totalStatements == failedStatements && statusWriter != null))
+		    statusWriter.setCompletionCode(this.STATUS_KEY, "-1");
+		connection.commit();
+		if (statusWriter != null) {
+		    statusWriter.addStatus(this.STATUS_KEY,
+			    String.valueOf(totalStatements - failedStatements),
+			    String.valueOf(failedStatements));
+		    statusWriter.externalizeStatusMessage(batchId, retryNumber,
+			    "BufferedJDBCSink");
+		}
+	    } catch (Exception e) {
+		logger.error("Error committing messages : " + e.getMessage(), e);
+		if (statusWriter != null) {
+		    statusWriter.addStatusMessage(this.STATUS_KEY,
+			    "Error committing messages : "
+				    + getCauseForDisplay(e), true);
+		    statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0),
+			    String.valueOf(totalStatements));
+		    statusWriter.setCompletionCode(this.STATUS_KEY, "-1");
+		    statusWriter.externalizeStatusMessage(batchId, retryNumber,
+			    "BufferedJDBCSink");
+		}
+	    }
+	    try {
+		statement.close();
+	    } catch (Exception e) {
+		logger.error("Error closing  Statement  : " + e.getMessage(), e);
+
+	    }
+	    try {
+		connection.close();
+	    } catch (Exception e) {
+		logger.error("Error closing  Connection  : " + e.getMessage(),
+			e);
+	    }
+	}
     }
 
     @Override
     public void clearAll() {
-        buffer.clear();
+	buffer.clear();
     }
 
     private String getCauseForDisplay(Exception e) {
-        java.io.StringWriter sw = new java.io.StringWriter();
-        java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-        e.printStackTrace(pw);
-        return sw.toString(); // stack trace as a string
+	java.io.StringWriter sw = new java.io.StringWriter();
+	java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+	e.printStackTrace(pw);
+	return sw.toString(); // stack trace as a string
     }
 }

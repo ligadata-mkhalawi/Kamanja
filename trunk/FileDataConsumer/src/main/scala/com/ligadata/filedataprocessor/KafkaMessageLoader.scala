@@ -1,38 +1,37 @@
 package com.ligadata.filedataprocessor
 
-import java.io.{IOException, File, PrintWriter}
+import java.io.{ IOException, File, PrintWriter }
 import java.nio.file.StandardCopyOption._
-import java.nio.file.{Paths, Files}
+import java.nio.file.{ Paths, Files }
 import java.text.SimpleDateFormat
-import java.util.concurrent.{TimeUnit, Future}
-import java.util.{TimeZone, Properties, Date, Arrays}
+import java.util.concurrent.{ TimeUnit, Future }
+import java.util.{ TimeZone, Properties, Date, Arrays }
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase._
 import com.ligadata.MetadataAPI.MetadataAPIImpl
-import com.ligadata.Utils.{Utils, KamanjaLoaderInfo}
+import com.ligadata.Utils.{ Utils, KamanjaLoaderInfo }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata.MessageDef
-import kafka.common.{QueueFullException, FailedToSendMessageException}
-import kafka.producer.{KeyedMessage, Producer, Partitioner}
+import kafka.common.{ QueueFullException, FailedToSendMessageException }
+import kafka.producer.{ KeyedMessage, Producer, Partitioner }
 import org.apache.curator.framework.CuratorFramework
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 import kafka.utils.VerifiableProperties
-import org.apache.kafka.clients.producer.{Callback, RecordMetadata, KafkaProducer, ProducerRecord}
+import org.apache.kafka.clients.producer.{ Callback, RecordMetadata, KafkaProducer, ProducerRecord }
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.json4s.jackson.JsonMethods._
-import org.json4s.{DefaultFormats, Formats}
+import org.json4s.{ DefaultFormats, Formats }
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Promise
 import java.util.regex.Pattern
 
-
 /**
-  * Created by danielkozin on 9/24/15.
-  */
+ * Created by danielkozin on 9/24/15.
+ */
 class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable.Map[String, String]) extends ObjectResolver {
   var fileBeingProcessed: String = ""
   var numberOfMessagesProcessedInFile: Int = 0
@@ -180,7 +179,6 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
       props.put(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR, saslkerberosticketrenewwindowfactor)
   }
 
-
   // create the producer object
   // val producer = new KafkaProducer[Array[Byte], Array[Byte]](new ProducerConfig(props))
   var producer = new KafkaProducer[Array[Byte], Array[Byte]](props)
@@ -235,7 +233,6 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     // Simply creating new object and returning. Not checking for MsgContainerType. This is issue if the child level messages ask for the type
     return objInst.createInstance
   }
-
 
   override def getInstance(schemaId: Long): ContainerInterface = {
     //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
@@ -293,13 +290,14 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    * @param messages
-    */
+   *
+   * @param messages
+   */
   def pushData(messages: Array[KafkaMessage]): Unit = {
     // First, if we are handling failover, then the messages could be of size 0.
     logger.info("SMART FILE CONSUMER **** processing chunk of " + messages.size + " messages")
     if (messages.size == 0) return
+    val msgVMInstances = FileProcessor.msgVMInstances
 
     // If we start processing a new file, then mark so in the zk.
     if (fileBeingProcessed.compareToIgnoreCase(messages(0).relatedFileName) != 0) {
@@ -371,6 +369,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
           // BUGBUG:: Previously we were using msg.msg. Should we use msgStr or msg.msg.
           val container = deserMsgBindingInfo.serInstance.deserialize(msgStr.getBytes(), objFullName)
+          
           val partitionKey = container.getPartitionKey.mkString(",")
 
           // By far the most common path..  just add the message
@@ -402,6 +401,12 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
               }
             } else {
               // Ignoring shit...
+            }
+          }
+
+          if (msgVMInstances != null && msgVMInstances.length > 0) {
+            for (i <- 0 until msgVMInstances.length) {
+              FileProcessor.vm.incrementIAVelocityMetrics(msgVMInstances(i), container, true)
             }
           }
         } catch {
@@ -453,10 +458,10 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    * @param messages
-    * @return
-    */
+   *
+   * @param messages
+   * @return
+   */
   //private def sendToKafka(messages: ArrayBuffer[KeyedMessage[Array[Byte], Array[Byte]]]): Int = {
   private def sendToKafka(messages: ArrayBuffer[ProducerRecord[Array[Byte], Array[Byte]]], sentFrom: String, fullSuccessOffset: Int = 0, fileToUpdate: String = null): Int = {
     try {
@@ -479,7 +484,6 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
       logger.info("Sending " + messages.size + " messages to kafka ...")
 
-
       while (!LocationWatcher.shutdown && !isFullySent) {
         if (isRetry) {
           Thread.sleep(getCurrentSleepTimer)
@@ -488,7 +492,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         currentMessage = 0
         messages.foreach(msg => {
           if ( //respFutures.contains(currentMessage) &&
-            !successVector(currentMessage)) {
+          !successVector(currentMessage)) {
             // Send the request to Kafka
             val response = FileProcessor.executeCallWithElapsed(producer.send(msg, new Callback {
               override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
@@ -591,9 +595,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    * @param fileName
-    */
+   *
+   * @param fileName
+   */
   private def closeOutFile(fileName: String, isResultOfCorruption: Boolean = false): Unit = {
     try {
       logger.info("SMART FILE CONSUMER (" + partIdx + ") - cleaning up after " + fileName)
@@ -629,9 +633,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    * @param fileName
-    */
+   *
+   * @param fileName
+   */
   private def writeStatusMsg(fileName: String, isTotal: Boolean = false): Unit = {
 
     if (statusTopic == null) return
@@ -683,9 +687,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    * @param msg
-    */
+   *
+   * @param msg
+   */
   private def writeErrorMsg(msg: KafkaMessage): Unit = {
 
     if (errorTopic == null) return
@@ -742,12 +746,12 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    * //   * @param inputData
-    * //   * @param associatedMsg
-    * //   * @param delimiters
-    * //   * @return
-    */
+   *
+   * //   * @param inputData
+   * //   * @param associatedMsg
+   * //   * @param delimiters
+   * //   * @return
+   */
   //  private def CreateKafkaInput(inputData: KafkaMessage, associatedMsg: String, delimiters: DataDelimiters): InputData = {
   //
   //    val msgStr = new String(inputData.msg)
@@ -805,9 +809,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   //  }
 
   /**
-    *
-    * @return
-    */
+   *
+   * @return
+   */
   private def configureMessageDef(): (com.ligadata.KamanjaBase.MessageFactoryInterface, String) = {
     val loaderInfo = new KamanjaLoaderInfo()
     var msgDef: MessageDef = null
@@ -929,8 +933,8 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   }
 
   /**
-    *
-    */
+   *
+   */
   def shutdown: Unit = {
     MetadataAPIImpl.shutdown
     if (producer != null)
