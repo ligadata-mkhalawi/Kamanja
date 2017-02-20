@@ -18,10 +18,10 @@ Current capabilities include:
   - A timestamp represented as a Long integer in the input can be formatted
     as a string using a formatting function
     from one of the date packages available for Scala and/or Java.
-   - A comma-delimited string from the input can be split
-     to form an array of strings for an output message.
-   - An incoming field can serve as a key to a table or map lookup
-     using the value found in an output message.
+  - A comma-delimited string from the input can be split
+    to form an array of strings for an output message.
+  - An incoming field can serve as a key to a table or map lookup
+    using the value found in an output message.
 
 - perform an operation or series of operations on one or more input fields
   to create a new field for an output message.

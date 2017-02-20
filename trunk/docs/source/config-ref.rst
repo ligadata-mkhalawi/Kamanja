@@ -5,6 +5,34 @@
 Configuration File Reference Pages
 ==================================
 
+.. list-table::
+   :class: ld-wrap-fixed-table
+   :widths: 30 50
+   :header-rows: 1
+
+   * - File
+     - Description
+   * - :ref:`adapter-binding-config-ref`
+     - Bind a message to an adapter and a serializer
+   * - :ref:`clusterconfig-config-ref`
+     - Configure components in a cluster
+   * - :ref:`container-def-config-ref`
+     - Define a container
+   * - :ref:`engineconfigproperties-config-ref`
+     - Configure a node
+   * - :ref:`log4j2-config-ref`
+     - Control logging on the cluster
+   * - :ref:`message-def-config-ref`
+     - Define a message
+   * - :ref:`metadataapiconfig-config-ref`
+     - 
+   * - :ref:`migrateconfig-template-config-ref`
+     -
+   * - :ref:`modelcfg-config-ref`
+     - Control compilation of a Java or Scala model
+   * - :ref:`tenant-def-config-ref`
+     - Define :ref:`tenancy<tenancy-term>` for the cluster
+
 .. toctree::
    :titlesonly:
 

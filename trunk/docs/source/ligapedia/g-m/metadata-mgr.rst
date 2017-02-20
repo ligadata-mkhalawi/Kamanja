@@ -1,8 +1,8 @@
 
-.. _metadata-mgr-arch:
+.. _metadata-mgr-term:
 
 Metadata manager
-================
+----------------
 
 The metadata manager handles offline, compile-time, processing.
 The metadata maintained and managed within Kamanja
@@ -19,15 +19,20 @@ The metadata manager performs a number of functions:
   can be instantiated and used during by the runtime system.
   These are the Kamanja objects:
 
-  - :ref:`messages<messages-term>`
-
-    - input messages  - data flowing into Kamanja engine
-    - output messages - data flowing out of models
-
-  - :ref:`containers<container-term>`  - “facts” about Kamanja models
-  - :ref:`models<model-term>` - executable logic (rules, TreeSets, etc)
+  - :ref:`models<model-term>` - executable logic; this can be
+    a simple computation or a machine learning algorithm.
+  - :ref:`messages<messages-term>` -- packets of information being processed.
+    A message can be input to a model, output to a model,
+    or transmitted to a storage warehouse.
+  - :ref:`containers<container-term>`  - reference information that is used
+    by models to process messages.
+    For example, a container might translate state codes (like MI and AZ)
+    to full state names (Michigan and Arizona, in this case)
+    or UPC/SKU numbers to full product descriptions.
+    A container might also contain more volatile information
+    such as customer order histories.
   - :ref:`functions<functions-term>` - UDFs
-  - :ref:`types<types-term>` - datatypes
+  - :ref:`types<types-term>` - data types
   - :ref:`concepts<concepts-term>`
 
 - Allows uploading of JAR files that are used during Kamanja execution.
@@ -47,4 +52,5 @@ There are 2 ways of interacting with the Kamanja metadata.
 - :ref:`CLI commands<kamanja-command-ref>` - Kamanja utilities
 
 Use the Kamanja utilities to start the metadata REST service.
+
 

@@ -131,4 +131,26 @@ For example:
   export KAFKA_HOME=/usr/local/kafka_2.11-0.9.0.0
   export PATH=$KAFKA_HOME/bin:$PATH
 
+.. _kafka-install:
+
+Download and install Kafka
+--------------------------
+
+Download Kafka 0.9.0.1 from `the Kafka download page
+<http://kafka.apache.org/downloads.html>`_.
+Note that separate files are provided to run with Scala 2.11 or 2.10;
+be sure to get the version that matches the version of Scala you installed.
+
+Note that Kamanja has not been tested with Kafka 0.10.* .
+
+Untar the .tgz file to install the software.
+
+.. _elastic-install:
+
+Download and install ElasticSearch
+----------------------------------
+
+Install ElasticSearch 2.4.3 from the
+`Elastic download page
+<https://www.elastic.co/blog/elasticsearch-2-4-3-released website>`_.
 

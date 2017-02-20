@@ -23,8 +23,7 @@ Options and arguments
 ---------------------
 
 - **gz** -
-— **format** - indicates the format of the data
-  (either CSV or JSON).
+— **format** - indicates the format of the data (either CSV or JSON).
 - **topics** -
 - **threads** -
 - **topicpartitions** -
@@ -34,7 +33,7 @@ Options and arguments
   indicates the message name and the partition key
   by which to aggregate other messages in the message history.
 
-  **partitionkeyidxs** if the file contains multiple message types,
+- **partitionkeyidxs** if the file contains multiple message types,
   list each type here, separated with commas.
   For example:
 

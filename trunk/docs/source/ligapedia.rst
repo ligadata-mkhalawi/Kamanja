@@ -44,6 +44,7 @@ Ligapedia
    ligapedia/g-m/kafka
    ligapedia/g-m/kbinary
    ligapedia/g-m/kv
+   ligapedia/g-m/lambda
    ligapedia/g-m/log4j2
    ligapedia/g-m/log-consolidated
    ligapedia/g-m/machine-learning
@@ -53,6 +54,7 @@ Ligapedia
    ligapedia/g-m/messages-mapped
    ligapedia/g-m/metadata
    ligapedia/g-m/metadata-api
+   ligapedia/g-m/metadata-mgr
    ligapedia/g-m/model
    ligapedia/n-r/naive-bayes
    ligapedia/n-r/neural-networks
