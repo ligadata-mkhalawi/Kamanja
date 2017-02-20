@@ -56,7 +56,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   private var msgCount = 0
   val default_outstanding_messages = "2048"
   val max_outstanding_messages = default_outstanding_messages.toString.trim().toInt
-  private var commitExecutor: ExecutorService = Executors.newFixedThreadPool(1)
+  private var commitExecutor: ExecutorService = Executors.newFixedThreadPool(2)
   val counterLock = new Object
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
@@ -97,12 +97,24 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
   private val producer = this
+  private val lockHartBeat = new Object();
+  private val lockConnection = new Object();
+  private var status = false
 
+  logger.warn("Start the heartbeat ....")
   // Start the heartbeat.
   commitExecutor.execute(new Runnable() {
     override def run(): Unit = {
       while (!isShutdown) {
         try {
+          if (!status) {
+            lockConnection.synchronized {
+              lockConnection.notify();
+            }
+            lockHartBeat.synchronized {
+              lockHartBeat.wait();
+            }
+          }
           val dt = System.currentTimeMillis
           if (IsTimeToWrite(dt)) {
             producer.synchronized {
@@ -113,6 +125,46 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
               }
             }
           }
+        } catch {
+          case e: Throwable => {
+            if (!isShutdown)
+              logger.warn("Failed to commit. ClassLoader:" + getClass().getClassLoader(), e)
+          }
+        }
+
+        try {
+          Thread.sleep(1000)
+        } catch {
+          case e: Throwable => {}
+        }
+      }
+    }
+  })
+
+  // start trying to reconnect Thread to check elasticsearch
+  commitExecutor.execute(new Runnable() {
+    override def run(): Unit = {
+      while (!isShutdown) {
+        Thread.sleep(1000);
+        try {
+          if (status) {
+            lockHartBeat.synchronized {
+              lockHartBeat.notify();
+            }
+            lockConnection.synchronized {
+              lockConnection.wait();
+            }
+          } else {
+            logger.warn("elastic search server is down trying to reconnect ...")
+            val client = getConnection
+            if (client.connectedNodes().isEmpty) {
+              lockConnection.synchronized {
+                status = true;
+              }
+            }
+            client.close()
+          }
+
         } catch {
           case e: Throwable => {
             if (!isShutdown)
@@ -219,6 +271,16 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
               if (client == null) {
                 client = getConnection
                 connectedTime = System.currentTimeMillis
+                //wait and start checking
+                if (client.connectedNodes().isEmpty) {
+                  lockConnection.synchronized {
+                    lockConnection.notify();
+                    status = false
+                  }
+                  lockHartBeat.synchronized {
+                    lockHartBeat.wait();
+                  }
+                }
               }
               createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
             } catch {
@@ -265,62 +327,76 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           if (client == null) {
             client = getConnection
             connectedTime = System.currentTimeMillis
+            //wait and start checking
           }
           var gotException: Throwable = null
           var addedKeys = ArrayBuffer[String]()
-          sendData.foreach(kv => {
-            if (gotException == null) {
-              val containerName = kv._1
-              val data_list = kv._2
-              try {
-                val tableName = toFullTableName(containerName)
-                var bulkRequest = client.prepareBulk()
-                data_list.foreach({ jsonData =>
+
+          LOG.warn("Client value ... " + client.connectedNodes())
+          if (client.connectedNodes().isEmpty) {
+            lockConnection.synchronized {
+              lockConnection.notify();
+              status = false
+            }
+            lockHartBeat.synchronized {
+              lockHartBeat.wait();
+            }
+          } else {
+            sendData.foreach(kv => {
+              if (gotException == null) {
+                val containerName = kv._1
+                val data_list = kv._2
+                try {
+                  val tableName = toFullTableName(containerName)
+                  var bulkRequest = client.prepareBulk()
+                  data_list.foreach({ jsonData =>
+                    //added by saleh 15/12/2016
+                    val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
+                    //if (root.get("metadata") != None) {
+                    val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
+
+                    val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
+                    val metadata_type = if (metadata.get("_type") == None || metadata.get("_type").get.toString.trim.length == 0) "type1" else metadata.get("_type").get.toString
+
+                    val bulk = client.prepareIndex(index, metadata_type)
+
+                    if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
+                    if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
+
+                    //}
+                    bulk.setSource(jsonData)
+                    bulkRequest.add(bulk)
+                  })
+                  if (LOG.isDebugEnabled) LOG.debug("Executing bulk indexing...")
+                  val bulkResponse = bulkRequest.execute().actionGet()
+
+                  // BUGBUG:: If we have errors do we treat this data is added ???????
                   //added by saleh 15/12/2016
-                  val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
-                  //if (root.get("metadata") != None) {
-                  val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
-
-                  val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
-                  val metadata_type = if (metadata.get("_type") == None || metadata.get("_type").get.toString.trim.length == 0) "type1" else metadata.get("_type").get.toString
-
-                  val bulk = client.prepareIndex(index, metadata_type)
-
-                  if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
-                  if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
-
-                  //}
-                  bulk.setSource(jsonData)
-                  bulkRequest.add(bulk)
-                })
-                if (LOG.isDebugEnabled) LOG.debug("Executing bulk indexing...")
-                val bulkResponse = bulkRequest.execute().actionGet()
-
-                // BUGBUG:: If we have errors do we treat this data is added ???????
-                //added by saleh 15/12/2016
-                if (bulkResponse.hasFailures && LOG.isWarnEnabled) {
-                  LOG.warn(bulkResponse.buildFailureMessage())
-                }
-                recsToWrite -= kv._2.size
-                kv._2.clear
-                addedKeys += containerName
-              } catch {
-                case e: Throwable => {
-                  LOG.error("Failed to add data to index:" + containerName, e)
-                  gotException = e
+                  if (bulkResponse.hasFailures && LOG.isWarnEnabled) {
+                    LOG.warn(bulkResponse.buildFailureMessage())
+                  }
+                  recsToWrite -= kv._2.size
+                  kv._2.clear
+                  addedKeys += containerName
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to add data to index:" + containerName, e)
+                    gotException = e
+                  }
                 }
               }
+            })
+
+            addedKeys.foreach(key => {
+              sendData.remove(key)
+            })
+            if (gotException != null) {
+              throw gotException
             }
-          })
-          addedKeys.foreach(key => {
-            sendData.remove(key)
-          })
-          if (gotException != null) {
-            throw gotException
+            // No Exceptions and everything is written
+            if (sendData.size == 0)
+              recsToWrite = 0
           }
-          // No Exceptions and everything is written
-          if (sendData.size == 0)
-            recsToWrite = 0
         } catch {
           case e: Throwable => {
             if ((System.currentTimeMillis - connectedTime) > 10000) {
@@ -502,9 +578,20 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     isShutdown = true
 
+    lockConnection.synchronized {
+      lockConnection.notify();
+    }
+    lockHartBeat.synchronized {
+      lockHartBeat.notify();
+    }
+
     if (commitExecutor != null)
       commitExecutor.shutdownNow
 
-    putJsonsWithMetadata(false)
+    val client = getConnection
+    if (!client.connectedNodes().isEmpty) {
+      putJsonsWithMetadata(false)
+    }
+    client.close()
   }
 }
