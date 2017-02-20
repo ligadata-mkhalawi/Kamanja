@@ -28,9 +28,15 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
 
   consumer = new KafkaConsumer[String, String](props)
 
+  /**
+    * def run will subscribe to the topic specified in the KafkaAdapterConfig passed in at class construction
+    * and seek to the end of the topic prior to retrieving records.
+    */
   def run: Unit = {
     try {
       consumer.subscribe(List(config.adapterSpecificConfig.topicName))
+      val partitions = consumer.assignment()
+      consumer.seekToEnd(partitions)
       while(true) {
         val records = consumer.poll(100).iterator()
         while(records.hasNext) {
