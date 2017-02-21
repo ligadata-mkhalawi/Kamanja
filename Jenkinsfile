@@ -18,16 +18,8 @@ node {
                 alwaysLinkToLastBuild: false, 
                 keepAll: false, 
                 reportDir: 'trunk/target/site', 
-                reportFiles: 'index.html', 
+                reportFiles: 'index.html,index.pdf', 
                 reportName: 'Documentation'
-            ])
-            publishHTML([
-                allowMissing: false,
-                alwaysLinkToLastBuild: false,
-                keepAll: false,
-                reportDir: 'trunk/target/site',
-                reportFiles: 'index.pdf',
-                reportName: 'PDF Documentation'
             ])
         }
     }
