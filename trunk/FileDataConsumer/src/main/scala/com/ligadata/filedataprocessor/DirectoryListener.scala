@@ -100,12 +100,13 @@ object LocationWatcher extends Observer {
     logger.warn("vmCategory " + vmCategory)
     logger.warn("vmComponentName " + vmComponentName)
 
+    var VMFactory: VelocityMetricsFactoryInterface = null
     if (velocitymetricsInfo != null && velocitymetricsInfo.trim.length() > 0) {
 
       // create factory here
       var vm = new VelocityMetricsInfo();
       FileProcessor.vm = vm
-      val VMFactory = VelocityMetricsInfo.getVMFactory(rotationtimeinsecs.toInt, emittimeinsecs.toInt)
+      VMFactory = VelocityMetricsInfo.getVMFactory(rotationtimeinsecs.toInt, emittimeinsecs.toInt)
       FileProcessor.VMFactory = VMFactory
       val msgVMInstances = vm.getMsgVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
       logger.warn("msgVMInstances length" + msgVMInstances.length)
@@ -271,7 +272,7 @@ object LocationWatcher extends Observer {
       } catch {
         case e: Throwable => {}
       }
-        
+
     }
 
     // Release lock in case if it is holding
