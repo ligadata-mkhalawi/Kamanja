@@ -148,6 +148,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         Thread.sleep(1000);
         try {
           if (status) {
+            logger.warn("elastic search server is running ...")
             lockHartBeat.synchronized {
               lockHartBeat.notify();
             }
@@ -155,12 +156,14 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
               lockConnection.wait();
             }
           } else {
-            logger.warn("elastic search server is down trying to reconnect ...")
+            logger.warn("trying to connect to elastic search ...")
             val client = getConnection
-            if (client.connectedNodes().isEmpty) {
+            if (!client.connectedNodes().isEmpty) {
               lockConnection.synchronized {
                 status = true;
               }
+            } else {
+              logger.warn("elastic search server is down trying to reconnect ...")
             }
             client.close()
           }
@@ -332,7 +335,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           var gotException: Throwable = null
           var addedKeys = ArrayBuffer[String]()
 
-          LOG.warn("Client value ... " + client.connectedNodes())
+          if (LOG.isInfoEnabled) LOG.info("Client value ... " + client.connectedNodes())
           if (client.connectedNodes().isEmpty) {
             lockConnection.synchronized {
               lockConnection.notify();
