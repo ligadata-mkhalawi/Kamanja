@@ -155,6 +155,21 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 		    for (Record rec : records) {
 			hdfsWriter.write(rec);
 			writtenMessages++;
+			if (VMInstances != null && VMInstances.length > 0) {
+			    for (int i = 0; i < this.VMInstances.length; i++) {
+				if (this.VMInstances[i].typId() == 3) {
+				    vm.incrementOutputUtilsVMetricsByKey(
+					    this.VMInstances[i], key, null,
+					    true);
+				} else if (this.VMInstances[i].typId() == 4) {
+
+				    vm.incrementOutputUtilsVMetricsByKey(
+					    this.VMInstances[i], null,
+					    this.VMInstances[i].KeyStrings(),
+					    true);
+				}
+			    }
+			}
 		    }
 		    logger.info("Sucessfully wrote " + records.size()
 			    + " records to partition [" + key + "]");
@@ -165,21 +180,6 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 			statusWriter.addStatus(key,
 				String.valueOf(writtenMessages),
 				String.valueOf(0));
-
-		    if (VMInstances != null && VMInstances.length > 0) {
-			for (int i = 0; i < this.VMInstances.length; i++) {
-			    if (this.VMInstances[i].typId() == 3) {
-				vm.incrementOutputUtilsVMetricsByKey(
-					this.VMInstances[i], key,
-					null, true);
-			    } else if (this.VMInstances[i].typId() == 4) {
-
-				vm.incrementOutputUtilsVMetricsByKey(
-					this.VMInstances[i], null,
-					this.VMInstances[i].KeyStrings(), true);
-			    }
-			}
-		    }
 
 		}
 	    } catch (Exception e) {
@@ -200,8 +200,7 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 		    for (int i = 0; i < this.VMInstances.length; i++) {
 			if (this.VMInstances[i].typId() == 3) {
 			    vm.incrementOutputUtilsVMetricsByKey(
-				    this.VMInstances[i], key, null,
-				    false);
+				    this.VMInstances[i], key, null, false);
 			} else if (this.VMInstances[i].typId() == 4) {
 
 			    vm.incrementOutputUtilsVMetricsByKey(

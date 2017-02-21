@@ -35,9 +35,18 @@ public class KafkaAdapter implements Observer {
 
     public KafkaAdapter(AdapterConfiguration config) {
 	this.configuration = config;
-	velocitymetricsStats = createVelocityMetricsStats(config);
-	VMFactory = getVMFactory(config);
-	config.VMInstances = getVelocityMetricsInstances(config);
+	String vmFullConfig = configuration.getProperty(
+		AdapterConfiguration.VM_CONFIG, "");
+	if (vmFullConfig != null && vmFullConfig.trim().length() > 0) {
+	    velocitymetricsStats = createVelocityMetricsStats(config);
+	    VMFactory = getVMFactory(config);
+	    config.VMInstances = getVelocityMetricsInstances(config,
+		    vmFullConfig);
+	    if (VMFactory != null)
+		VMFactory.addEmitListener(velocitymetricsStats);
+	    System.out.println("config.VMInstances "
+		    + config.VMInstances.length);
+	}
     }
 
     @Override
@@ -303,8 +312,8 @@ public class KafkaAdapter implements Observer {
 		    adapter.shutdownTriggerCounter.incrementAndGet();
 		}
 	    }
-	    adapter.VMFactory.addEmitListener(adapter.velocitymetricsStats);
 	}
+
 	adapter.VMFactory.shutdown();
 	adapter.shutdown(true);
     }
@@ -314,6 +323,13 @@ public class KafkaAdapter implements Observer {
 
 	Integer rotationTimeInSecs = 30;
 	Integer emitTimeInSecs = 15;
+
+	String r_timeinsecs = config.getProperty(
+		AdapterConfiguration.VM_ROTATIONTIMEINSECS, "30");
+	String e_timeinsecs = config.getProperty(
+		AdapterConfiguration.VM_EMITTIMEINSECS, "15");
+	rotationTimeInSecs = Integer.parseInt(r_timeinsecs);
+	emitTimeInSecs = Integer.parseInt(e_timeinsecs);
 
 	VelocityMetricsFactoryInterface existingFactory = VelocityMetrics
 		.GetExistingVelocityMetricsFactory();
@@ -332,15 +348,20 @@ public class KafkaAdapter implements Observer {
 	    String classname = configuration
 		    .getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
 
-	    String velocitymetricskafkatopic = config.getProperty(
-		    AdapterConfiguration.VELOCITYMETRICS_KAFKA_TOPIC, "");
+	    String velocitymetricskafkatopic = config
+		    .getProperty(AdapterConfiguration.VELOCITYMETRICS_KAFKA_TOPIC);
 
 	    String bootstrapserver = config.getProperty(
 		    AdapterConfiguration.BOOTSTRAP_SERVERS, "");
 
 	    if (classname == null || classname.trim().length() == 0)
 		throw new Exception(
-			"Topic for Velocity Metrics Stats is not provided in properties file");
+			"MESSAGE_PROCESSOR is not provided in properties file");
+	    System.out.println("classname " + classname);
+	    System.out.println("velocitymetricskafkatopic "
+		    + velocitymetricskafkatopic);
+	    System.out.println("bootstrapserver " + bootstrapserver);
+
 	    k_vm.init(velocitymetricskafkatopic, bootstrapserver, classname);
 
 	    logger.info("Initializing Velocity Metrics Kafka Recorder");
@@ -351,7 +372,7 @@ public class KafkaAdapter implements Observer {
     }
 
     private InstanceRuntimeInfo[] getVelocityMetricsInstances(
-	    AdapterConfiguration config) {
+	    AdapterConfiguration config, String vmFullConfig) {
 	VelocityMetricsInfo vm = new VelocityMetricsInfo();
 	try {
 	    String vmCategory = configuration.getProperty(
@@ -359,16 +380,14 @@ public class KafkaAdapter implements Observer {
 	    String vmComponentName = configuration.getProperty(
 		    AdapterConfiguration.VM_COMPONENT_NAME, "");
 
-	    String vmFullConfig = configuration.getProperty(
-		    AdapterConfiguration.VM_CONFIG, "");
 	    if (vmFullConfig == null || vmFullConfig.trim().length() == 0)
 		throw new Exception(
 			"velocity metrics config info should be given in properties file");
 	    String nodeId = configuration.getProperty(
 		    AdapterConfiguration.VM_NODEID, "");
-	    if (vmFullConfig == null || vmFullConfig.trim().length() == 0)
+	    if (nodeId == null || nodeId.trim().length() == 0)
 		throw new Exception(
-			"velocity metrics config info should be given in properties file");
+			"nodeId config info should be given in properties file");
 
 	    return vm.getOutputUtilsVelocityInstances(VMFactory, vmCategory,
 		    vmComponentName, vmFullConfig, nodeId);

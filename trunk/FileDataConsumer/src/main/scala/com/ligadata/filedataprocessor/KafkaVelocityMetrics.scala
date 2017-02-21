@@ -172,10 +172,13 @@ class KafkaVelocityMetrics(inConfiguration: scala.collection.mutable.Map[String,
                   ("metricskeyvalue" -> mValues.Value())))))));
 
     var outputJson: String = compact(render(json))
+    logger.info("velocity metrics json.values " + json.values)
+    logger.info("velocity metrics outputJson " + outputJson)
     val statusPartitionId = "velocity metrics"
     val keyMessages = new scala.collection.mutable.ArrayBuffer[ProducerRecord[Array[Byte], Array[Byte]]](1)
     keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.VM_KAFKA_TOPIC), statusPartitionId.getBytes("UTF8"), new String(outputJson).getBytes("UTF8"))
-
+    logger.info("velocity metrics topic " + SmartFileAdapterConstants.VM_KAFKA_TOPIC)
+    logger.info("velocity metrics topic " + inConfiguration(SmartFileAdapterConstants.VM_KAFKA_TOPIC))
     sendToKafka(keyMessages, "VelocityMetrics")
 
   }

@@ -348,6 +348,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         numberOfValidEvents += 1
         //        var inputData: InputData = null
         var msgStr: String = null
+        var container: ContainerInterface = null
         try {
 
           //Pass in the complete message instead of just the message string
@@ -356,6 +357,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
           if (msgStr.size > allowedSize) throw new KVMessageFormatingException("Message size exceeds the maximum alloweable size ", null)
 
+          logger.info("msgStr: " + msgStr)
           if (message_metadata && !msgStr.startsWith("fileId")) {
             msgStr = "fileId" + keyAndValueDelimiter + FileProcessor.getIDFromFileCache(msg.relatedFileName) +
               fieldDelimiter +
@@ -368,8 +370,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           // val partitionKey = objInst.asInstanceOf[MessageContainerObjBase].PartitionKeyData(inputData).mkString(",")
 
           // BUGBUG:: Previously we were using msg.msg. Should we use msgStr or msg.msg.
-          val container = deserMsgBindingInfo.serInstance.deserialize(msgStr.getBytes(), objFullName)
-          
+          container = deserMsgBindingInfo.serInstance.deserialize(msgStr.getBytes(), objFullName)
           val partitionKey = container.getPartitionKey.mkString(",")
 
           // By far the most common path..  just add the message
@@ -405,7 +406,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           }
 
           if (msgVMInstances != null && msgVMInstances.length > 0) {
+            logger.info("velocity metrics msg msgVMInstances " + msgVMInstances.length)
             for (i <- 0 until msgVMInstances.length) {
+              logger.info("velocity metrics msg inrement here")
               FileProcessor.vm.incrementIAVelocityMetrics(msgVMInstances(i), container, true)
             }
           }
@@ -417,6 +420,13 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           case e: Exception => {
             logger.warn("Unknown message format in partition " + partIdx, e)
             writeErrorMsg(msg)
+            if (msgVMInstances != null && msgVMInstances.length > 0) {
+              logger.info("velocity metrics msg msgVMInstances " + msgVMInstances.length)
+              for (i <- 0 until msgVMInstances.length) {
+                logger.info("velocity metrics msg inrement here")
+                FileProcessor.vm.incrementIAVelocityMetrics(msgVMInstances(i), container, false)
+              }
+            }
           }
           case e: Throwable => {
             logger.warn("Unknown message format in partition " + partIdx, e)

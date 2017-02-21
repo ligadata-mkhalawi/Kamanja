@@ -87,22 +87,36 @@ object LocationWatcher extends Observer {
     })
     //Velocity Metrics Properties
     // var rotationtimeinsecs = 30
-    var rotationtimeinsecs = properties.getOrElse(SmartFileAdapterConstants.VM_ROTATIONTIMEINSECS, 30)
+    var rotationtimeinsecs = properties.getOrElse(SmartFileAdapterConstants.VM_ROTATIONTIMEINSECS, "30")
     var emittimeinsecs = properties.getOrElse(SmartFileAdapterConstants.VM_EMITTIMEINSECS, "15")
     var velocitymetricsInfo = properties.getOrElse(SmartFileAdapterConstants.VELOCITYMETRICSINFO, null)
     var nodeId = properties.getOrElse(SmartFileAdapterConstants.NODE_ID_PREFIX, null)
     var vmCategory = properties.getOrElse(SmartFileAdapterConstants.VM_CATEGORY, null)
     var vmComponentName = properties.getOrElse(SmartFileAdapterConstants.VM_COMPONENTNAME, null)
-    // create factory here
-    var vm = new VelocityMetricsInfo();
-    FileProcessor.vm = vm
-    val VMFactory = VelocityMetricsInfo.getVMFactory(rotationtimeinsecs.asInstanceOf[Int], emittimeinsecs.toInt)
-    FileProcessor.VMFactory = VMFactory
-    val msgVMInstances = vm.getMsgVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
-    FileProcessor.msgVMInstances = msgVMInstances
-    val fileVMInstances = vm.getFileVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
-    FileProcessor.fileVMInstances = fileVMInstances
+    logger.warn("rotationtimeinsecs " + rotationtimeinsecs)
+    logger.warn("emittimeinsecs " + emittimeinsecs)
+    logger.warn("velocitymetricsInfo " + velocitymetricsInfo)
+    logger.warn("nodeId " + nodeId)
+    logger.warn("vmCategory " + vmCategory)
+    logger.warn("vmComponentName " + vmComponentName)
 
+    if (velocitymetricsInfo != null && velocitymetricsInfo.trim.length() > 0) {
+
+      // create factory here
+      var vm = new VelocityMetricsInfo();
+      FileProcessor.vm = vm
+      val VMFactory = VelocityMetricsInfo.getVMFactory(rotationtimeinsecs.toInt, emittimeinsecs.toInt)
+      FileProcessor.VMFactory = VMFactory
+      val msgVMInstances = vm.getMsgVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
+      logger.warn("msgVMInstances length" + msgVMInstances.length)
+      FileProcessor.msgVMInstances = msgVMInstances
+      val fileVMInstances = vm.getFileVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
+      FileProcessor.fileVMInstances = fileVMInstances
+      logger.warn("fileVMInstances length" + fileVMInstances.length)
+      var kafkaVelocityMetrics = new KafkaVelocityMetrics(properties)
+
+      FileProcessor.VMFactory.addEmitListener(kafkaVelocityMetrics)
+    }
     // FileConsumer is a special case we need to default to 1, but also have it present in the properties since
     // it is used later for memory managemnt
     var numberOfProcessorsRaw = properties.getOrElse(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS, null)
@@ -142,7 +156,6 @@ object LocationWatcher extends Observer {
       }
     }
 
-    var kafkaVelocityMetrics = new KafkaVelocityMetrics(properties)
     for (dir <- path)
       logger.info("SMART FILE CONSUMER: Starting " + numberOfProcessors + " file consumers, reading from " + dir)
 
@@ -251,14 +264,16 @@ object LocationWatcher extends Observer {
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
         }
       }
+
+      logger.warn("End in Directory Listener");
       try {
         Thread.sleep(1000)
       } catch {
         case e: Throwable => {}
       }
+        
     }
 
-    VMFactory.addEmitListener(kafkaVelocityMetrics)
     // Release lock in case if it is holding
     if (FileProcessor.prevIsThisNodeToProcess) {
       watchThreads.shutdownNow()

@@ -149,9 +149,8 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
 	public void init(String topic, String bootstrapserver,
 			String destinationComponentName) throws Exception {
 		try {
-			logger.info("Initializing Velocity Metrics KafkaStatsRecorder");
-			if (velocitymetricsTopic == null
-					|| velocitymetricsTopic.trim().length() == 0)
+			logger.info("Initializing Velocity Metrics KafkaStatsRecorder" +topic);
+			if (topic == null || topic.trim().length() == 0)
 				throw new Exception(
 						"Topic for Velocity Metrics Stats is not provided in properties file");
 			if (destinationComponentName != null

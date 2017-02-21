@@ -49,6 +49,9 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 			+ " typeName=" + param.typeName);
 	}
 	this.VMInstances = config.VMInstances;
+
+	System.out
+		.println("this.VMInstances length " + this.VMInstances.length);
     }
 
     @Override
@@ -86,19 +89,42 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 	    for (JSONObject jsonObject : buffer) {
 		if (bindParameters(statement, insertParams, jsonObject))
 		    statement.addBatch();
+		if (this.VMInstances != null && this.VMInstances.length > 0) {
+		    System.out
+			    .println("1 increment " + this.VMInstances.length);
+		    for (int i = 0; i < this.VMInstances.length; i++) {
+			if (this.VMInstances[i].typId() == 4) {
+			    System.out.println("2 increment "
+				    + this.VMInstances.length);
+			    vm.incrementOutputUtilsVMetricsByKey(
+				    this.VMInstances[i], null,
+				    this.VMInstances[i].KeyStrings(), true);
+			}
+			if (this.VMInstances[i].typId() == 3) {
+			    System.out.println("2 increment "
+				    + this.VMInstances.length);
+
+			    if (this.VMInstances[i].MsgKeys() != null
+				    && this.VMInstances[i].MsgKeys().length > 0) {
+				String[] myStringArray = new String[this.VMInstances[i]
+					.MsgKeys().length];
+				for (int k = 0; k < this.VMInstances[i]
+					.MsgKeys().length; k++) {
+				    myStringArray[k] = jsonObject.get(
+					    this.VMInstances[i].MsgKeys()[k])
+					    .toString();
+				}
+				vm.incrementOutputUtilsVMetricsByKey(
+					this.VMInstances[i], null,
+					this.VMInstances[i].KeyStrings(), true);
+			    }
+			}
+		    }
+		}
 	    }
 
 	    statement.executeBatch();
 
-	    if (VMInstances != null && VMInstances.length > 0) {
-		for (int i = 0; i < this.VMInstances.length; i++) {
-		    if (this.VMInstances[i].typId() == 4) {
-			vm.incrementOutputUtilsVMetricsByKey(
-				this.VMInstances[i], null,
-				this.VMInstances[i].KeyStrings(), true);
-		    }
-		}
-	    }
 	} catch (BatchUpdateException e) {
 	    logger.error("Error saving messages : " + e.getMessage(), e);
 	    int[] updateCounts = e.getUpdateCounts();
@@ -113,6 +139,45 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 				"failed to execute this statement : "
 					+ buffer.get(i), false);
 			statusWriter.setCompletionCode(this.STATUS_KEY, "1");
+
+			JSONObject jsonObject = buffer.get(i);
+
+			if (this.VMInstances != null
+				&& this.VMInstances.length > 0) {
+			    System.out.println("1 increment "
+				    + this.VMInstances.length);
+			    for (int j = 0; j < this.VMInstances.length; j++) {
+				if (this.VMInstances[j].typId() == 4) {
+				    System.out.println("2 increment "
+					    + this.VMInstances.length);
+				    vm.incrementOutputUtilsVMetricsByKey(
+					    this.VMInstances[j], null,
+					    this.VMInstances[j].KeyStrings(),
+					    false);
+				}
+				if (this.VMInstances[j].typId() == 3) {
+				    System.out.println("2 increment "
+					    + this.VMInstances.length);
+
+				    if (this.VMInstances[j].MsgKeys() != null
+					    && this.VMInstances[j].MsgKeys().length > 0) {
+					String[] myStringArray = new String[this.VMInstances[j]
+						.MsgKeys().length];
+					for (int k = 0; k < this.VMInstances[j]
+						.MsgKeys().length; k++) {
+					    myStringArray[k] = jsonObject.get(
+						    this.VMInstances[j]
+							    .MsgKeys()[k])
+						    .toString();
+					}
+					vm.incrementOutputUtilsVMetricsByKey(
+						this.VMInstances[j], null,
+						this.VMInstances[j]
+							.KeyStrings(), false);
+				    }
+				}
+			    }
+			}
 		    }
 		    failedStatements++;
 		}
@@ -121,15 +186,6 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 		statusWriter.addStatusMessage(this.STATUS_KEY,
 			"BatchUpdateException encountered "
 				+ getCauseForDisplay(e), true);
-	    if (VMInstances != null && VMInstances.length > 0) {
-		for (int i = 0; i < this.VMInstances.length; i++) {
-		    if (this.VMInstances[i].typId() == 4) {
-			vm.incrementOutputUtilsVMetricsByKey(
-				this.VMInstances[i], null,
-				this.VMInstances[i].KeyStrings(), false);
-		    }
-		}
-	    }
 	} finally {
 	    try {
 		if ((totalStatements == failedStatements && statusWriter != null))

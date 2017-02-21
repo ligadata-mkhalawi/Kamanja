@@ -1469,7 +1469,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   private var rotationtimeinsecs: Int = _
   private var emittimeinsecs: Int = _
   var velocitymetricsInfo: String = _
-
   def setContentParsableFlag(isParsable: Boolean): Unit = synchronized {
     isContentParsable = isParsable
   }
@@ -1566,6 +1565,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
           throw e
         }
       }
+  
     } catch {
       case e: Exception => {
         logger.error("SMART_FILE_CONSUMER: ERROR", e)
@@ -2093,6 +2093,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
           readBytesChunksFromFile(fileToProcess)
           if (fileVMStances != null && fileVMStances.length > 0) {
             for (i <- 0 until fileVMStances.length) {
+              logger.info("velocity metrics inrement here")
               FileProcessor.vm.incrementFileVMetrics(fileVMStances(i), fileToProcess.name, true)
             }
           }
@@ -2106,6 +2107,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
             }
             if (fileVMStances != null && fileVMStances.length > 0) {
               for (i <- 0 until fileVMStances.length) {
+                logger.info("velocity metrics inrement fail")
                 FileProcessor.vm.incrementFileVMetrics(fileVMStances(i), fileToProcess.name, false)
               }
             }
@@ -2171,6 +2173,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         }
       }
     })
+  
   }
 
   /**

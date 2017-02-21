@@ -154,7 +154,6 @@ class VelocityMetricsInfo {
   def getFileVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapName: String, adapFullConfig: String, nodeId: String): Array[InstanceRuntimeInfo] = {
     val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
     try {
-      var nodeId: String = null
       val vmetrics = getVelocityMetricsConfig(adapFullConfig)
       val compName = adapCategory + uscore + adapName
       // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
@@ -199,10 +198,9 @@ class VelocityMetricsInfo {
     return allMsgInstances.toArray
   }
 
-  def getOutputUtilsVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapName: String, adapFullConfig: String, nodeid: String = null): Array[InstanceRuntimeInfo] = {
+  def getOutputUtilsVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapName: String, adapFullConfig: String, nodeId: String): Array[InstanceRuntimeInfo] = {
     val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
     try {
-      var nodeId: String = null
       val vmetrics = getVelocityMetricsConfig(adapFullConfig)
       val compName = adapCategory + uscore + adapName
       // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
