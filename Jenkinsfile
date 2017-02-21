@@ -8,7 +8,7 @@ node {
             // Navigating to the trunk directory, building the package and generating the documentation.
             sh "cd trunk; sbt '++ 2.11.7 package' doc makeSite"
             dir('docs') {
-                make pdf
+                sh "make pdf"
             }
             cp trunk/docs/build/html/*.pdf trunk/target/site
 
