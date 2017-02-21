@@ -7,6 +7,11 @@ node {
             checkout scm
             // Navigating to the trunk directory, building the package and generating the documentation.
             sh "cd trunk; sbt '++ 2.11.7 package' doc makeSite"
+            dir('docs') {
+                make pdf
+            }
+            cp trunk/docs/build/html/*.pdf trunk/target/site
+
             // This publishes the documentation generated on that branch so anyone with Jenkins access may review it.
             publishHTML([
                 allowMissing: false, 
@@ -15,6 +20,14 @@ node {
                 reportDir: 'trunk/target/site', 
                 reportFiles: 'index.html', 
                 reportName: 'Documentation'
+            ])
+            publishHTML([
+                allowMissing: false,
+                alwaysLinkToLastBuild: false,
+                keepAll: false,
+                reportDir: 'trunk/target/site',
+                reportFiles: 'index.pdf',
+                reportName: 'PDF Documentation'
             ])
         }
     }

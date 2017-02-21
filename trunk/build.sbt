@@ -46,7 +46,6 @@ enablePlugins(SphinxPlugin)
 sourceDirectory in Sphinx := baseDirectory.value / "docs" / "source"
 
 lazy val docSettings = Seq(
-  //target in Compile in doc := (baseDirectory in ThisBuild).value / "docs" / "source" / "api" / name.value
   target in Compile in doc := (baseDirectory in ThisBuild).value / "target" / "sphinx" / "docs" / "api" / name.value
 )
 
