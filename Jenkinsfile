@@ -10,7 +10,7 @@ node {
             dir('docs') {
                 sh "make pdf"
             }
-            cp trunk/docs/build/html/*.pdf trunk/target/site
+            sh "cp trunk/docs/build/html/*.pdf trunk/target/site"
 
             // This publishes the documentation generated on that branch so anyone with Jenkins access may review it.
             publishHTML([
