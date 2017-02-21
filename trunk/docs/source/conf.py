@@ -248,7 +248,7 @@ html_style = 'css/ligadata_theme.css'
 # The name of a javascript file (relative to the configuration directory) that
 # implements a search results scorer. If empty, the default will be used.
 #
-# html_search_scorer = 'scorer.js'
+# html_search_scorer = ''
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Kamanjadoc'
