@@ -18,17 +18,6 @@ import scala.io.Source
   */
 case class ContainerElement(filename: String, kvFilename: Option[String]) extends MetadataElement {
   val elementType: String = "container"
-  lazy val name: String = {
-    if (!new File(filename).exists())
-      throw new FileNotFoundException(s"[Kamanja Application Tester] - ***ERROR*** Container element file $filename does not exist.")
-    else {
-      val source = Source.fromFile(new File(filename))
-      val jsonStr: String = source.getLines().mkString
-      source.close()
-      val json = parse(jsonStr)
-      (json \ "Container" \ "NameSpace").values.toString + "." + (json \ "Container" \ "Name").values.toString
-    }
-  }
 }
 
 case class MessageElement(filename: String) extends MetadataElement {

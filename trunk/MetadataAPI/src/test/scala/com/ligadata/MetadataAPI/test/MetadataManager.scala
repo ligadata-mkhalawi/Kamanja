@@ -163,11 +163,11 @@ class MetadataManager extends KamanjaTestLogger {
     val mdString = source.mkString
     source.close()
 
-    return validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(mdString, Some(userId)))
+    validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(mdString, Some(userId)))
   }
 
   def addBindingsFromString(adapterMessageBindingDefs: String): Int = {
-    return validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(adapterMessageBindingDefs, Some(userId)))
+    validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(adapterMessageBindingDefs, Some(userId)))
   }
 
   def add(mdType: String,
@@ -179,7 +179,7 @@ class MetadataManager extends KamanjaTestLogger {
           modelVersion: Option[String] = None,
           msgConsumed: Option[String] = None,
           msgVersion: Option[String] = None,
-          msgProduced: Option[String] = None): Int = {
+          msgProduced: Option[String] = None): ApiResult = {
 
     var result: ApiResult = null
     val file = new File(filepath)
@@ -213,10 +213,10 @@ class MetadataManager extends KamanjaTestLogger {
     }
     println(s"[Metadata Manager]: API Result =>\n${result.toString}")
     logger.info(s"[Metadata Manager]: API Result =>\n${result.toString}")
-    result.statusCode
+    result
   }
 
-  def remove(mdType: String, namespace: String, name: String, version: String): Int = {
+  def remove(mdType: String, namespace: String, name: String, version: String): ApiResult = {
     var result: ApiResult = null
     logger.info("[Metadata Manager]: Removing " + mdType + s" $namespace.$name.$version")
     mdType.toLowerCase match {
@@ -231,7 +231,7 @@ class MetadataManager extends KamanjaTestLogger {
     }
     logger.info("[Metadata Manager]: API Result =>")
     logger.info(result.toString)
-    result.statusCode
+    result
   }
 
   def get(mdType: String, namespace: String, name: String, version: String): Int = {

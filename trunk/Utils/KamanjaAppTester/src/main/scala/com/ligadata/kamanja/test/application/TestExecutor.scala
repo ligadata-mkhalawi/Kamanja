@@ -18,93 +18,15 @@ object TestExecutor {
   private val mdMan: MetadataManager = new MetadataManager
   private var logger: KamanjaAppLogger = _
   private val usage: String = "The following arguments are accepted:\n\t" +
-    "--kamanja-dir (Required: the install directory of Kamanja\n\t" +
-    "--metadata-config (Optional: the metadata configuration file you'd like to use. If not given, an internal configuration will be generated automatically.\n\t" +
-    "--cluster-config (Optional: the cluster configuration file you'd like to use. If not given, an internal configuration will be generated automatically.\n\t" +
-    "--app-name (Optional: the application you would like to test.\n\t" +
+    "--kamanja-dir (Required: the install directory of Kamanja)\n\t" +
+    "--metadata-config (Optional: the metadata configuration file you'd like to use. If not given, an internal configuration will be generated automatically.)\n\t" +
+    "--cluster-config (Optional: the cluster configuration file you'd like to use. If not given, an internal configuration will be generated automatically.)\n\t" +
+    "--app-name (Optional: the application you would like to test.)\n\t" +
+    "--skip-metadata (Optional: skip adding metadata for an application. Primarily used if not cleaning up after tests)\n\t" +
     "--help (Optional: Displays help text)"
 
   private type OptionMap = Map[Symbol, Any]
   private var runEmbedded: Boolean = false
-
-  private def addApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
-    var result = 1
-    kamanjaApp.metadataElements.foreach(element => {
-      try {
-        element match {
-          case e: MessageElement => {
-            logger.info(s"Adding message from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
-          }
-          case e: ContainerElement => {
-            logger.info(s"Adding container from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
-            e.kvFilename match {
-              case Some(file) =>
-                logger.info(s"Key-Value filename associated with container ${e.name} found. Adding data from $file")
-                if (KVInit.run(Array("--typename", s"${e.name}",
-                  "--config", KamanjaEnvironmentManager.metadataConfigFile,
-                  "--datafiles", file,
-                  "--ignorerecords", "1",
-                  "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
-                  "--optionsjson",
-                  """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
-                )) != 0)
-                  throw new TestExecutorException(s"***ERROR*** Failed to upload data from Key-Value file")
-                else {
-                  logger.info(s"Successfully added Key-Value data")
-                  // KVInit calls MetadataAPIImpl.CloseDB after it loads container data.
-                  // Therefore, we need to call OpenDBStore in order to reopen it to avoid a nullpointer expceiont on future MetadataAPI calls.
-                  MetadataAPIImpl.OpenDbStore(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet, MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE"))
-                }
-              case None =>
-            }
-          }
-          case e: JavaModelElement => {
-            logger.info(s"Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")
-            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), Some(e.modelCfg))
-          }
-          case e: ScalaModelElement => {
-            logger.info(s"Adding scala model from file '${e.filename}' with model configuration '${e.modelCfg}'")
-            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), Some(e.modelCfg))
-          }
-          case e: KPmmlModelElement => {
-            logger.info(s"Adding KPMML model from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType))
-          }
-          case e: PmmlModelElement => {
-            logger.info(s"Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
-            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
-          }
-          case e: AdapterMessageBindingElement => {
-            logger.info(s"Adding adapter message bindings from file '${e.filename}'")
-            result = mdMan.addBindings(e.filename)
-          }
-          case e: ModelConfigurationElement => {
-            logger.info(s"Adding model configuration from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename)
-          }
-          case _ => throw new TestExecutorException("***ERROR*** Unknown element type: '" + element.elementType)
-        }
-      }
-      catch {
-        case e: MetadataManagerException =>
-          logger.error(s"Failed to add '${element.elementType}' from file '${element.filename}' with result '${result}' and exception:\n$e")
-          return false
-        case e: Exception =>
-          logger.error(s"***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '${result}' and exception:\n$e")
-          return false
-      }
-
-      if (result != 0) {
-        logger.error(s"***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '$result'")
-        return false
-      }
-      else
-        logger.info(s"'${element.elementType}' successfully added")
-    })
-    return true
-  }
 
   def main(args: Array[String]): Unit = {
     if (args.length == 0) {
@@ -134,6 +56,7 @@ object TestExecutor {
       val metadataConfigFile: String = options.getOrElse('metadataconfig, null).asInstanceOf[String]
       val clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
       val appName: String = options.getOrElse('appname, null).asInstanceOf[String]
+      val skipMetadata: Boolean = options.getOrElse('skipmetadata, false).asInstanceOf[Boolean]
       logger = KamanjaAppLogger.createKamanjaAppLogger(installDir)
       val appManager = new KamanjaApplicationManager(installDir + "/test")
 
@@ -148,12 +71,17 @@ object TestExecutor {
           /// generating config files and start embedded services if user doesn't provide said files.
           KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
 
-          logger.info(s"Adding metadata...")
-          if (!addApplicationMetadata(app)) {
-            logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
-            throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+          if(!skipMetadata) {
+            logger.info(s"Adding metadata...")
+            if (!appManager.addApplicationMetadata(app)) {
+              logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+              throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+            }
+            logger.info(s"All metadata successfully added")
           }
-          logger.info(s"All metadata successfully added")
+          else {
+            logger.warn(s"***WARN*** Skip Metadata option set to true. Not adding metadata.")
+          }
           var testResult = true
 
           val consumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig)
@@ -279,6 +207,8 @@ object TestExecutor {
         optionMap(map ++ Map('clusterconfig -> value), tail)
       case "--app-name" :: value :: tail =>
         optionMap(map ++ Map('appname -> value), tail)
+      case "--skip-metadata" :: tail =>
+        optionMap(map ++ Map('skipmetadata -> true), tail)
       case "--help" :: tail =>
         optionMap(map ++ Map('help -> true), tail)
       case opt => {

@@ -2,11 +2,14 @@ package com.ligadata.kamanja.test.application
 
 import java.io.File
 
+import com.ligadata.MetadataAPI.{APIResultInfo, ApiResult, MetadataAPIImpl}
 import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
 import com.ligadata.kamanja.test.application.configuration._
+import com.ligadata.kamanja.test.application.metadata._
+import com.ligadata.kamanja.test.application.metadata.interfaces.MetadataElement
+import com.ligadata.tools.kvinit.KVInit
 
 import scala.collection.mutable.ListBuffer
-
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
@@ -21,6 +24,119 @@ class KamanjaApplicationManager(baseDir: String) {
     catch {
       case e: KamanjaAppLoggerException => throw new Exception("Kamanja App Logger has not been created. Please call createKamanjaAppLogger first.")
     }
+  }
+
+  def addApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
+
+    def setMetadataElementName(element: MetadataElement, apiResult: ApiResult): Unit = {
+      val mdNameArray = apiResult.description.split(":")(1).split('.')
+      val arrayLen = mdNameArray.length
+      element.version = mdNameArray(mdNameArray.length - 1)
+      element.name = mdNameArray(mdNameArray.length - 2)
+      element.namespace = mdNameArray.reverse.dropWhile(_ == element.version).dropWhile(_ == element.name).reverse.mkString(".")
+    }
+
+    var statusCode: Int = -10
+    kamanjaApp.metadataElements.foreach(element => {
+      var apiResult: ApiResult = null
+      try {
+        element match {
+          case e: MessageElement => {
+            logger.info(s"Adding message from file '${e.filename}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
+            setMetadataElementName(element, apiResult)
+          }
+          case e: ContainerElement => {
+            logger.info(s"Adding container from file '${e.filename}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
+            setMetadataElementName(element, apiResult)
+            e.kvFilename match {
+              case Some(file) =>
+                logger.info(s"Key-Value filename associated with container ${e.namespace}.${e.name} found. Adding data from $file")
+                if (KVInit.run(Array("--typename", s"${e.namespace}.${e.name}",
+                  "--config", KamanjaEnvironmentManager.metadataConfigFile,
+                  "--datafiles", file,
+                  "--ignorerecords", "1",
+                  "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
+                  "--optionsjson",
+                  """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
+                )) != 0)
+                  throw new TestExecutorException(s"***ERROR*** Failed to upload data from Key-Value file")
+                else {
+                  logger.info(s"Successfully added Key-Value data")
+                  // KVInit calls MetadataAPIImpl.CloseDB after it loads container data.
+                  // Therefore, we need to call OpenDBStore in order to reopen it to avoid a nullpointer expceiont on future MetadataAPI calls.
+                  MetadataAPIImpl.OpenDbStore(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet, MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE"))
+                }
+              case None =>
+            }
+          }
+          case e: JavaModelElement => {
+            logger.info(s"Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), Some(e.modelCfg))
+            setMetadataElementName(element, apiResult)
+          }
+          case e: ScalaModelElement => {
+            logger.info(s"Adding scala model from file '${e.filename}' with model configuration '${e.modelCfg}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), Some(e.modelCfg))
+            setMetadataElementName(element, apiResult)
+          }
+          case e: KPmmlModelElement => {
+            logger.info(s"Adding KPMML model from file '${e.filename}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType))
+            setMetadataElementName(element, apiResult)
+          }
+          case e: PmmlModelElement => {
+            logger.info(s"Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
+            setMetadataElementName(element, apiResult)
+          }
+          case e: AdapterMessageBindingElement => {
+            logger.info(s"Adding adapter message bindings from file '${e.filename}'")
+            statusCode = KamanjaEnvironmentManager.mdMan.addBindings(e.filename)
+          }
+          case e: ModelConfigurationElement => {
+            logger.info(s"Adding model configuration from file '${e.filename}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename)
+          }
+          case _ => throw new TestExecutorException("***ERROR*** Unknown element type: '" + element.elementType)
+        }
+      }
+      catch {
+        case e: com.ligadata.MetadataAPI.test.MetadataManagerException =>
+          logger.error(s"Failed to add '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
+          return false
+        case e: Exception =>
+          logger.error(s"***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
+          return false
+      }
+
+      if (element.isInstanceOf[AdapterMessageBindingElement]) {
+        if (statusCode != 0) {
+          logger.error(s"***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '$statusCode'")
+          return false
+        }
+        else
+          logger.info(s"'${element.elementType}' successfully added")
+      }
+      else {
+        if (apiResult.statusCode != 0) {
+          logger.error(s"***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '$apiResult'")
+          return false
+        }
+        else
+          logger.info(s"'${element.elementType}' successfully added")
+      }
+    })
+    true
+  }
+
+  def removeApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
+    kamanjaApp.metadataElements.foreach(element => {
+      var apiResult: ApiResult = null
+
+    })
+    return true
   }
 
   /** Given a directory, this will return a list of directories contained with the baseDir/tests

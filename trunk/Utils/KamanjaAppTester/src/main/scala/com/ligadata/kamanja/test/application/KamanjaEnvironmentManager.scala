@@ -31,7 +31,7 @@ object KamanjaEnvironmentManager {
   private var isInitialized: Boolean = false
   private var logger: KamanjaAppLogger = _
   private var kamanjaInstallDir: String = _
-  private var mdMan: MetadataManager = _
+  var mdMan: MetadataManager = _
   private var embeddedKamanjaManager: EmbeddedKamanjaManager = _
   private var embeddedZookeeper: EmbeddedZookeeper = _
   private var kafkaCluster: EmbeddedKafkaCluster = _
