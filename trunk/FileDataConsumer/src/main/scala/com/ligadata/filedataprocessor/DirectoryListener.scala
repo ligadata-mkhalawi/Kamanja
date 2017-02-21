@@ -93,12 +93,12 @@ object LocationWatcher extends Observer {
     var nodeId = properties.getOrElse(SmartFileAdapterConstants.NODE_ID_PREFIX, null)
     var vmCategory = properties.getOrElse(SmartFileAdapterConstants.VM_CATEGORY, null)
     var vmComponentName = properties.getOrElse(SmartFileAdapterConstants.VM_COMPONENTNAME, null)
-    logger.warn("rotationtimeinsecs " + rotationtimeinsecs)
-    logger.warn("emittimeinsecs " + emittimeinsecs)
-    logger.warn("velocitymetricsInfo " + velocitymetricsInfo)
-    logger.warn("nodeId " + nodeId)
-    logger.warn("vmCategory " + vmCategory)
-    logger.warn("vmComponentName " + vmComponentName)
+    logger.info("rotationtimeinsecs " + rotationtimeinsecs)
+    logger.info("emittimeinsecs " + emittimeinsecs)
+    logger.info("velocitymetricsInfo " + velocitymetricsInfo)
+    logger.info("nodeId " + nodeId)
+    logger.info("vmCategory " + vmCategory)
+    logger.info("vmComponentName " + vmComponentName)
 
     var VMFactory: VelocityMetricsFactoryInterface = null
     if (velocitymetricsInfo != null && velocitymetricsInfo.trim.length() > 0) {
@@ -116,7 +116,7 @@ object LocationWatcher extends Observer {
       logger.warn("fileVMInstances length" + fileVMInstances.length)
       var kafkaVelocityMetrics = new KafkaVelocityMetrics(properties)
 
-      FileProcessor.VMFactory.addEmitListener(kafkaVelocityMetrics)
+      VMFactory.addEmitListener(kafkaVelocityMetrics)
     }
     // FileConsumer is a special case we need to default to 1, but also have it present in the properties since
     // it is used later for memory managemnt

@@ -403,7 +403,7 @@ class VelocityMetricsInfo {
           } else throw new Exception("Keys for the metricsbymsgkeys need to be provided in the velocity metrics config")
 
         } else if (typId == 4) {
-          if (VMInstance.KeyStrings != null && VMInstance.KeyStrings.length != 0) {
+          if (VMInstance.KeyStrings != null && VMInstance.KeyStrings.length > 0) {
             val metricsKey = VMInstance.KeyStrings.mkString(",")
             if (processed) {
               VMInstance.instance.increment(metricsTime, metricsKey, System.currentTimeMillis(), true, false)

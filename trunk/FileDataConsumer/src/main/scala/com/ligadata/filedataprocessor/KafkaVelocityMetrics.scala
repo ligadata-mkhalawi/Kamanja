@@ -155,7 +155,7 @@ class KafkaVelocityMetrics(inConfiguration: scala.collection.mutable.Map[String,
    */
 
   def call(metrics: Metrics): Unit = {
-    println("metrics " + metrics.metricsGeneratedTimeInMs)
+    logger.info("metrics " + metrics.metricsGeneratedTimeInMs)
     val json = ("uuid" -> metrics.uuid) ~
       ("metricsgeneratedtime" -> metrics.metricsGeneratedTimeInMs) ~
       ("metrics" -> metrics.compMetrics.toList.map(componentMetrics =>
@@ -177,10 +177,10 @@ class KafkaVelocityMetrics(inConfiguration: scala.collection.mutable.Map[String,
     val statusPartitionId = "velocity metrics"
     val keyMessages = new scala.collection.mutable.ArrayBuffer[ProducerRecord[Array[Byte], Array[Byte]]](1)
     keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.VM_KAFKA_TOPIC), statusPartitionId.getBytes("UTF8"), new String(outputJson).getBytes("UTF8"))
-    logger.info("velocity metrics topic " + SmartFileAdapterConstants.VM_KAFKA_TOPIC)
-    logger.info("velocity metrics topic " + inConfiguration(SmartFileAdapterConstants.VM_KAFKA_TOPIC))
     sendToKafka(keyMessages, "VelocityMetrics")
 
+    logger.info("velocity metrics topic:  " + SmartFileAdapterConstants.VM_KAFKA_TOPIC)
+    logger.info("velocity metrics topic name: " + inConfiguration(SmartFileAdapterConstants.VM_KAFKA_TOPIC))
   }
 
   //private def sendToKafka(messages: ArrayBuffer[KeyedMessage[Array[Byte], Array[Byte]]]): Int = {
@@ -233,7 +233,39 @@ class KafkaVelocityMetrics(inConfiguration: scala.collection.mutable.Map[String,
           }
           currentMessage += 1
         })
+        var sleepTmRemainingInMs = 30000
+        // Make sure all messages have been successfuly sent, and resend them if we detected bad messages
+        isFullySent = true
+        var i = messages.size - 1
+        while (i >= 0) {
+          if (!successVector(i) && !gotResponse(i)) {
+            val tmConsumed = System.nanoTime
+            val (rc, partitionId) = checkMessage(respFutures, i, sleepTmRemainingInMs)
+            var tmElapsed = System.nanoTime - tmConsumed
+            if (tmElapsed < 0) tmElapsed = 0
+            sleepTmRemainingInMs -= (tmElapsed / 1000000).toInt
+            if (rc > 0) {
+              isFullySent = false
+              isRetry = true
+            } else {
+              if (partitionsStats.contains(partitionId)) {
+                partitionsStats(partitionId) = partitionsStats(partitionId) + 1
+              } else {
+                partitionsStats(partitionId) = 1
+              }
+              successVector(i) = true
+            }
+          }
+          i -= 1
+        }
+
+        // We can now fail for some messages, so, we need to update the recovery area in ZK, to make sure the retry does not
+        // process these messages.
+        if (fileToUpdate != null) {
+          FileProcessor.addToZK("", fullSuccessOffset, partitionsStats)
+        }
       }
+      resetSleepTimer
 
     } catch {
       case e: Exception =>
@@ -249,6 +281,37 @@ class KafkaVelocityMetrics(inConfiguration: scala.collection.mutable.Map[String,
     logger.error("File Data Consumer detected a problem with Kafka... Retry in " + scala.math.min(currentSleepValue, MAX_WAIT) / 1000 + " seconds")
     currentSleepValue = scala.math.min(currentSleepValue, MAX_WAIT)
     currentSleepValue
+  }
+
+  private def checkMessage(mapF: scala.collection.mutable.Map[Int, Future[RecordMetadata]], i: Int, sleepTmRemainingInMs: Int): (Int, Int) = {
+    try {
+      val md = mapF(i).get(if (sleepTmRemainingInMs <= 0) 1 else sleepTmRemainingInMs, TimeUnit.MILLISECONDS)
+      mapF(i) = null
+      return (FileProcessor.KAFKA_SEND_SUCCESS, md.partition)
+    } catch {
+      case e1: java.util.concurrent.ExecutionException => {
+        return (FileProcessor.KAFKA_SEND_DEAD_PRODUCER, -1)
+      }
+      case e: java.util.concurrent.TimeoutException => {
+        return (FileProcessor.KAFKA_SEND_DEAD_PRODUCER, -1)
+      }
+      // case ftsme: FailedToSendMessageException => {
+      case ftsme: java.lang.InterruptedException => {
+        return (FileProcessor.KAFKA_SEND_DEAD_PRODUCER, -1)
+      }
+      case e: Exception => {
+        logger.error("CHECK_MESSAGE: Unknown error from Kafka ", e);
+        throw e
+      }
+      case e: Throwable => {
+        logger.error("CHECK_MESSAGE: Unknown error from Kafka ", e);
+        throw e
+      }
+    }
+  }
+
+  private def resetSleepTimer: Unit = {
+    currentSleepValue = INIT_KAFKA_UNAVAILABLE_WAIT_VALUE
   }
 
 }

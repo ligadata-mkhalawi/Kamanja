@@ -1565,7 +1565,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
           throw e
         }
       }
-  
+
     } catch {
       case e: Exception => {
         logger.error("SMART_FILE_CONSUMER: ERROR", e)
@@ -2100,16 +2100,16 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         } catch {
           case fnfe: Exception => {
             logger.error("Exception Encountered, check the logs.", fnfe)
-          }
-          case e: Throwable =>
-            {
-              logger.error("Exception Encountered, check the logs.", e)
-            }
             if (fileVMStances != null && fileVMStances.length > 0) {
               for (i <- 0 until fileVMStances.length) {
                 logger.info("velocity metrics inrement fail")
                 FileProcessor.vm.incrementFileVMetrics(fileVMStances(i), fileToProcess.name, false)
               }
+            }
+          }
+          case e: Throwable =>
+            {
+              logger.error("Exception Encountered, check the logs.", e)
             }
         }
         curTimeEnd = System.currentTimeMillis
@@ -2173,7 +2173,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         }
       }
     })
-  
+
   }
 
   /**
