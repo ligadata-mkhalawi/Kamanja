@@ -7,8 +7,10 @@ node {
             checkout scm
             // Navigating to the trunk directory, building the package and generating the documentation.
             sh "cd trunk; sbt '++ 2.11.7 package' doc makeSite"
-            dir('docs') {
-                sh "make pdf"
+            dir('trunk') {
+                dir('docs') {
+                    sh "make pdf"
+                }
             }
             sh "cp trunk/docs/build/html/*.pdf trunk/target/site"
 
