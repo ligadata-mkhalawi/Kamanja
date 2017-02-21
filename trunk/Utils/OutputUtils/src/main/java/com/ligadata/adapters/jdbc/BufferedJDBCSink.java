@@ -18,6 +18,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     private String insertStatement;
     private List<ParameterMapping> insertParams;
     private ArrayList<JSONObject> buffer;
+    private static final String HIGHPRIORITY = "SET DEADLOCK_PRIORITY 'HIGH'";
 
     public BufferedJDBCSink() {
     }
@@ -66,6 +67,10 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     @Override
     public void processAll(long batchId, long retryNumber) throws Exception {
         Connection connection = dataSource.getConnection();
+
+        PreparedStatement statementHighPro = connection.prepareStatement(HIGHPRIORITY);
+        statementHighPro.executeQuery();
+
         PreparedStatement statement = connection.prepareStatement(insertStatement);
         int totalStatements = buffer.size();
         int failedStatements = 0;
