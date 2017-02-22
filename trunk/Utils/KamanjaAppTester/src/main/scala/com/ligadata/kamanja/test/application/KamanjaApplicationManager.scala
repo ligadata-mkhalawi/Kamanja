@@ -132,10 +132,37 @@ class KamanjaApplicationManager(baseDir: String) {
   }
 
   def removeApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
-    kamanjaApp.metadataElements.foreach(element => {
-      var apiResult: ApiResult = null
-
-    })
+      kamanjaApp.metadataElements.foreach(element => {
+        var apiResult: ApiResult = null
+        try {
+          element match {
+            case e: MessageElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
+            case e: ContainerElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
+            case e: ScalaModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
+            case e: JavaModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
+            case e: KPmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
+            case e: PmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
+            case e: ModelConfigurationElement =>
+            case e: AdapterMessageBindingElement =>
+          }
+        }
+        catch {
+          case e: com.ligadata.MetadataAPI.test.MetadataManagerException =>
+            logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
+            return false
+          case e: Exception =>
+            logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
+            return false
+        }
+        if(apiResult != null) {
+          if (apiResult.statusCode != 0) {
+            logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult'")
+            return false
+          }
+          else
+            logger.info(s"${element.elementType} '${element.namespace}.${element.name}.${element.version}' successfully removed")
+        }
+      })
     return true
   }
 

@@ -184,10 +184,16 @@ object TestExecutor {
           eventConsumer.shutdown
           errorConsumer.shutdown
 
+          if (!appManager.removeApplicationMetadata(app)) {
+            logger.error(s"*** Failed to remove metadata from application '${app.name}'")
+            throw new Exception(s"*** Failed to remove metadata from application '${app.name}'")
+          }
+
           if (KamanjaEnvironmentManager.isEmbedded) {
             KamanjaEnvironmentManager.stopServices
             TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
           }
+
           logger.close
         }
       })
