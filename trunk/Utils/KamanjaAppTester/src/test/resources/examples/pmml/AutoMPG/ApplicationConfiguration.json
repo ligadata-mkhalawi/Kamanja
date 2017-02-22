@@ -1,0 +1,40 @@
+{
+  "Application": {
+    "Name": "AutoMPG",
+    "MetadataElements": [
+      {
+        "Type": "Message",
+        "Filename": "AutoMPG.json"
+      },
+      {
+        "Type": "Message",
+        "Filename": "AutoMPG_OutputMsg.json"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "PMML",
+	"ModelName" : "com.ligadata.kamanja.samples.models.rattle_pmml",
+	"MessageConsumed": "com.ligadata.kamanja.samples.messages.AutoMPGData",
+	"MessageProduced": "com.ligadata.kamanja.samples.messages.OutAutoMPGData",
+        "Filename": "AutoMPG_rpart_PMML.xml"
+      },
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "AutoMPG_Adapter_Binding.json"
+      }
+    ],
+    "DataSets": [
+      {
+    	"Input": {
+		"Filename": "Input_Data_AutoMPG.csv",
+		"Format": "CSV",
+		"PartitionKey": "1"
+	},
+	"ExpectedResults": {
+		"Filename": "Output_Data_AutoMPG.csv",
+		"Format": "CSV"
+	 }
+      }
+     ]
+  }
+}

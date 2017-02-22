@@ -120,6 +120,8 @@ object KamanjaEnvironmentManager {
       val tenantId: String = adapter("TenantId").toString
       val name: String = adapter("Name").toString
 
+      logger.info("adapter => " + adapter);
+
       typeString.toLowerCase match {
         case "input" | "output" => {
           val dependencyJars: List[String] = adapter("DependencyJars").asInstanceOf[List[String]]

@@ -1,0 +1,41 @@
+{
+  "Application": {
+    "Name": "HelloWorld",
+    "MetadataElements": [
+      {
+        "Type": "Message",
+        "Filename": "Message_Definition_HelloWorld.json"
+      },
+      {
+        "Type": "Message",
+        "Filename": "OutMessage_Definition_HelloWorld.json"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "KPMML",
+        "Filename": "KPMML_Model_HelloWorld.xml"
+      },
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "HelloWorld_Adapter_Binding.json"
+      },
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "SystemMsgs_Adapter_Binding.json"
+      }
+    ],
+    "DataSets": [
+      {
+    	"Input": {
+		"Filename": "Input_Data_HelloWorld.csv",
+		"Format": "CSV",
+		"PartitionKey": "1"
+	},
+	"ExpectedResults": {
+		"Filename": "Output_Data_HelloWorld.csv",
+		"Format": "CSV"
+	 }
+      }
+     ]
+  }
+}

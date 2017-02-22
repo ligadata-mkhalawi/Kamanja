@@ -1,0 +1,37 @@
+{
+  "Message": {
+    "NameSpace": "org.kamanja.arithmetic",
+    "Name": "arithmeticOutMsg",
+    "Version": "00.01.01",
+    "Description": "simple arithmetic output message",
+    "Fixed": "true",
+    "Persist": "false",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "a",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "b",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "operator",
+          "Type": "String"
+        }
+      },
+      {
+        "Field": {
+          "Name": "result",
+          "Type": "system.Float"
+        }
+      }
+    ]
+  }
+}
+

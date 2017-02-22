@@ -1,0 +1,23 @@
+[
+  {
+    "AdapterName": "HelloWorldInput",
+    "MessageName": "com.ligadata.kamanja.samples.messages.msg1",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  },
+  {
+    "AdapterName": "testout_1",
+    "MessageNames": [
+      "com.ligadata.kamanja.samples.messages.outmsg1"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  }
+]
+

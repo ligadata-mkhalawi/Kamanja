@@ -45,9 +45,14 @@ case class ScalaModelElement(filename: String,  modelCfg: String) extends ModelE
   val modelType = ModelType.SCALA
 }
 
-case class PmmlModelElement(filename: String, msgConsumed: String, msgProduced: Option[String]) extends ModelElement {
+case class PmmlModelElement(filename: String, modelName: String, msgConsumed: String, msgProduced: Option[String]) extends ModelElement {
   val elementType = "model"
   val modelType = ModelType.PMML
+}
+
+case class PythonModelElement(filename: String, modelName: String, modelOptions:String, msgConsumed: String, msgProduced: Option[String]) extends ModelElement {
+  val elementType = "model"
+  val modelType = ModelType.PYTHON
 }
 
 case class KPmmlModelElement(filename: String) extends ModelElement {

@@ -107,19 +107,49 @@ class KamanjaApplicationConfiguration {
             }
             case "pmml" => {
               if (!elem.keySet.exists(_ == "Filename")) {
-                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'Filename' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'Filename' to be defined.")
+              }
+              if(!elem.keySet.exists(_ == "ModelName")) {
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'ModelName' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'ModelName' to be defined.")
               }
               if(!elem.keySet.exists(_ == "MessageConsumed")) {
-                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'MessageConsumed' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'MessageConsumed' to be defined.")
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'MessageConsumed' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'MessageConsumed' to be defined.")
               }
               if (elem.keySet.exists(_ == "MessageProduced")) {
                 if (elem("MessageProduced") != null && elem("MessageProduced") != "") {
-                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("MessageConsumed").toString, Some(elem("MessageProduced").toString))
+                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelName").toString, elem("MessageConsumed").toString, Some(elem("MessageProduced").toString))
                 }
                 else {
-                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("MessageConsumed").toString, None)
+                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelName").toString, elem("MessageConsumed").toString, None)
+                }
+              }
+            }
+            case "python" => {
+              if (!elem.keySet.exists(_ == "Filename")) {
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'Filename' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'Filename' to be defined.")
+              }
+              if(!elem.keySet.exists(_ == "ModelName")) {
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelName' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelName' to be defined.")
+              }
+              if(!elem.keySet.exists(_ == "ModelOptions")) {
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelOptions' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelOptions' to be defined.")
+              }
+              if(!elem.keySet.exists(_ == "MessageConsumed")) {
+                logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'MessageConsumed' to be defined.")
+                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'MessageConsumed' to be defined.")
+              }
+              if (elem.keySet.exists(_ == "MessageProduced")) {
+                if (elem("MessageProduced") != null && elem("MessageProduced") != "") {
+                  metadataElements = metadataElements :+ new PythonModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelName").toString, elem("ModelOptions").toString, elem("MessageConsumed").toString, Some(elem("MessageProduced").toString))
+                }
+                else {
+                  metadataElements = metadataElements :+ new PythonModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelName").toString, elem("ModelOptions").toString, elem("MessageConsumed").toString, None)
                 }
               }
             }

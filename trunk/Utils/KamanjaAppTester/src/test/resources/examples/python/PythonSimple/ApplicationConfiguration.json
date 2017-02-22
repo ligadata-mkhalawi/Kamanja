@@ -1,0 +1,81 @@
+{
+  "Application": {
+    "Name": "PythonSimple",
+    "MetadataElements": [
+      {
+        "Type": "Message",
+        "Filename": "arithmeticMsg.json"
+      },
+      {
+        "Type": "Message",
+        "Filename": "arithmeticOutMsg.json"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "python",
+	"ModelName" : "add.AddTuple",
+	"ModelOptions" : "{\"InputTypeInfo\": {\"a\": \"Int\", \"b\": \"Int\"} }",
+	"MessageConsumed": "org.kamanja.arithmetic.arithmeticMsg",
+	"MessageProduced": "org.kamanja.arithmetic.arithmeticOutMsg",
+        "Filename": "add.py"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "python",
+	"ModelName" : "multiply.MultiplyTuple",
+	"ModelOptions" : "{\"InputTypeInfo\": {\"a\": \"Float\", \"b\": \"Float\"} }",
+	"MessageConsumed": "org.kamanja.arithmetic.arithmeticMsg",
+	"MessageProduced": "org.kamanja.arithmetic.arithmeticOutMsg",
+        "Filename": "multiply.py"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "python",
+	"ModelName" : "subtract.SubtractTuple",
+	"ModelOptions" : "{\"InputTypeInfo\": {\"a\": \"Int\", \"b\": \"Int\"} }",
+	"MessageConsumed": "org.kamanja.arithmetic.arithmeticMsg",
+	"MessageProduced": "org.kamanja.arithmetic.arithmeticOutMsg",
+        "Filename": "subtract.py"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "python",
+	"ModelName" : "divide.DivideTuple",
+	"ModelOptions" : "{\"InputTypeInfo\": {\"a\": \"Int\", \"b\": \"Int\"} }",
+	"MessageConsumed": "org.kamanja.arithmetic.arithmeticMsg",
+	"MessageProduced": "org.kamanja.arithmetic.arithmeticOutMsg",
+        "Filename": "divide.py"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "python",
+	"ModelName" : "addF.AddFTuple",
+	"ModelOptions" : "{\"InputTypeInfo\": {\"a\": \"Int\", \"b\": \"Int\"} }",
+	"MessageConsumed": "org.kamanja.arithmetic.arithmeticMsg",
+	"MessageProduced": "org.kamanja.arithmetic.arithmeticOutMsg",
+        "Filename": "addF.py"
+      },
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "PythonSimple_Input_Adapter_Binding.json"
+      },
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "PythonSimple_Output_Adapter_Binding.json"
+      }
+    ],
+    "DataSets": [
+      {
+    	"Input": {
+		"Filename": "Input_Data_PythonSimple.csv",
+		"Format": "CSV",
+		"PartitionKey": "1"
+	},
+	"ExpectedResults": {
+		"Filename": "Output_Data_PythonSimple.csv",
+		"Format": "CSV"
+	 }
+      }
+     ]
+  }
+}
