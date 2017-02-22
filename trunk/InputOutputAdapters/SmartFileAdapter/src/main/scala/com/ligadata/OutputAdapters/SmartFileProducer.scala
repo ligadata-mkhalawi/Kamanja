@@ -46,6 +46,7 @@ import parquet.hadoop.metadata.CompressionCodecName
 import parquet.schema.MessageTypeParser
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.threadpool.{ExecutorService, Executors}
+import com.ligadata.VelocityMetrics._
 
 import parquet.hadoop._
 import parquet.hadoop.api.WriteSupport
@@ -452,6 +453,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
 
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
+
+  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
+
   //private val avroSchemasMap = collection.mutable.Map[String, org.apache.avro.Schema]() //message -> schema
   private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
 
@@ -805,14 +811,35 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         pf.synchronized {
           val status = pf.send(tnxCtxt, record, this)
 
-          if (status == SendStatus.SUCCESS)
+          if (status == SendStatus.SUCCESS) {
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
+            /**VelocityMetrics****/
+            if (outputContainers != null && outputContainers.size > 0) {
+              val nodeId = nodeContext.getEnvCtxt().getNodeId()
+              for (i <- 0 until outContainers.size) {
+                getOAVelocityMetrics(this, outContainers(i), true)
+              }
+            }
+            getFileVelocityMetrics(this, fc.Name, true)
+          } else {
+/*
+            /**VelocityMetrics****/
+            if (outputContainers != null && outputContainers.size > 0) {
+              val nodeId = nodeContext.getEnvCtxt().getNodeId()
+              for (i <- 0 until outContainers.size) {
+                getOAVelocityMetrics(this, outContainers(i), false)
+              }
+            }
+*/
+            getFileVelocityMetrics(this, fc.Name, false)
+          }
         }
 
       })
     } catch {
       case e: Exception => {
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
+        getFileVelocityMetrics(this, fc.Name, false)
         throw FatalAdapterException("Unable to send message", e)
       }
     }
@@ -846,5 +873,23 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
+  private def getOAVelocityMetrics(output: OutputAdapter, message: ContainerInterface, processed: Boolean) = {
+    val vmInstances = output.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
+  }
+
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getFileVelocityMetrics(output: OutputAdapter, fileName: String, processed: Boolean) = {
+    val vmInstances = this.getFileVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementFileVMetrics(vmInstances(i), fileName, processed)
+      }
+    }
+  }
 }
 

@@ -20,6 +20,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
+import com.ligadata.VelocityMetrics._
 
 import scala.actors.threadpool.{Executors, ExecutorService}
 import scala.collection.mutable.{Map, MultiMap, HashMap, ArrayBuffer}
@@ -222,6 +223,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private val allNodesStartInfo = scala.collection.mutable.Map[String, List[(Int, String, Long, Boolean)]]()
 
   envContext.registerNodesChangeNotification(nodeChangeCallback)
+
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   private val _reent_lock = new ReentrantReadWriteLock(true)
 
@@ -1471,6 +1475,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHanders, fileOffsets, smartFileContext,
             sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
           fileMessageExtractor.extractMessages()
+
+          /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
+          val nodeId = nodeContext.getEnvCtxt().getNodeId()
+          getSmartFileVelocityMetrics(this, fileToProcessName, true)
         }
       }
     }
@@ -2325,5 +2333,22 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val parentDir = fileHandler.getParentDir
     getDirLocationInfo(parentDir)
 
+  }
+
+
+  /* Get Velocity Metrics for Output Adapter   */
+  // private def getSmartFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
+  //   var vm = new VelocityMetricsInfo
+  //   vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeId, adapConfig)
+  // }
+
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getSmartFileVelocityMetrics(input: InputAdapter, fileName: String, processed: Boolean) = {
+    val vmInstances = input.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        input.vm.incrementFileVMetrics(vmInstances(i), fileName, processed)
+      }
+    }
   }
 }
