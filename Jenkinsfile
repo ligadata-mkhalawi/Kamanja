@@ -19,14 +19,7 @@ node {
                 reportFiles: 'index.html', 
                 reportName: 'Documentation'
             ])
-            publishHTML([
-                allowMissing: false, 
-                alwaysLinkToLastBuild: false, 
-                keepAll: false, 
-                reportDir: 'trunk/target/site', 
-                reportFiles: 'index.pdf', 
-                reportName: 'PDF Documentation'
-            ])
+            archiveArtifacts 'trunk/target/site/index.pdf'
         }
     }
     catch(e) {
