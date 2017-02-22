@@ -49,7 +49,6 @@ object FileAdapterConfiguration {
       throw new Exception(err)
     }
     val values = adapCfg.values.asInstanceOf[Map[String, String]]
-
     values.foreach(kv => {
       if (kv._1.compareToIgnoreCase("CompressionString") == 0) {
         fc.CompressionString = kv._2.trim
@@ -64,6 +63,8 @@ object FileAdapterConfiguration {
         fc.Files = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
     })
+    
+    fc.fullAdapterConfig = inputConfig.fullAdapterConfig     
 
     fc
   }

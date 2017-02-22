@@ -16,16 +16,20 @@
 
 package com.ligadata.InputOutputAdapterInfo
 
-import com.ligadata.Exceptions.{KamanjaException, StackTrace}
+import com.ligadata.Exceptions.{ KamanjaException, StackTrace }
 import com.ligadata.KamanjaBase._
 import com.ligadata.HeartBeat._
 import com.ligadata.kamanja.metadata.MdMgr
-import com.ligadata.transactions.{NodeLevelTransService, SimpleTransService}
+import com.ligadata.transactions.{ NodeLevelTransService, SimpleTransService }
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.native.JsonMethods._
+import com.ligadata.VelocityMetrics._
 
 //import org.json4s._
 //import org.json4s.JsonDSL._
 //import org.json4s.jackson.JsonMethods._
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 
 //import scala.collection.mutable.ArrayBuffer
 
@@ -46,6 +50,7 @@ class AdapterConfiguration {
   var dependencyJars: Set[String] = _
   // adapter specific (mostly json) string
   var adapterSpecificCfg: String = _
+  var fullAdapterConfig: String = _
   var tenantId: String = _
 }
 
@@ -65,6 +70,7 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   val nodeContext: NodeContext
   // NodeContext
   val inputConfig: AdapterConfiguration // Configuration
+  var vm: VelocityMetricsInfo = new VelocityMetricsInfo
 
   def UniqueName: String = {
     // Making String from key
@@ -92,7 +98,7 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
 
-  def externalizeExceptionEvent (cause: Throwable): Unit = {
+  def externalizeExceptionEvent(cause: Throwable): Unit = {
     try {
       val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
       exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
@@ -101,9 +107,12 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
       exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
       nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
     } catch {
-      case t:Throwable => {return}
+      case t: Throwable => { return }
     }
   }
+
+  var VMFactory = VelocityMetricsInfo.getVMFactory(nodeContext)
+  var getVelocityInstances: Array[InstanceRuntimeInfo] = null
 }
 
 // Output Adapter Object to create Adapter
@@ -115,6 +124,8 @@ trait OutputAdapterFactory {
 trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   // NodeContext
   val nodeContext: NodeContext
+
+  var vm: VelocityMetricsInfo = new VelocityMetricsInfo
   // Configuration
   val inputConfig: AdapterConfiguration
 
@@ -128,7 +139,7 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def Category = "Output"
 
-  def externalizeExceptionEvent (cause: Throwable): Unit = {
+  def externalizeExceptionEvent(cause: Throwable): Unit = {
     try {
       val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
       exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
@@ -142,6 +153,10 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
       }
     }
   }
+
+  var VMFactory = VelocityMetricsInfo.getVMFactory(nodeContext)
+  var getVelocityInstances: Array[InstanceRuntimeInfo] = null
+
 }
 
 trait ExecContext {
@@ -168,6 +183,7 @@ trait ExecContext {
     excludedMsgs += "com.ligadata.kamanjabase.kamanjaexceptionevent"
     excludedMsgs += "com.ligadata.kamanjabase.kamanjaexecutionfailureevent"
     excludedMsgs += "com.ligadata.kamanjabase.kamanjamessageevent"
+    excludedMsgs += "com.ligadata.kamanjabase.kamanjavelocitymetrics"
   }
 
   LoadExcludedMessages
@@ -205,7 +221,7 @@ trait ExecContext {
 
           try {
             if (omsg != null)
-              msg.msgid =  MdMgr.GetMdMgr.ElementIdForSchemaId(omsg.asInstanceOf[ContainerInterface].getSchemaId)
+              msg.msgid = MdMgr.GetMdMgr.ElementIdForSchemaId(omsg.asInstanceOf[ContainerInterface].getSchemaId)
             else
               msg.msgid = -1
 
@@ -220,7 +236,7 @@ trait ExecContext {
             nodeContext.getEnvCtxt().postMessages(Array(msg))
           } catch {
             case e: Throwable => {
-              LOG.error("Failed to post message of type:%s, UK:%s, UV:%s".format(omsg.Name, uk, uv) , e)
+              LOG.error("Failed to post message of type:%s, UK:%s, UV:%s".format(omsg.Name, uk, uv), e)
             }
           }
         } else {
@@ -228,7 +244,7 @@ trait ExecContext {
         }
       } catch {
         case e: Throwable => {
-          LOG.error("Failed to create message for type:" +  omsg.Name, e)
+          LOG.error("Failed to create message for type:" + omsg.Name, e)
         }
       }
     } else {
@@ -261,7 +277,7 @@ trait ExecContext {
         LOG.trace("CurrentMsg:%s, KamanjaMessageEvent excluded Messages:%s".format(msg.getFullTypeName.toLowerCase(), excludedMsgs.mkString(",")))
       }
       val msgEvent: KamanjaMessageEvent =
-        if (excludedMsgs.contains(msg.getFullTypeName.toLowerCase())){
+        if (excludedMsgs.contains(msg.getFullTypeName.toLowerCase())) {
           val tmpMsgEvent: KamanjaMessageEvent = null
           tmpMsgEvent
         } else {
@@ -326,13 +342,22 @@ trait ExecContext {
       val failedMsg = if (msgName != null) msgName else ""
       if (tMsg != null) {
         execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
-      }
-      else {
+        val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
+        if (input.getVelocityInstances == null || input.getVelocityInstances.length == 0) {
+          input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig.Name, input.inputConfig.fullAdapterConfig, input.nodeContext)
+        }
+        getIAVelocityMetrics(input, tMsg, true)
+      } else {
         if (LOG.isDebugEnabled) {
           LOG.debug("Not able to deserialize data:%s at UK:%s, UV:%s".format((if (data != null) new String(data) else ""), uk, uv))
         }
         val ex = new Exception("Unable to deserialize messageName:%s from data:%s".format(messageName, (if (data != null) new String(data) else "")))
         SendFailedEvent(data, tDeserializerName, failedMsg, uniqueKey, uniqueVal, ex, tempMsgInterface)
+        val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
+        if (input.getVelocityInstances == null || input.getVelocityInstances.length == 0) {
+          input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig.Name, input.inputConfig.fullAdapterConfig, input.nodeContext)
+        }
+        getIAVelocityMetrics(input, tMsg, false)
       }
     } catch {
       case e: Throwable => {
@@ -342,9 +367,20 @@ trait ExecContext {
     }
   }
 
+  private def getIAVelocityMetrics(input: InputAdapter, message: ContainerInterface, processed: Boolean) = {
+
+    val vmInstances = input.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        input.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
+  }
+
   protected def executeMessage(txnCtxt: TransactionContext): Unit
 
   protected def commitData(txnCtxt: TransactionContext): Unit
+
 }
 
 trait ExecContextFactory {

@@ -9,7 +9,7 @@
     }
   },
   {
-    "AdapterName": "testout_1",
+    "AdapterName": "testout_hw",
     "MessageNames": [
       "com.ligadata.kamanja.samples.messages.outmsg1"
     ],

@@ -102,7 +102,8 @@ object SmartFileProducerConfiguration {
     adapterConfig.className = config.className
     adapterConfig.jarName = config.jarName
     adapterConfig.dependencyJars = config.dependencyJars
-
+    adapterConfig.fullAdapterConfig = config.fullAdapterConfig
+    
     adapterConfig
   }
 

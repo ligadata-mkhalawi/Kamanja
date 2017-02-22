@@ -26,8 +26,9 @@ import java.nio.file.{ Paths, Files }
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.AdaptersConfiguration.{ FileAdapterConfiguration, FilePartitionUniqueRecordKey, FilePartitionUniqueRecordValue }
 import scala.util.control.Breaks._
-import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
-import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.KamanjaBase.{ NodeContext, DataDelimiters }
+import com.ligadata.HeartBeat.{ Monitorable, MonitorComponentInfo }
+import com.ligadata.VelocityMetrics._
 
 object FileConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "File Consumer"
@@ -42,7 +43,10 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
   private[this] val lock = new Object()
   private var startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  private var metrics: scala.collection.mutable.Map[String,Any] = scala.collection.mutable.Map[String,Any]()
+  private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
+
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   uniqueKey.Name = "File"
 
@@ -57,9 +61,9 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
     var totalSent: Long = 0
   }
 
-  override  def getComponentStatusAndMetrics: MonitorComponentInfo = {
+  override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, FileConsumer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
+    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, FileConsumer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
   }
 
   override def getComponentSimpleStats: String = {
@@ -186,6 +190,11 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
           val key = Category + "/" + fc.Name + "/evtCnt"
           // cntrAdapter.addCntr(key, 1)
         }
+
+        /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
+        val nodeId = nodeContext.getEnvCtxt().getNodeId()
+        getFileVelocityMetrics(this, sFileName, true)
+
       }
     } catch {
       case e: Exception => {
@@ -302,5 +311,16 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
   override def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
     return Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
   }
+
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getFileVelocityMetrics(input: InputAdapter, fileName: String, processed: Boolean) = {
+    val vmInstances = input.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        input.vm.incrementFileVMetrics(vmInstances(i), fileName, processed)
+      }
+    }
+  }
+
 }
 

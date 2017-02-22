@@ -17,25 +17,25 @@
 
 package com.ligadata.kafkaInputOutputAdapters_v9
 
-import java.util.{Properties, Arrays}
-import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext, NodeContext}
+import java.util.{ Properties, Arrays }
+import com.ligadata.KamanjaBase.{ ContainerInterface, TransactionContext, NodeContext }
 
 //import kafka.common.{ QueueFullException, FailedToSendMessageException }
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.InputOutputAdapterInfo._
-import com.ligadata.AdaptersConfiguration.{KafkaConstants, KafkaQueueAdapterConfiguration}
-import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
-import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.AdaptersConfiguration.{ KafkaConstants, KafkaQueueAdapterConfiguration }
+import com.ligadata.Exceptions.{ KamanjaException, FatalAdapterException }
+import com.ligadata.HeartBeat.{ Monitorable, MonitorComponentInfo }
 import org.json4s.jackson.Serialization
 import scala.collection.mutable.ArrayBuffer
-import org.apache.kafka.clients.producer.{Callback, RecordMetadata, ProducerRecord}
-import org.apache.kafka.common.serialization.{ByteArraySerializer /*, StringSerializer */}
-import java.util.concurrent.{TimeUnit, Future}
+import org.apache.kafka.clients.producer.{ Callback, RecordMetadata, ProducerRecord }
+import org.apache.kafka.common.serialization.{ ByteArraySerializer /*, StringSerializer */ }
+import java.util.concurrent.{ TimeUnit, Future }
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong
-import scala.actors.threadpool.{TimeUnit, ExecutorService, Executors}
+import scala.actors.threadpool.{ TimeUnit, ExecutorService, Executors }
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import com.ligadata.VelocityMetrics._
 
 object KafkaProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new KafkaProducer(inputConfig, nodeContext)
@@ -220,7 +220,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   var reqCntr: Int = 0
   var msgInOrder = new AtomicLong
 
-
   // Create the producer object...
   LOG.info("Staring Kafka Producer with the following paramters: \n" + qc.toString)
 
@@ -256,6 +255,9 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   metrics(KafkaProducer.SEND_MESSAGE_COUNT_KEY) = 0
   metrics(KafkaProducer.LAST_FAILURE_TIME) = "n/a"
   metrics(KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
+
+  //calling the velocity metrics instances
+   getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig.Name, inputConfig.fullAdapterConfig, nodeContext)
 
   if (enable_adapter_retries) retryExecutor.execute(new RetryFailedMessages())
 
@@ -532,7 +534,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
   }
 
-
   /**
     *
     *
@@ -546,7 +547,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   override def getComponentSimpleStats: String = {
     return key + "->" + msgCount.get()
   }
-
 
   /**
     *
@@ -580,6 +580,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     }
 
     send(serializedContainerData, partitionKeys.toArray)
+
+    /****VelocityMetrics****/
+
+    if (outContainers != null && outContainers.size > 0) {
+      for (i <- 0 until outContainers.size) {
+        getOAVelocityMetrics(this, outContainers(i), true) //VMFactory, nodeId, outContainers(i), inputConfig, true)
+  }
+    }
   }
 
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
@@ -922,5 +930,15 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         LOG.info(qc.Name + " Heartbeat is shutting down")
       }
     })
+  }
+
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getOAVelocityMetrics(output: OutputAdapter, message: ContainerInterface, processed: Boolean) = {
+    val vmInstances = output.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
   }
 }

@@ -240,7 +240,7 @@ object KafkaQueueAdapterConfiguration {
     })
 
     qc.instancePartitions = Set[Int]()
-
+    qc.fullAdapterConfig = inputConfig.fullAdapterConfig
     qc
   }
 }
