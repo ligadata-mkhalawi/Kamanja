@@ -805,6 +805,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     try {
       // Op is not atomic
       var idx = 0
+      val nodeId = nodeContext.getEnvCtxt().getNodeId()
       outputContainers.foreach(record => {
 
         val pf = getPartionFile(record);
@@ -814,21 +815,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (status == SendStatus.SUCCESS) {
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
             /**VelocityMetrics****/
-            if (outputContainers != null && outputContainers.size > 0) {
-              val nodeId = nodeContext.getEnvCtxt().getNodeId()
-              for (i <- 0 until outContainers.size) {
-                getOAVelocityMetrics(this, outContainers(i), true)
-              }
+            if (record != null) {
+              getOAVelocityMetrics(this, record, true)
             }
             getFileVelocityMetrics(this, fc.Name, true)
           } else {
 /*
             /**VelocityMetrics****/
-            if (outputContainers != null && outputContainers.size > 0) {
-              val nodeId = nodeContext.getEnvCtxt().getNodeId()
-              for (i <- 0 until outContainers.size) {
-                getOAVelocityMetrics(this, outContainers(i), false)
-              }
+            if (record != null) {
+              getOAVelocityMetrics(this, record, false)
             }
 */
             getFileVelocityMetrics(this, fc.Name, false)
