@@ -187,12 +187,8 @@ public class MessageConsumer implements Runnable {
 	String topic = configuration
 		.getProperty(AdapterConfiguration.KAFKA_TOPIC);
 	logger.info("Connecting to kafka topic " + topic);
-	try {
-	    consumer.subscribe(Arrays.asList(topic));
-	} catch (Exception e) {
 
-	    logger.error("Error  : " + e.getMessage(), e);
-	}
+	consumer.subscribe(Arrays.asList(topic));
     }
 
     private void createKafkaConsumerRetry() {
@@ -271,21 +267,6 @@ public class MessageConsumer implements Runnable {
 
 	} catch (Exception e) {
 	    logger.error("Error initializing processor: " + e.getMessage(), e);
-	    if (configuration.VMInstances != null
-		    && configuration.VMInstances.length > 0) {
-		System.out.println("1 increment "
-			+ configuration.VMInstances.length);
-		for (int i = 0; i < configuration.VMInstances.length; i++) {
-		    if (configuration.VMInstances[i].typId() == 4) {
-			System.out.println("2 increment "
-				+ configuration.VMInstances.length);
-			vm.incrementOutputUtilsVMetricsByKey(
-				configuration.VMInstances[i], null,
-				configuration.VMInstances[i].KeyStrings(),
-				false);
-		    }
-		}
-	    }
 	    throw new RuntimeException(e);
 	}
 
@@ -301,12 +282,13 @@ public class MessageConsumer implements Runnable {
 	long messageCount = 0;
 	long nextSyncTime = System.currentTimeMillis() + syncInterval;
 	long start = System.currentTimeMillis();
-
+	
 	while (!stop) {
 	    try {
 		try {
 		    ConsumerRecords<String, String> records = consumer
 			    .poll(pollInterval);
+		    logger.info("records count: " + records.count());
 		    for (ConsumerRecord<String, String> record : records) {
 			Long lastOffset = partitionOffsets.get(record
 				.partition());
@@ -319,6 +301,7 @@ public class MessageConsumer implements Runnable {
 				    + record.value());
 			    if (processor.addMessage(record.value())) {
 				messageCount++;
+				logger.info("messageCount : " + messageCount);
 			    } else {
 				errorMessageCount++;
 			    }
@@ -332,21 +315,6 @@ public class MessageConsumer implements Runnable {
 		} catch (Exception e) {
 		    logger.error("Error reading from kafka: " + e.getMessage(),
 			    e);
-		    if (configuration.VMInstances != null
-			    && configuration.VMInstances.length > 0) {
-			System.out.println("1 increment "
-				+ configuration.VMInstances.length);
-			for (int i = 0; i < configuration.VMInstances.length; i++) {
-			    if (configuration.VMInstances[i].typId() == 4) {
-				System.out.println("2 increment "
-					+ configuration.VMInstances.length);
-				vm.incrementOutputUtilsVMetricsByKey(
-					configuration.VMInstances[i], null,
-					configuration.VMInstances[i]
-						.KeyStrings(), false);
-			    }
-			}
-		    }
 		    createKafkaConsumerRetry();
 		}
 
@@ -394,20 +362,13 @@ public class MessageConsumer implements Runnable {
 				+ syncInterval;
 			start = System.currentTimeMillis();
 		    } catch (Exception e) {
-			if (executor != null)
-			    executor.shutdownNow();
-			executor = null;
-			logger.error("Failed with: " + e.getMessage(), e);
-			shutdownTriggerCounter.incrementAndGet();
-			stop = true;
-		    } catch (Throwable t) {
 			if (configuration.VMInstances != null
 				&& configuration.VMInstances.length > 0) {
-			    System.out.println("1 increment "
+			   logger.info("increment "
 				    + configuration.VMInstances.length);
 			    for (int i = 0; i < configuration.VMInstances.length; i++) {
 				if (configuration.VMInstances[i].typId() == 4) {
-				    System.out.println("2 increment "
+				    logger.info("increment "
 					    + configuration.VMInstances.length);
 				    vm.incrementOutputUtilsVMetricsByKey(
 					    configuration.VMInstances[i], null,
@@ -416,6 +377,14 @@ public class MessageConsumer implements Runnable {
 				}
 			    }
 			}
+			if (executor != null)
+			    executor.shutdownNow();
+			executor = null;
+			logger.error("Failed with: " + e.getMessage(), e);
+			shutdownTriggerCounter.incrementAndGet();
+			stop = true;
+		    } catch (Throwable t) {
+
 			if (executor != null)
 			    executor.shutdownNow();
 			executor = null;

@@ -266,7 +266,7 @@ object LocationWatcher extends Observer {
         }
       }
 
-      logger.warn("End in Directory Listener");
+      logger.info("End in Directory Listener");
       try {
         Thread.sleep(1000)
       } catch {

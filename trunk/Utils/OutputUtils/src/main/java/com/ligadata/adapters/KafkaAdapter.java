@@ -44,8 +44,7 @@ public class KafkaAdapter implements Observer {
 		    vmFullConfig);
 	    if (VMFactory != null)
 		VMFactory.addEmitListener(velocitymetricsStats);
-	    System.out.println("config.VMInstances "
-		    + config.VMInstances.length);
+	    logger.info("config.VMInstances " + config.VMInstances.length);
 	}
     }
 
@@ -314,7 +313,8 @@ public class KafkaAdapter implements Observer {
 	    }
 	}
 
-	adapter.VMFactory.shutdown();
+	if (adapter != null && adapter.VMFactory != null)
+	    adapter.VMFactory.shutdown();
 	adapter.shutdown(true);
     }
 

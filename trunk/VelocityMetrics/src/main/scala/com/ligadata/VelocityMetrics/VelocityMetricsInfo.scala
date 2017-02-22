@@ -32,7 +32,7 @@ object VelocityMetricsInfo {
       if (nodeContext != null) {
 
         val clusterCfg = MdMgr.GetMdMgr.GetClusterCfg(nodeContext.getEnvCtxt().getClusterId())
-        LOG.info("=============== clusterCfg  Keys" + clusterCfg.cfgMap.keySet.toList)
+        LOG.info("clusterCfg  Keys" + clusterCfg.cfgMap.keySet.toList)
         val velocityStats = clusterCfg.cfgMap.getOrElse(velocityStatsInfo, null)
         if (velocityStats != null) {
           val vstatsJson = parse(velocityStats)
@@ -208,7 +208,7 @@ class VelocityMetricsInfo {
       val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapFullConfig, compName)
       if (allinstances != null && allinstances.length > 0) {
         for (i <- 0 until allinstances.length) {
-          if (allinstances(i).typId == 3 || allinstances(i).typId == 4) {
+          if (allinstances(i).typId == 1 || allinstances(i).typId == 3 || allinstances(i).typId == 4) {
             allMsgInstances += allinstances(i)
           }
         }
@@ -451,7 +451,7 @@ class VelocityMetricsInfo {
    * Increment the velocity metrics - get the VelocityMetricsInstance Factory and call increment for metrics by msgType and metrics by msg keys
    */
 
-  def incrementOutputUtilsVMetricsByKey(VMInstance: InstanceRuntimeInfo, key: String, keyStrings: Array[String], processed: Boolean): Unit = {
+  def incrementOutputUtilsVMetricsByKey(VMInstance: InstanceRuntimeInfo, keys: Array[String], keyStrings: Array[String], processed: Boolean): Unit = {
     LOG.info("Start Increment Velocity Metrics")
     try {
       var metricsTime: Long = System.currentTimeMillis()
@@ -459,8 +459,13 @@ class VelocityMetricsInfo {
       if (typId >= 5) throw new Exception("The metrics type key is not valid")
       var metricsKey = ""
       if (typId == 3 || typId == 4) {
-        if (typId == 3) metricsKey = key
-        else if (typId == 4) metricsKey = keyStrings.mkString(",")
+        if (typId == 3) {
+          if (keys != null && keys.length > 0)
+            metricsKey = keys.mkString(",")
+        } else if (typId == 4) {
+          if (keyStrings != null && keyStrings.length > 0)
+            metricsKey = keyStrings.mkString(",")
+        }
 
         if (processed) {
           VMInstance.instance.increment(metricsTime, metricsKey, System.currentTimeMillis(), true, false)

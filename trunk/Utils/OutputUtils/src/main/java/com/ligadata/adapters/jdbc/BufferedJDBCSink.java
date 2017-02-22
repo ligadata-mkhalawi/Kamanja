@@ -50,9 +50,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 	}
 	this.VMInstances = config.VMInstances;
 
-	System.out
-		.println("this.VMInstances length " + this.VMInstances.length);
-    }
+	}
 
     @Override
     public boolean addMessage(String message) {
@@ -89,19 +87,20 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 	    for (JSONObject jsonObject : buffer) {
 		if (bindParameters(statement, insertParams, jsonObject))
 		    statement.addBatch();
+		// Taking Velocity Metrics stats here
 		if (this.VMInstances != null && this.VMInstances.length > 0) {
-		    System.out
-			    .println("1 increment " + this.VMInstances.length);
+		    logger.info("BufferedJDBSSink vm increment "
+			    + this.VMInstances.length);
 		    for (int i = 0; i < this.VMInstances.length; i++) {
 			if (this.VMInstances[i].typId() == 4) {
-			    System.out.println("2 increment "
+			    logger.info("BufferedJDBSSink vm increment typid 4 "
 				    + this.VMInstances.length);
 			    vm.incrementOutputUtilsVMetricsByKey(
 				    this.VMInstances[i], null,
 				    this.VMInstances[i].KeyStrings(), true);
 			}
 			if (this.VMInstances[i].typId() == 3) {
-			    System.out.println("2 increment "
+			    logger.info("BufferedJDBSSink vm increment typid 3 "
 				    + this.VMInstances.length);
 
 			    if (this.VMInstances[i].MsgKeys() != null
@@ -115,7 +114,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 					    .toString();
 				}
 				vm.incrementOutputUtilsVMetricsByKey(
-					this.VMInstances[i], null,
+					this.VMInstances[i], myStringArray,
 					this.VMInstances[i].KeyStrings(), true);
 			    }
 			}
@@ -171,7 +170,8 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 						    .toString();
 					}
 					vm.incrementOutputUtilsVMetricsByKey(
-						this.VMInstances[j], null,
+						this.VMInstances[j],
+						myStringArray,
 						this.VMInstances[j]
 							.KeyStrings(), false);
 				    }
