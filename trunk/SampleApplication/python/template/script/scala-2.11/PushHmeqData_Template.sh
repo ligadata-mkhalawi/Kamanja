@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 scalaver=2.11
-release=1.6.1
+release=1.6.2
 topicname="loaninput"
 inputfmt="CSV"
 gzcompressed=false
@@ -40,7 +40,7 @@ fi
 echo "User selected: $INPUTFILE"
 echo "Running kafka client version $kafkaversion"
 
-currentKamanjaVersion=1.6.1
+currentKamanjaVersion=1.6.2
 
 KEYSTORE_CONFIG_OPT=""
 KEYSTORE_PASS_CONFIG_OPT=""
