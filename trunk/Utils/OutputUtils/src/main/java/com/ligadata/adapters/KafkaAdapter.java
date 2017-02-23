@@ -357,14 +357,13 @@ public class KafkaAdapter implements Observer {
 	    if (classname == null || classname.trim().length() == 0)
 		throw new Exception(
 			"MESSAGE_PROCESSOR is not provided in properties file");
-	    System.out.println("classname " + classname);
-	    System.out.println("velocitymetricskafkatopic "
+	    logger.info("classname " + classname);
+	    logger.info("velocitymetricskafkatopic "
 		    + velocitymetricskafkatopic);
-	    System.out.println("bootstrapserver " + bootstrapserver);
+	    logger.info("bootstrapserver " + bootstrapserver);
 
 	    k_vm.init(velocitymetricskafkatopic, bootstrapserver, classname);
 
-	    logger.info("Initializing Velocity Metrics Kafka Recorder");
 	} catch (Exception e) {
 	    logger.error(e.getMessage());
 	}
