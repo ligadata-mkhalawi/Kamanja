@@ -160,21 +160,9 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 			if (VMInstances != null && VMInstances.length > 0) {
 			    for (int i = 0; i < this.VMInstances.length; i++) {
 				if (this.VMInstances[i].typId() == 3) {
-
-				    if (this.VMInstances[i].MsgKeys() != null
-					    && this.VMInstances[i].MsgKeys().length > 0) {
-					String[] myStringArray = new String[this.VMInstances[i]
-						.MsgKeys().length];
-					for (int k = 0; k < this.VMInstances[i]
-						.MsgKeys().length; k++) {
-					    String val = rec.get(
-						    this.VMInstances[i]
-							    .MsgKeys()[k])
-						    .toString();
-					    if (val != null
-						    && val.trim().length() != 0)
-						myStringArray[k] = val;
-					}
+				    String[] myStringArray = new String[1];
+				    if (key != null && key.trim().length() != 0) {
+					myStringArray[0] = key;
 
 					vm.incrementOutputUtilsVMetricsByKey(
 						this.VMInstances[i],
@@ -194,13 +182,6 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 			    + " records to partition [" + key + "]");
 
 		    writtenKeysSet.add(key);
-		    if (VMInstances != null && VMInstances.length > 0) {
-			for (int i = 0; i < this.VMInstances.length; i++) {
-			    vm.incrementFileVMetrics(this.VMInstances[i], key,
-				    true);
-			}
-		    }
-
 		    hdfsWriter.close();
 		    if (statusWriter != null)
 			statusWriter.addStatus(key,
@@ -224,9 +205,16 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 		hdfsWriter.closeAll();
 		if (VMInstances != null && VMInstances.length > 0) {
 		    for (int i = 0; i < this.VMInstances.length; i++) {
-			if (this.VMInstances[i].typId() == 1) {
-			    vm.incrementFileVMetrics(this.VMInstances[i], key,
-				    false);
+			if (this.VMInstances[i].typId() == 3) {
+			    String[] myStringArray = new String[1];
+
+			    if (key != null && key.trim().length() != 0) {
+				myStringArray[0] = key;
+
+				vm.incrementOutputUtilsVMetricsByKey(
+					this.VMInstances[i], myStringArray,
+					null, true);
+			    }
 			} else if (this.VMInstances[i].typId() == 4) {
 
 			    vm.incrementOutputUtilsVMetricsByKey(

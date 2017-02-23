@@ -208,7 +208,7 @@ class VelocityMetricsInfo {
       val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapFullConfig, compName)
       if (allinstances != null && allinstances.length > 0) {
         for (i <- 0 until allinstances.length) {
-          if (allinstances(i).typId == 1 || allinstances(i).typId == 3 || allinstances(i).typId == 4) {
+          if (allinstances(i).typId == 3 || allinstances(i).typId == 4) {
             allMsgInstances += allinstances(i)
           }
         }
