@@ -1,11 +1,13 @@
 
 .. _clusterinstallerdriver-command-ref:
 
-ClusterInstallerDriver-1.6.0
+ClusterInstallerDriver-1.6.2
 ============================
 
-Install a fresh Kamanja installation
+Install a fresh Kamanja installation on a multi-node cluster
 or upgrade from an earlier release.
+
+Before running this command, you must edit the
 
 
 Syntax

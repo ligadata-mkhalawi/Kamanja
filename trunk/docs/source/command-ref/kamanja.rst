@@ -193,7 +193,8 @@ An example:
 ::
 
   bash $KAMANJA_HOME/bin/kamanja add message \
-      $KAMANJA_HOME/input/SampleApplications/metadata/message/beneficiary_Medical.json TENANTID <id>
+      $KAMANJA_HOME/input/SampleApplications/metadata/message/beneficiary_Medical.json
+      TENANTID <id>
 
 Note Kamanja has basic multi-tenancy (new in v1.4).
 Therefore, every time a container, message, or model is added or updated,

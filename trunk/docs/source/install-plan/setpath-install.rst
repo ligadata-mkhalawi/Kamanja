@@ -2,8 +2,8 @@
 
 .. _setpath-install:
 
-Run SetPaths.sh
----------------
+Run SetPaths.sh (single-node only)
+----------------------------------
 
 If you are installing a single-node cluster,
 run :ref:`setpaths-command-ref`

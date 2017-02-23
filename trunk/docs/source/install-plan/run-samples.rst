@@ -23,30 +23,6 @@ where things are (IP addresses, queues, and much more),
 and what type of processing to do.
 This is called metadata and it is loaded through the metadata API.
 
-First, make sure that all the components are installed
-and set up by issuing the `jps
-<http://docs.oracle.com/javase/6/docs/technotes/tools/share/jps.html>`_
-command in a separate window:
-
-::
-
-  jps
-
-in a separate window.
-
-**jps** is the Java Process Tool,
-a built-in Unix command to list Java processes running.
-
-Expected output:
-
-::
-
-  3969 Jps
-  3947 QuorumPeerMain
-  3964 Kafka
-
-Note: QuorumPeerMain is ZooKeeper.
-
 
 Run the HelloWorld sample
 -------------------------

@@ -31,7 +31,7 @@ This is a list of the steps required to install Kamanja:
    * - :ref:`cassandra-install` (optional)
      - :ref:`cassandra-install` (optional)
    * - --
-     - :ref:`ssh-install`
+     - :ref:`Set up passwordless SSH<ssh-term>`
    * - :ref:`kamanja-download`
      - :ref:`kamanja-download`
    * - how to choose ClustConfig/kafka?

@@ -55,6 +55,8 @@ Command Reference Pages
      - 
    * - :ref:`simplepmltesttool-command-ref`
      - Test a generated PMML model.
+   * - :ref:`startkamanjacluster-command-ref`
+     - Start the Kamanja cluster
    * - :ref:`statuskamanjacluster-command-ref`
      - Report health of each node in the cluster.
    * - :ref:`watchqueue-command-ref`
@@ -89,6 +91,7 @@ Command Reference Pages
    command-ref/SetPaths
    command-ref/SimpleKafkaProducer
    command-ref/SimplePmlTestTool
+   command-ref/StartKamanjaCluster
    command-ref/StatusKamanjaCluster
    command-ref/WatchQueue
    command-ref/zkCLI

@@ -27,7 +27,9 @@ We will be continuing to enhance the content of the documentation
 over the next several releases,
 but a number of new features are available now:
 
-- PDFs are available for each title as well as the entire doc set;
+- PDFs are available for each title
+  and for each subsection of each title
+  as well as the entire doc set;
   click on the PDF icon in the upper right of each page
   to download the PDF for that title.
   Clicking the PDF icon on the documentation landing page

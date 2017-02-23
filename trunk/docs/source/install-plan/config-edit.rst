@@ -4,18 +4,27 @@
 Edit the configuration files
 ============================
 
-Two main configuration files control the Kamanja environment:
+Two configuration files must be edited before you install
+the multi-node cluster.
+These are:
 
-- :ref:`metadataapiconfig-config-ref` -- configures the
-  :ref:`metadata<metadata-term>` objects
+- :ref:`clustercfgmetadataapiconfig-config-ref`,
+  (located in the *ClusterInstall* folder)
+  which defines the values that are populated in the
+  :ref:`metadataapiconfig-config-ref` file
+  to define the :ref:`metadata<metadata-term>` objects
   (:ref:`messages<messages-term>`, :ref:`containers<container-term>`
   :ref:`models<model-term>`, :ref:`functions<functions-term>` (UDFs),
   :ref:`types<types-term>`, and :ref:`concepts<concepts-term>`)
 
-- :ref:`clusterconfig-config-ref` files -- assigns a name to the cluster
-  and configures all :ref:`tenants<tenancy-term>`,
-  :ref:`ZooKeeper<zookeeper-term>`, Python, environment context,
-  cache, all nodes in the cluster, and all adapters in the cluster.
+- :ref:`clusterconfig-config-ref` files
+  (located in the */config* directory)
+  which assigns a name to the cluster
+  and configures all :ref:`nodes<node-term>`,
+  :ref:`adapters<adapter-term>` in the cluster
+  and :ref:`tenants<tenancy-term>` to be created,
+  as well as configuring :ref:`ZooKeeper<zookeeper-term>`,
+  Python, environment context, and the cache.
 
 Note that these files include all the configurations required
 to run the :ref:`sample applications<run-samples-install>`
@@ -36,14 +45,11 @@ see the :ref:`clusterconfig-config-ref` reference page.
 - Copy the *ClusterConfig.json* file you want to use
   to a name such as *my-ClusterConfig.json*;
   you will specify this file when you install the cluster.
-- Edit your copy of *ClusterConfig.json>* file:
+- Edit these files to reflect the cluster to be installed:
 
-  - [Old docs say: "{InstallDirectory}, found throughout the
-    :ref:`MetadataAPIConfig.properties<metadataapiconfig-config-ref>`
-    and :ref:`ClusterConfig.json<clusterconfig-config-ref>` configuration files,
-    must be modified to show the directory where Kamanja will be installed.
-    The location must be the same on all nodes in the custer."  But I
-    don't find this string in the file]
+  - Edit the paths found throughout both files
+    to show the directory where each component will be installed.
+    The location must be the same on all nodes in the custer.
   - Modify the value of the **ClusterID** parameter
     to the name you want to use for your cluster.
   - Set the **SystemCatalog/StoreType** attribute
@@ -52,10 +58,11 @@ see the :ref:`clusterconfig-config-ref` reference page.
     attributes in **SystemCatalog** to support the selected database type.
   - Set a different **user** and **password** for the **StoreType**.
   - Define all the nodes that are to be configured in the cluster.
-    See :ref:`failover-install` for notes about how to configure nodes
-    to support the node :ref:`failover<failover-nodes-term>` feature.
 
-[What about modifying the **Threads** parameters for the cluster?]
+For samples of these files, see:
+
+- :ref:`ClusterConfig.json, Example 1<clusterconfig-ex1>`
+- :ref:`ClusterCfgMetadataAPIConfig.properties, Example 1<clustercfgmetadataapiproperties-ex1>`
 
 .. _failover-install:
 

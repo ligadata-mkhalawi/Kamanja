@@ -88,6 +88,6 @@ See also
 
 - :ref:`adapter-def-config-ref` gives details about adapter definitions
 - :ref:`adapter-binding-config-ref` describes the structure
-  used to link adapters to :ref:messages<messages-term>`
+  used to link adapters to :ref:`messages<messages-term>`
   and :ref:`serializers<serial-deserial-term>`
 

@@ -45,9 +45,9 @@ Parameters
 - **Description** – (optional) description of the message.
 - **Persist** – (optional) If set to TRUE, data processed as this message type
   is saved to the data store.  See :ref:`persist-term`.
-- **Fixed** – if set to TRUE, this is a fixed message;
-  if set to FALSE, it is a mapped messages.
-  See :ref:`Fixed and mapped messages<messages-fix-map-term>`.
+- **Fixed** – if set to TRUE, this is a
+  :ref:`fixed<messages-fixed-term>` message;
+  if set to FALSE, it is a :ref:`mapped<messages-mapped-term>` message.
 - **CaseSensitive** -- if set to TRUE, fields in the message definition
   are case-sensitive.
   The variables in the generated message are the same case

@@ -36,6 +36,7 @@ Ligapedia
    ligapedia/a-f/file-formats
    ligapedia/a-f/functions
    ligapedia/g-m/hbase
+   ligapedia/g-m/hortonworks
    ligapedia/g-m/ingest-data
    ligapedia/g-m/jar
    ligapedia/g-m/java
@@ -80,6 +81,7 @@ Ligapedia
    ligapedia/s-z/sql
    ligapedia/s-z/smart-input-adapter
    ligapedia/s-z/smart-output-adapter
+   ligapedia/s-z/ssh
    ligapedia/s-z/supervised-learning
    ligapedia/s-z/tensorflow
    ligapedia/s-z/tenancy

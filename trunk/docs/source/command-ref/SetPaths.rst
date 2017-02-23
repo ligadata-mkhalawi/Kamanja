@@ -20,7 +20,7 @@ Options and arguments
 
 It is not necessary to specify $KAFKA_HOME but,
 if it is omitted,
-some scripts such as :ref:`watchqueue-command-ref>`
+some scripts such as :ref:`watchqueue-command-ref`
 do not set properly.
 
 

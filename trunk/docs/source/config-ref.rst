@@ -16,6 +16,11 @@ Configuration File Reference Pages
      - Bind a message to an adapter and a serializer
    * - :ref:`clusterconfig-config-ref`
      - Configure components in a cluster
+   * - :ref:clustercfgmetadataapiconfig-config-ref`
+     - File to edit to define the configuration that will be in
+       :ref:`metadataapiconfig-config-ref`
+       after running :ref:`clusterinstallerdriver-command-ref`
+       to install a multi-node cluster
    * - :ref:`container-def-config-ref`
      - Define a container
    * - :ref:`engineconfigproperties-config-ref`
@@ -39,6 +44,7 @@ Configuration File Reference Pages
    config-ref/adapter-def
    config-ref/adapter-binding
    config-ref/container-def
+   config-ref/ClusterCfgMetadataAPIConfig.properties
    config-ref/ClusterConfig
    config-ref/EngineConfig-properties
    config-ref/log4j2

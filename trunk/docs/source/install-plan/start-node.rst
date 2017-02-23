@@ -1,8 +1,8 @@
 
 .. _start-node-install-guide:
 
-Start node
-==========
+Start single-node cluster
+=========================
 
 After successfully installing the Kamanja engine,
 you can start your single-node installation

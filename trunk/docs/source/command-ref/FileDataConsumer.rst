@@ -4,7 +4,7 @@
 FileDataConsumer
 ================
 
-Populate Kafka message queues from files
+Populate Kafka message queues from files.
 
 Syntax
 ------

@@ -1,46 +1,66 @@
 
 .. _clusterinstallerdriver-install:
 
-Run ClusterInstallerDriver
-==========================
+Run ClusterInstallerDriver and start the multi-node cluster
+===========================================================
 
-Run :ref:`ClusterInstallerDriver-1.6.2<clusterinstallerdriver-command-ref>`
-using the adapters binding file,
-:ref:`ClusterCfgMetadataAPIConfig.properties<metadataapiconfig-config-ref>` file
-and :ref:`ClusterConfig.json<clusterconfig-config-ref>`
-with the 1.6.2 release package.
+After modifying the :ref:`clusterconfig-config-ref`
+and :ref:`clustercfgmetadataapiconfig-config-ref` files,
+navigate to the */CLusterInstall* directory
+and run :ref:`ClusterInstallerDriver-1.6.2<clusterinstallerdriver-command-ref>`
+specifying:
+
+- The
+  :ref:`ClusterCfgMetadataAPIConfig.properties<metadataapiconfig-config-ref>`
+  and :ref:`ClusterConfig.json<clusterconfig-config-ref>` files
+  that you edited as described in :ref:`config-edit-install`
+- The tar file downloaded as described in :ref:`kamanja-download`.
+
+.. note:  Before running this command, be sure that :ref:`ssh-term`
+   is set up from each node to each node in the cluster,
+   including from each node to itself.
 
 A sample script:
 
-[Note that this specifies upgrade, not install]
 
 ::
 
-  export KAMANJA_ROOT=/media/home2/installKamanja162
-  export KAMANJA_INSTALL_HOME=$KAMANJA_ROOT/Kamanja-1.6.2_2.11/ClusterInstall
+  java -jar ClusterInstallerDriver-1.5.3 --install
+    --apiConfig ClusterCfgMetadataAPIConfig.properties
+    --clusterConfig ../config/ClusterConfig.json --toScala 2.11
+    --tarballPath ../../Kamanja-1.5.3_2.11.tar.gz --tenantId tenant1
+    --adapterMessageBindings ../config/SystemMsgs_Adapter_Binding.json
+    --skipPrerequisites all
 
-  java -Dlog4j.configurationFile=file:$KAMANJA_INSTALL_HOME/log4j2.xml \
-      -jar $KAMANJA_INSTALL_HOME/ClusterInstallerDriver-1.6.2 \
-      --clusterId "kamanjacluster162" \
-      --apiConfig "$KAMANJA_INSTALL_HOME/ClusterCfgMetadataAPIConfig.properties" \
-      --clusterConfig "$KAMANJA_INSTALL_HOME/my-ClusterConfig.json" \
-      --tarballPath "$KAMANJA_ROOT/Kamanja-1.6.2_2.11.tar.gz" \
-      --fromKamanja "1.3" --fromScala "2.11" --toScala "2.11" \
-      --upgrade --externalJarsDir /media/home2/external_libs --tenantId kamanja
-  
-If upgrading from 1.4 or 1.4.1, don’t use the adapters binding file.
+
+
 
 Note: ClusterInstall attempts to create a directory
-defined in {InstallDirectory}.
+defined in $KAMANJA_HOME.
 If a directory with the same name is already present on the system,
 delete it and try again.
 
-For a description of ClusterInstallerDriver-1.6.0 parameters,
-see ClusterInstallerDriver-1.6.0 parameters.
-
-
 When this has run successfully,
 your cluster is installed and ready to use.
+You should see the deployed instance of Kamanja
+on all nodes on the target destination you defined
+in *ClusterConfig.json* and *ClusterCfgMetadataAPIConfig.properties*;
+under the $KAMANJA_HOME directory.
+
+To start the cluster,
+**ssh** to any of the nodes then navigate to the *KAMANJA_HOME/bin* folder
+and run the following command:
+
+::
+
+  ./StartKamanjaCluster.sh --ClusterId ligadata1
+    --MetadataAPIConfig ../config/MetadataAPIConfig.properties
+
+
+The cluster should start on all nodes
+that are defined in the *ClusterConfig.json* file.
+In this case, four nodes are configured.
+
 
 - The structure of the installed software is described in
   :ref:`dir-struct-install`.
