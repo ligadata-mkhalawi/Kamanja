@@ -70,7 +70,7 @@ class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
 
   serializer = SerializerManager.GetSerializer("kryo")
   logger.info("Initialize H2dbAdapter")
-  val dataStoreInfo = """{"StoreType": "h2db","connectionMode": "embedded","SchemaName": "kamanja","Location": "/media/home2/installKamanja150/Kamanja-1.5.0_2.11/storage","portnumber": "9100","user": "test","password": "test"}""" 
+  val dataStoreInfo = """{"StoreType": "h2db","connectionMode": "embedded","SchemaName": "kamanja","Location": "/media/home2/installKamanja150/Kamanja-1.6.2_2.11/storage","portnumber": "9100","user": "test","password": "test"}""" 
   // For repeated use of scala test component in sbt console
   // start the h2db server and use a tcp connection(comment out above line 
   // and uncomment below line( val dataStoreInfo ...). 

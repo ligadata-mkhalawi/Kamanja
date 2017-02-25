@@ -18,7 +18,7 @@ fi
 # this directory should be set to the "conventional" directory, not rich's
 # home directory tree.  For example, /var/Kamanja/<homedir>/python places it
 # in the KAMANJA_HOME tree.
-export PYTHONSERVER_HOME="/home/rich/github1/dev/r1.5.0/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonModelPrototype/src/main/python"
+export PYTHONSERVER_HOME="/home/rich/github1/dev/r1.6.2/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonModelPrototype/src/main/python"
 export PYTHONPATH="$PYTHONSERVER_HOME"
 
 python $PYTHONSERVER_HOME/pythonserver.py --host $host --port $port &

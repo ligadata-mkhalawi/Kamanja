@@ -1478,7 +1478,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
           /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
           val nodeId = nodeContext.getEnvCtxt().getNodeId()
-          getSmartFileVelocityMetrics(this, fileToProcessName, true)
+          filesGrp.foreach(f => {
+            getSmartFileVelocityMetrics(this, f.Fl, true)
+          })
         }
       }
     }
