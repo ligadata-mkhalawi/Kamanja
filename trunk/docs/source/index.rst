@@ -101,6 +101,7 @@ Reference Pages
 ---------------
 
 .. toctree::
+   :caption: Reference Pages
    :maxdepth: 1
 
    config-ref
@@ -112,14 +113,16 @@ API Documentation
 -----------------
 
 .. toctree::
+   :caption: API Documentation
 
-    api
+       api
     legacy-api
 
 Machine Learning Guides
 -----------------------
 
 .. toctree::
+   :caption: Machine Learning Guides
 
    models
    java
@@ -133,6 +136,7 @@ Administration Guides
 ---------------------
 
 .. toctree::
+   :caption: Administration Guides
 
    install-plan
    admin
@@ -141,6 +145,7 @@ About this Product
 ------------------
 
 .. toctree::
+   :caption: About this Product
 
    architecture
    relnotes
