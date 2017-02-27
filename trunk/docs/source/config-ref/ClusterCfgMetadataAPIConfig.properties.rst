@@ -26,9 +26,9 @@ File structure
   SCALA_HOME=/usr
   JAVA_HOME=/usr
   MANIFEST_PATH=$KAMANJA_HOME/config/manifest.mf
-  CLASSPATH=$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:
-      $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:
-      $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar
+  CLASSPATH=$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.2.jar:
+      $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.2.jar:
+      $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.2.jar
   NOTIFY_ENGINE=YES
   ZNODE_PATH=/kamanja
   API_LEADER_SELECTION_ZK_NODE=/kamanja
@@ -51,13 +51,44 @@ File structure
   AUDIT_IMPL_CLASS=com.ligadata.audit.adapters.AuditCassandraAdapter
   DO_AUDIT=NO
   DO_AUTH=NO
-  SSL_CERTIFICATE={InstallDirectory}/config/keystore.jks
+  SSL_CERTIFICATE=$KAMANJA_HOME/config/keystore.jks
   SSL_PASSWD=keystore
 
 
 
 Parameters
 ----------
+
+- **MetaDataStore** -
+
+  - **StoreType** -
+  - **SchemaName** -
+  - **Location** -
+
+- **ROOT_DIR** - This is the root directory
+  for the Kamanja installation directory;
+  when upgrading, this should match the name of the root directory
+  used for the old release.
+- **GIT_ROOT** -
+- **JAR_TARGET_DIR** -
+- **SCALA_HOME** -
+- **JAVA_HOME** -
+- **MANIFEST_PATH** -
+- **TYPE_FILES_DIR** -
+- **FUNCTION_FILES_DIR** -
+- **CONCEPT_FILES_DIR** -
+- **MESSAGE_FILES_DIR** 8
+- **CONTAINER_FILES_DIR** -
+- **CONFIG_FILES** -
+- **MODEL_EXEC_LOG** -
+- **JarPaths** -
+- **SECURITY_IMP_JAR** -
+- **SECURITY_IMP_CLASS** -
+- **AUDIT_IMPL_JAR** -
+- **AUDIT_IMPL_CLASS** -
+- **DO_AUDIT** -
+- **DO_AUTH** -
+- **SSL_CERTIFICATE** -
 
 Usage
 -----
@@ -105,9 +136,9 @@ to install your multi-node Kamanja cluster.
   SCALA_HOME=/usr
   JAVA_HOME=/usr
   MANIFEST_PATH=$KAMANJA_HOME/config/manifest.mf
-  CLASSPATH=$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:
-      $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:
-      $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar
+  CLASSPATH=$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.2.jar:
+      $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.2.jar:
+      $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.2.jar
   NOTIFY_ENGINE=YES
   ZNODE_PATH=/kamanja
   API_LEADER_SELECTION_ZK_NODE=/kamanja
@@ -130,8 +161,12 @@ to install your multi-node Kamanja cluster.
   AUDIT_IMPL_CLASS=com.ligadata.audit.adapters.AuditCassandraAdapter
   DO_AUDIT=NO
   DO_AUTH=NO
-  SSL_CERTIFICATE={InstallDirectory}/config/keystore.jks
+  SSL_CERTIFICATE=$KAMANJA_HOME/config/keystore.jks
   SSL_PASSWD=keystore
 
 See also
 --------
+
+- :ref:`metadataapiconfig-config-ref`
+
+

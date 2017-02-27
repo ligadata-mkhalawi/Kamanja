@@ -15,6 +15,10 @@ Download the tarball that corresponds to the version of Scala you are using:
 We recommend that you download the tarball to a location
 (such as */tmp* or *Downloads*)
 other than where you want to install the software.
+In this documentation,
+we refer to this location as $KAMANJA_INSTALL.
+
+Unzip the package.
 
 .. note::  In most cases, using the tarballs provided by LigaData
            are the best alternative.

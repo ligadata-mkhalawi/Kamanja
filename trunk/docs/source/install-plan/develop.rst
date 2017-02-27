@@ -12,7 +12,7 @@ This requires:
   follow the instructions in :ref:`kamanja-install-top`.
   Most development and initial testing can be done on a single node;
   eventually, you may also need to set up a multi-node cluster
-  for testing; follow the instructions in :ref:`cluster-install`.
+  for testing.
 
 
 - Be sure that your environment has all the requisite software installed.

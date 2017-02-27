@@ -15,9 +15,9 @@ Planning and installing Kamanja
    install-plan/kamanja-user
    install-plan/download
    install-plan/setpath-install
+   install-plan/start-node
    install-plan/config-edit.rst
    install-plan/clusterinstall.rst
-   install-plan/start-node
    install-plan/develop
    install-plan/upgrade
    install-plan/run-samples

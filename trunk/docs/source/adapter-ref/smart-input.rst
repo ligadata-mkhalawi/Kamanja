@@ -493,6 +493,106 @@ HDFS input, specifying DetailedLocation
     }
   } 
 
+Archiver from SFTP to HDFS
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+  {
+    "Name": "INPUT_ADAPTER_VM1",
+    "TypeString": "Input",
+    "TenantId": "tenant1",
+    "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
+    "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+    "DependencyJars": [
+	  "ExtDependencyLibs_2.11-1.5.3.jar",
+	  "ExtDependencyLibs2_2.11-1.5.3.jar"
+    ],
+    "AdapterSpecificCfg": {
+	  "Type": "SFTP",
+	  "StatusMsgTypeName": "com.ligadata.messages.InputAdapterStatsMsg",
+	  "ConnectionConfig": {
+	    "HostLists": "host:port",
+	    "UserId": "user",
+	    "Password": "pass"
+	  },
+	  "MonitoringConfig": {
+	    "MaxTimeWait": "600000",
+	    "WorkerBufferSize": "4",
+	    "ConsumersCount": "96",
+	    "MessageSeparator": "10",
+	    "MonitoringThreadsCount": "4",
+	    "DetailedLocations": [
+	       {
+	       "srcDir": "/home/bigdata/emm/jam/air_adjustments/kprod/incoming",
+	       "targetDir": "/home/bigdata/emm/jam/air_adjustments/kprod/processed",
+               "ArchiveRelativePath": "jam/air_adjustments",
+	       "MsgTagsKV": {
+	   	  "msgType": "AirAdjustmentCS5",
+   		  "file_name": "$FileName",
+	   	  "file_full_path": "$FileFullPath",
+	   	  "line_num": "$LineNumber",
+	   	  "file_offset": "$MsgStartOffset"
+	       },
+	       "TagDelimiter": "\\u0002",
+	       "MessageSeparator": "10"
+		  },
+		  {
+		    "srcDir": "/home/bigdata/emm/jam/air_refill/kprod/incoming",
+		    "targetDir": "/home/bigdata/emm/jam/air_refill/kprod/processed",
+		    "ArchiveRelativePath": "jam/air_refill",
+		    "MsgTagsKV": {
+			  "msgType": "AirRefillCS5",
+			  "file_name": "$FileName",
+			  "file_full_path": "$FileFullPath",
+			  "line_num": "$LineNumber",
+			  "file_offset": "$MsgStartOffset"
+		    },
+		    "TagDelimiter": "\\u0002",
+		    "MessageSeparator": "10"
+		  },
+		  {
+		    "srcDir": "/home/bigdata/emm/jam/cipip_data/kprod/incoming",
+		    "targetDir": "/home/bigdata/emm/jam/cipip_data/kprod/processed",
+		    "ArchiveRelativePath": "jam/cipip_data",
+		    "MsgTagsKV": {
+			  "msgType": "CCNDataCS5",
+			  "file_name": "$FileName",
+			  "file_full_path": "$FileFullPath",
+			  "line_num": "$LineNumber",
+			  "file_offset": "$MsgStartOffset"
+		    },
+		    "TagDelimiter": "\\u0002",
+		    "MessageSeparator": "10"
+		  }
+	    ]
+	  },
+	  "ArchiveConfig": {
+	    "Uri": "hdfs://jmbdcls01-ns/user/kamanjaprod/ARCHIVE",
+	    "ConsolidationMaxSizeMB": "250",
+	    "ArchiveParallelism": "6",
+	    
+	    "Compression": "gz",
+	    "RolloverInterval": "15",
+	    "Authentication": "kerberos",
+	    "principal": "user@group.LOCAL",
+	    "keytab": "/home/user/user.keytab",
+	    "hadoopConfig": {
+		  "hadoop.rpc.protection": "privacy",
+		  "dfs.nameservices": "jmbdcls01-ns",
+		  "dfs.ha.namenodes.jmbdcls01-ns": "namenode3,namenode59",
+		  "dfs.namenode.rpc-address.jmbdcls01-ns.namenode3":
+                      "jbd1node01.digicelgroup.local:8020",
+		  "dfs.namenode.rpc-address.jmbdcls01-ns.namenode59":
+                      "jbd1node02.digicelgroup.local:8020",
+		  "dfs.client.failover.proxy.provider.jmbdcls01-ns":
+                      "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider",
+		  "dfs.client.block.write.replace-datanode-on-failure.policy": "NEVER"
+	    }
+	  }
+    }
+  }
+
 
 See also
 --------

@@ -16,11 +16,11 @@ Configuration File Reference Pages
      - Bind a message to an adapter and a serializer
    * - :ref:`clusterconfig-config-ref`
      - Configure components in a cluster
-   * - :ref:clustercfgmetadataapiconfig-config-ref`
+   * - :ref:`clustercfgmetadataapiconfig-config-ref`
      - File to edit to define the configuration that will be in
        :ref:`metadataapiconfig-config-ref`
        after running :ref:`clusterinstallerdriver-command-ref`
-       to install a multi-node cluster
+       to install or upgrade a multi-node cluster
    * - :ref:`container-def-config-ref`
      - Define a container
    * - :ref:`engineconfigproperties-config-ref`

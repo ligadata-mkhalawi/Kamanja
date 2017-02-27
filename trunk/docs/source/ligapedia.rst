@@ -8,6 +8,7 @@ Ligapedia
 .. toctree::
 
    ligapedia/a-f/adapter
+   ligapedia/a-f/archiver
    ligapedia/a-f/audit-adapter
    ligapedia/a-f/audit-log
    ligapedia/a-f/avro

@@ -23,15 +23,22 @@ File structure
   JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home
   MANIFEST_PATH=/Users/userid/Downloads/installKamanja/config/manifest.mf
   ...
-  TYPE_FILES_DIR=/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/type/
-  FUNCTION_FILES_DIR=/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/function/
-  CONCEPT_FILES_DIR=/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/concept/
-  MESSAGE_FILES_DIR=/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/message/
-  CONTAINER_FILES_DIR=/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/container/
+  TYPE_FILES_DIR=/Users/userid/Downloads/installKamanja/input/
+     SampleApplications/metadata/type/
+  FUNCTION_FILES_DIR=/Users/userid/Downloads/installKamanja/input/
+     SampleApplications/metadata/function/
+  CONCEPT_FILES_DIR=/Users/userid/Downloads/installKamanja/input/
+     SampleApplications/metadata/concept/
+  MESSAGE_FILES_DIR=/Users/userid/Downloads/installKamanja/input/
+     SampleApplications/metadata/message/
+  CONTAINER_FILES_DIR=/Users/userid/Downloads/installKamanja/input/
+     SampleApplications/metadata/container/
   CONFIG_FILES_DIR=/Users/userid/Downloads/installKamanja/config/
   MODEL_EXEC_LOG=false
-  JarPaths=/Users/userid/Downloads/installKamanja/lib/system,/Users/userid/Downloads/installKamanja/lib/application
-  SECURITY_IMPL_JAR=/Users/userid/Downloads/installKamanja/lib/system/simpleapacheshiroadapter_2.10-1.0.jar
+  JarPaths=/Users/userid/Downloads/installKamanja/lib/system,/Users/userid/
+     Downloads/installKamanja/lib/application
+  SECURITY_IMPL_JAR=/Users/userid/Downloads/installKamanja/lib/system/
+     simpleapacheshiroadapter_2.10-1.0.jar
   SECURITY_IMPL_CLASS=com.ligadata.Security.SimpleApacheShiroAdapter
   AUDIT_IMPL_JAR=/Users/userid/Downloads/installKamanja/lib/system/auditadapters_2.10-1.0.jar
   AUDIT_IMPL_CLASS=com.ligadata.audit.adapters.AuditCassandraAdapter

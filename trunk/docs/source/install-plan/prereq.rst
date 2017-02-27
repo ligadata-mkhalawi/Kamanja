@@ -17,10 +17,7 @@ The following installation scenarios are supported:
 - :ref:`Install developer tools<develop-install-top>`
   if you will be developing software on this system.
 
-- :ref:`Replicate<replicate-install-top>` a configured node
-  to other nodes in the cluster.
-
-- :ref:`Configure a multi-node cluster<cluster-install>`
+- Configure a multi-node cluster
   for systems that will be used for production.
 
 - :ref:`Upgrade<upgrade-install-top>` from an earlier version

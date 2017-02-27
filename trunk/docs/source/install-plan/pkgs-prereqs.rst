@@ -74,10 +74,10 @@ Install Scala
 -------------
 
 Download and install :ref:`Scala<scala-term>` 2.11 from the
-`Scala 2.11 download site <http://www.scala-lang.org/download/2.11.7.html>`-.
+`Scala 2.11 download site <http://www.scala-lang.org/download/2.11.7.html>`_.
 
 Kamanja can instead use Scala 2.10, which can be downloaded from
-`the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`-.
+`the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`_.
 
 .. _zookeeper-install:
 

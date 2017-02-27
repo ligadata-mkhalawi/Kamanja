@@ -23,12 +23,19 @@ Options and arguments
 ---------------------
 
 - **gz** -
+
 — **format** - indicates the format of the data (either CSV or JSON).
+
 - **topics** -
+
 - **threads** -
+
 - **topicpartitions** -
+
 - **brokerlist** -
+
 - **files** - 
+
 — **partitionkeyidxs <System.MessageName>:<PartitionKey>**
   indicates the message name and the partition key
   by which to aggregate other messages in the message history.

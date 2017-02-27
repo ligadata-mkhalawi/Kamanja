@@ -12,6 +12,7 @@ Kamanja Architecture
    architecture/continuous-decision
    architecture/kamanja-components
    architecture/model-validation
+   architecture/archiver-arch
    architecture/python
 
 
