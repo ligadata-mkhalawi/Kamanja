@@ -50,7 +50,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 	}
 	this.VMInstances = config.VMInstances;
 
-	}
+    }
 
     @Override
     public boolean addMessage(String message) {
@@ -143,21 +143,14 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 
 			if (this.VMInstances != null
 				&& this.VMInstances.length > 0) {
-			    System.out.println("1 increment "
-				    + this.VMInstances.length);
 			    for (int j = 0; j < this.VMInstances.length; j++) {
 				if (this.VMInstances[j].typId() == 4) {
-				    System.out.println("2 increment "
-					    + this.VMInstances.length);
 				    vm.incrementOutputUtilsVMetricsByKey(
 					    this.VMInstances[j], null,
 					    this.VMInstances[j].KeyStrings(),
 					    false);
 				}
 				if (this.VMInstances[j].typId() == 3) {
-				    System.out.println("2 increment "
-					    + this.VMInstances.length);
-
 				    if (this.VMInstances[j].MsgKeys() != null
 					    && this.VMInstances[j].MsgKeys().length > 0) {
 					String[] myStringArray = new String[this.VMInstances[j]

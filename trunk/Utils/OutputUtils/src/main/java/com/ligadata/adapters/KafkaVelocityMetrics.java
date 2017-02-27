@@ -41,10 +41,10 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
     }
 
     public void call(Metrics metrics) {
-	System.out.println("metrics " + metrics.metricsGeneratedTimeInMs);
+	logger.info("metrics " + metrics.metricsGeneratedTimeInMs);
 	ComponentMetrics[] compMetrics = metrics.compMetrics;
 
-	System.out.println("compMetrics length  " + compMetrics.length);
+	logger.info("compMetrics length  " + compMetrics.length);
 
 	if (compMetrics.length > 0) {
 	    javax.json.JsonArrayBuilder componentArr = Json
@@ -53,28 +53,26 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
 		    .createArrayBuilder();
 	    JsonObjectBuilder componentObj = Json.createObjectBuilder();
 	    for (int i = 0; i < compMetrics.length; i++) {
-		System.out.println("compMetrics componentKey  "
+		logger.info("compMetrics componentKey  "
 			+ compMetrics[i].componentKey);
-		System.out.println("compMetrics nodeId "
-			+ compMetrics[i].nodeId);
+		logger.info("compMetrics nodeId " + compMetrics[i].nodeId);
 		javax.json.JsonArrayBuilder componentMetricsArr = Json
 			.createArrayBuilder();
 		ComponentKeyMetrics[] componentMetrics = compMetrics[i].keyMetrics;
-		System.out.println("componentMetrics "
-			+ componentMetrics.length);
+		logger.info("componentMetrics " + componentMetrics.length);
 		for (int j = 0; j < componentMetrics.length; j++) {
 		    JsonObjectBuilder componentJsonObj = Json
 			    .createObjectBuilder();
-		    System.out.println("componentMetrics "
+		    logger.info("componentMetrics "
 			    + componentMetrics[j].firstOccured);
-		    System.out.println("componentMetrics metrics time "
+		    logger.info("componentMetrics metrics time "
 			    + componentMetrics[j].metricsTime);
-		    System.out.println("componentMetrics key "
+		    logger.info("componentMetrics key "
 			    + componentMetrics[j].key);
-		    System.out.println("componentMetrics "
+		    logger.info("componentMetrics "
 			    + componentMetrics[j].lastOccured);
 		    MetricValue[] metricValues = componentMetrics[j].metricValues;
-		    System.out.println("metricValues " + metricValues.length);
+		    logger.info("metricValues " + metricValues.length);
 		    javax.json.JsonArrayBuilder metricsValsArr = Json
 			    .createArrayBuilder();
 		    for (int k = 0; k < metricValues.length; k++) {
@@ -85,9 +83,8 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
 			metricsValueJsonObj.add("metricskeyvalue",
 				metricValues[k].Value());
 			metricsValsArr.add(metricsValueJsonObj);
-			System.out.println("metricValues Key "
-				+ metricValues[k].Key());
-			System.out.println("metricValues value "
+			logger.info("metricValues Key " + metricValues[k].Key());
+			logger.info("metricValues value "
 				+ metricValues[k].Value());
 		    }
 		    JsonArray marr = metricsValsArr.build();
@@ -117,7 +114,7 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
 		    metrics.metricsGeneratedTimeInMs);
 	    metricObj.add("Metrics", componentArr.build());
 	    JsonObject json = metricObj.build();
-	    System.out.println("!!!!!!!!!!!: " + json);
+	    logger.info("json: " + json);
 
 	    // TODO: Do we need to handle the failure differently? Will we have
 	    // a problem if a lot of addStatus Calls are made
