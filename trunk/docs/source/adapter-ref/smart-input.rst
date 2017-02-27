@@ -349,10 +349,10 @@ Local (DAS) file system input
 	  "TypeString": "Input",
 	  "TenantId": "tenant1",
 	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-	  "JarName": "KamanjaInternalDeps_2.11-1.4.0.jar",
+	  "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
 	  "DependencyJars": [
-		  "ExtDependencyLibs_2.11-1.4.0.jar",
-		  "ExtDependencyLibs2_2.11-1.4.0.jar"
+		  "ExtDependencyLibs_2.11-1.6.2.jar",
+		  "ExtDependencyLibs2_2.11-1.6.2.jar"
 	  ],
 	  "AdapterSpecificCfg": {
 		  "Type": "DAS/NAS",
@@ -379,10 +379,10 @@ HDFS input
 	    "TypeString": "Input",
 	  "TenantId": "tenant1",
 	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-	  "JarName": "KamanjaInternalDeps_2.11-1.4.0.jar",
+	  "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
 	  "DependencyJars": [
-		  "ExtDependencyLibs_2.11-1.4.0.jar",
-		  "ExtDependencyLibs2_2.11-1.4.0.jar"
+		  "ExtDependencyLibs_2.11-1.6.2.jar",
+		  "ExtDependencyLibs2_2.11-1.6.2.jar"
 	  ],
 	  "AdapterSpecificCfg": {
 		  "Type": "hdfs",
