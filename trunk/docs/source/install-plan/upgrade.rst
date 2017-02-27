@@ -1,19 +1,16 @@
 
 .. _upgrade-install-top:
 
-Basic upgrade to 1.6.2
-======================
+Upgrade to 1.6.2
+================
 
-To upgrade to Release 1.6.2 from an earlier Kamanja release,
-
-Download the 1.6.2 package to */tmp* or */Downloads*
-or some other location that is not where you want
-to install the Kamanja software.
-
-Upgrade -- to 1.6.2 from 1.5.x to 1.6.2
+You can upgrade to Release 1.6.2 from an earlier Kamanja release,
 
 
-- download tarball; unzip in /tmp
+Follow the instructions in :ref:`kamanja-download`
+to download and unzip the 1.6.2 package to $KAMANJA_INSTALL.
+
+
 - two options:
 
   - copy existing MetadataAPI and ClusterConfig to /tmp and
@@ -27,12 +24,12 @@ Upgrade -- to 1.6.2 from 1.5.x to 1.6.2
 
 Step 4: Update ClusterCfgMetadataAPIConfig.properties and ClusterConfig.json
 
-Run the following command:
+Run the :ref:`clusterinstallerdriver-command-ref` command:
 Go to the directory where the 1.6.2 tar file was extracted:
 
 ::
 
-  cd ......../Kamanja-1.6.2_2.11/ClusterInstall
+  cd $KAMANJA_INSTALL/Kamanja-1.6.2_2.11/ClusterInstall
 
 Update the ClusterCfgMetadataAPIConfig.properties properties file
 according to the following matrix.
@@ -162,8 +159,8 @@ A sample shell script:
 
 ::
 
-  export KAMANJA_ROOT=/media/home2/installKamanja150
-  export KAMANJA_INSTALL_HOME=$KAMANJA_ROOT/Kamanja-1.6.0_2.11/ClusterInstall
+  export KAMANJA_ROOT=/media/home2/installKamanja162
+  export KAMANJA_INSTALL_HOME=$KAMANJA_ROOT/Kamanja-1.6.2_2.11/ClusterInstall
 
   java -Dlog4j.configurationFile=file:$KAMANJA_INSTALL_HOME/log4j2.xml -jar $KAMANJA_INSTALL_HOME/ClusterInstallerDriver-1.5.0 --clusterId “kamanjacluster150” --apiConfig “$KAMANJA_INSTALL_HOME/ClusterCfgMetadataAPIConfig.properties” --clusterConfig “$KAMANJA_INSTALL_HOME/ClusterConfig.json” --tarballPath “$KAMANJA_ROOT/Kamanja-1.6.0_2.11.tar.gz” --fromKamanja “1.3” --fromScala “2.10” --toScala “2.11” --upgrade --externalJarsDir /media/home2/external_libs --tenantId kamanja --adapterMessageBindings /tmp/AdapterMessageBindings.json
 

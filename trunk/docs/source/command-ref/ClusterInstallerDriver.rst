@@ -30,7 +30,7 @@ overwrite the new file -- creating unique links --
 Syntax
 ------
 
-$KAMANJA_HOME is the directory to which
+$KAMANJA_INSTALL is the directory to which
 the Kamanja package is downloaded;
 default location is */tmp*.
 
