@@ -113,10 +113,10 @@ API Documentation
 -----------------
 
 .. toctree::
-   :caption: API Documentation
+   :caption: API Reference Pages
 
-       api
-    legacy-api
+   api
+   legacy-api
 
 Machine Learning Guides
 -----------------------
