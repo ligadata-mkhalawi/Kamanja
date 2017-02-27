@@ -119,7 +119,7 @@ with the following parameters set as shown:
 
 ::
 
-  "ClassName": "com.ligadata.InputAdapters.SmartFileInputAdapter$",
+  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
   "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
   
 
@@ -318,7 +318,7 @@ SFTP input with public key authentication
 	  "Name": "SftpAdapter_1",
 	  "TypeString": "Input",
 	  "TenantId": "tenant1",
-	  "ClassName": "com.ligadata.InputAdapters.SmartFileInputAdapter$",
+	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
 	  "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
 	  "DependencyJars": [],
 	  "AdapterSpecificCfg": {
