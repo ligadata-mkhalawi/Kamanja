@@ -42,6 +42,7 @@ h6
     font-weight: normal;
     color: #666666 !important;
 }
+
 p
 {
     font-family: Glegoo, Arial, sans-serif;
@@ -58,4 +59,37 @@ a:link:active, a:visited:active {
 
 .wy-side-nav-search{
     background-color: #00b1c0;
+}
+
+.caption-text{
+    color: #f0f0f0;
+    text-transform: none;
+    font-size: 18px;
+}
+.wy-menu a.reference.internal {
+    color: #f0f0f0;
+    text-decoration: none;
+}
+.wy-menu.wy-menu-vertical ul {
+    margin-bottom: 15px;
+}
+.wy-menu-vertical li.current>a span.toctree-expand{
+    display: none;
+}
+.wy-menu-vertical a {
+    padding: 0.4045em 1.45em;
+}
+.wy-menu ul.current .toctree-l1.current .reference.internal{
+    color:black;
+    padding: 0.4045em 1.45em;
+}
+.wy-menu ul.current .toctree-l1.current .toctree-l2 .reference.internal{
+    color: #666666;
+}
+.wy-menu ul.current .toctree-l1.current .toctree-l2.current .reference.internal{
+    color: black;
+}
+.wy-menu ul.current .toctree-l1.current .toctree-l2.current .toctree-l3 .reference.internal{
+    color: #666666;
+    padding: 0.4045em 2.5em;
 }

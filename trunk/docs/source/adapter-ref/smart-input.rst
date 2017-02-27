@@ -36,10 +36,10 @@ Smart File Input Adapter definition
     "TypeString": "Input",
     "TenantId": "tenant1",
     "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-    "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+    "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
     "DependencyJars": [
-      "ExtDependencyLibs_2.11-1.5.3.jar",
-      "ExtDependencyLibs2_2.11-1.5.3.jar"
+      "ExtDependencyLibs_2.11-1.6.2.jar",
+      "ExtDependencyLibs2_2.11-1.6.2.jar"
     ],
     "AdapterSpecificCfg": {
       "Type": "HDFS",
@@ -119,7 +119,7 @@ with the following parameters set as shown:
 
 ::
 
-  "ClassName": "com.ligadata.InputAdapters.SamrtFileInputAdapter$",
+  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
   "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
   
 
@@ -318,7 +318,7 @@ SFTP input with public key authentication
 	  "Name": "SftpAdapter_1",
 	  "TypeString": "Input",
 	  "TenantId": "tenant1",
-	  "ClassName": "com.ligadata.InputAdapters.SamrtFileInputAdapter$",
+	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
 	  "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
 	  "DependencyJars": [],
 	  "AdapterSpecificCfg": {
@@ -349,10 +349,10 @@ Local (DAS) file system input
 	  "TypeString": "Input",
 	  "TenantId": "tenant1",
 	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-	  "JarName": "KamanjaInternalDeps_2.11-1.4.0.jar",
+	  "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
 	  "DependencyJars": [
-		  "ExtDependencyLibs_2.11-1.4.0.jar",
-		  "ExtDependencyLibs2_2.11-1.4.0.jar"
+		  "ExtDependencyLibs_2.11-1.6.2.jar",
+		  "ExtDependencyLibs2_2.11-1.6.2.jar"
 	  ],
 	  "AdapterSpecificCfg": {
 		  "Type": "DAS/NAS",
@@ -379,10 +379,10 @@ HDFS input
 	    "TypeString": "Input",
 	  "TenantId": "tenant1",
 	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-	  "JarName": "KamanjaInternalDeps_2.11-1.4.0.jar",
+	  "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
 	  "DependencyJars": [
-		  "ExtDependencyLibs_2.11-1.4.0.jar",
-		  "ExtDependencyLibs2_2.11-1.4.0.jar"
+		  "ExtDependencyLibs_2.11-1.6.2.jar",
+		  "ExtDependencyLibs2_2.11-1.6.2.jar"
 	  ],
 	  "AdapterSpecificCfg": {
 		  "Type": "hdfs",
@@ -433,10 +433,10 @@ HDFS input, specifying DetailedLocation
     "TypeString": "Input",
     "TenantId": "tenant1",
     "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-    "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+    "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
     "DependencyJars": [
-      "ExtDependencyLibs_2.11-1.5.3.jar",
-      "ExtDependencyLibs2_2.11-1.5.3.jar"
+      "ExtDependencyLibs_2.11-1.6.2.jar",
+      "ExtDependencyLibs2_2.11-1.6.2.jar"
     ],
     "AdapterSpecificCfg": {
       "Type": "HDFS",
