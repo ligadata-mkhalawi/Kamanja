@@ -36,10 +36,10 @@ Smart File Input Adapter definition
     "TypeString": "Input",
     "TenantId": "tenant1",
     "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-    "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+    "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
     "DependencyJars": [
-      "ExtDependencyLibs_2.11-1.5.3.jar",
-      "ExtDependencyLibs2_2.11-1.5.3.jar"
+      "ExtDependencyLibs_2.11-1.6.2.jar",
+      "ExtDependencyLibs2_2.11-1.6.2.jar"
     ],
     "AdapterSpecificCfg": {
       "Type": "HDFS",
@@ -433,10 +433,10 @@ HDFS input, specifying DetailedLocation
     "TypeString": "Input",
     "TenantId": "tenant1",
     "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-    "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+    "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
     "DependencyJars": [
-      "ExtDependencyLibs_2.11-1.5.3.jar",
-      "ExtDependencyLibs2_2.11-1.5.3.jar"
+      "ExtDependencyLibs_2.11-1.6.2.jar",
+      "ExtDependencyLibs2_2.11-1.6.2.jar"
     ],
     "AdapterSpecificCfg": {
       "Type": "HDFS",
