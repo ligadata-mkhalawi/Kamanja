@@ -118,9 +118,10 @@ class CompilerProxy {
       val uniqueId = getMetadataAPI.GetUniqueId
       val mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
 
+      val tdeps = if (totalDeps == null) scala.collection.immutable.Set[String]() else totalDeps.filter(x => x != null)
       return generateModelDef(repackagedCode, sourceLang, pname, classPath, tempPackage, modelName,
         modelVersion, msgDefClassFilePath, elements, sourceCode,
-        totalDeps,
+        tdeps,
         getMetadataAPI.getModelMessagesContainers(modelConfigName, userid),
         nonTypeDeps, false, inputMsgSets, outMsgs, userid, tenantId, modelConfigName, uniqueId, mdElementId, modCfgJson)
     } catch {
@@ -156,8 +157,9 @@ class CompilerProxy {
       val mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
       // use the model Config Name passed by the caller of this function
       logger.debug("recompileModelFromSource: Model Config Name => " + modCfgName)
+      val tdeps = if (totalDeps == null) scala.collection.immutable.Set[String]() else totalDeps.filter(x => x != null)
       return generateModelDef(repackagedCode, sourceLang, pname, classPath, tempPackage, modelName,
-        modelVersion, msgDefClassFilePath, elements, sourceCode, totalDeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, modCfgName, uniqueId, mdElementId, modCfgJson)
+        modelVersion, msgDefClassFilePath, elements, sourceCode, tdeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, modCfgName, uniqueId, mdElementId, modCfgJson)
     } catch {
       case e: Exception => {
         logger.error("COMPILER_PROXY: unable to determine model metadata information during recompile.", e)
