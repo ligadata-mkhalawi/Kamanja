@@ -574,7 +574,11 @@ class SftpFileHandler extends SmartFileHandler{
     }
     catch {
       case ex : Throwable =>
-        logger.error("Sftp File Handler - Error while listing files of dir " + path, ex)
+        if (ex.isInstanceOf[com.jcraft.jsch.SftpException] && ex.getCause != null && ex.getCause.isInstanceOf[java.io.InterruptedIOException]) {
+          if (logger.isDebugEnabled) logger.debug("Sftp File Handler - Error while listing files of dir " + path, ex)
+        } else {
+          logger.error("Sftp File Handler - Error while listing files of dir " + path, ex)
+        }
     }
 
     (currentDirectFiles.toArray, currentDirectDirs.toArray)
