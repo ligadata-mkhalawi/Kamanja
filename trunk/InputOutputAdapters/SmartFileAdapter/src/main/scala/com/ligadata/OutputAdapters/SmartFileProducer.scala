@@ -17,24 +17,24 @@
 package com.ligadata.OutputAdapters
 
 import org.apache.avro.generic.GenericRecord
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 import java.io._
 import java.text.SimpleDateFormat
 import java.util.TimeZone
-import java.util.zip.{ZipException, GZIPOutputStream}
-import java.nio.file.{Paths, Files}
+import java.util.zip.{ ZipException, GZIPOutputStream }
+import java.nio.file.{ Paths, Files }
 import java.net.URI
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext, NodeContext}
+import com.ligadata.KamanjaBase.{ ContainerInterface, TransactionContext, NodeContext }
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
-import com.ligadata.Exceptions.{UnsupportedOperationException, FatalAdapterException}
-import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.Exceptions.{ UnsupportedOperationException, FatalAdapterException }
+import com.ligadata.HeartBeat.{ Monitorable, MonitorComponentInfo }
 import org.json4s.jackson.Serialization
 import org.apache.hadoop.hdfs.DFSOutputStream
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream.SyncFlag
-import org.apache.hadoop.fs.{FileSystem, FSDataOutputStream, Path}
+import org.apache.hadoop.fs.{ FileSystem, FSDataOutputStream, Path }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.commons.lang3.time.FastDateFormat
@@ -45,7 +45,7 @@ import org.apache.avro.generic.GenericRecordBuilder
 import parquet.hadoop.metadata.CompressionCodecName
 import parquet.schema.MessageTypeParser
 import scala.collection.mutable.ArrayBuffer
-import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.actors.threadpool.{ ExecutorService, Executors }
 import com.ligadata.VelocityMetrics._
 
 import parquet.hadoop._
@@ -284,7 +284,6 @@ class OutputStreamWriter {
 
   final def openFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean = true): OutputStream = if (fc.uri.startsWith("hdfs://")) openHdfsFile(fc, fileName, canAppend) else openFsFile(fc, fileName, canAppend)
 
-
   def getFileSize(fc: SmartFileProducerConfiguration, fileName: String): Long = if (fc.uri.startsWith("hdfs://")) getHdfsFileSize(fc, fileName) else getFSFileSize(fc, fileName)
 
   def getHdfsFileSize(fc: SmartFileProducerConfiguration, fileName: String): Long = {
@@ -306,8 +305,7 @@ class OutputStreamWriter {
       val path: Path = new Path(uri)
       val fs: FileSystem = FileSystem.get(uri, hdfsConf)
       fs.getFileStatus(path).getLen
-    }
-    catch {
+    } catch {
       case ex: Throwable =>
         LOG.warn("", ex)
         0
@@ -328,8 +326,7 @@ class OutputStreamWriter {
     LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
     try {
       new File(dirPath).mkdirs()
-    }
-    catch {
+    } catch {
       case e: Throwable =>
         LOG.error("OutputStreamWriter - Error while creating fs path " + dirPath, e)
         false
@@ -356,8 +353,7 @@ class OutputStreamWriter {
       val path: Path = new Path(uri)
       val fs: FileSystem = FileSystem.get(uri, hdfsConf)
       fs.mkdirs(path)
-    }
-    catch {
+    } catch {
       case ex: Throwable =>
         LOG.warn("", ex)
         false
@@ -461,7 +457,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   //private val avroSchemasMap = collection.mutable.Map[String, org.apache.avro.Schema]() //message -> schema
   private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
 
-
   if (fc.uri.startsWith("file://"))
     fc.uri = fc.uri.substring("file://".length() - 1)
 
@@ -478,8 +473,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(fc.compressionString) ||
       CompressorStreamFactory.GZIP.equalsIgnoreCase(fc.compressionString) ||
       CompressorStreamFactory.XZ.equalsIgnoreCase(fc.compressionString) ||
-      isParquet
-    )
+      isParquet)
       LOG.debug("Smart File Producer " + fc.Name + " Using compression: " + fc.compressionString)
     else
       throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
@@ -634,12 +628,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     var key = ""
     //if we have a subdir name in type level config correspnding to this msg, use it
     //else name of the msg will be used as subdir
-    if(tlcfg != null && tlcfg.subDirName != null && tlcfg.subDirName.trim.length > 0){
-      key = if(tlcfg.subDirName.trim.endsWith("/"))
-              tlcfg.subDirName.trim.substring(0, tlcfg.subDirName.trim.length - 1)
-            else  tlcfg.subDirName
-    }
-    else {
+    if (tlcfg != null && tlcfg.subDirName != null && tlcfg.subDirName.trim.length > 0) {
+      key = if (tlcfg.subDirName.trim.endsWith("/"))
+        tlcfg.subDirName.trim.substring(0, tlcfg.subDirName.trim.length - 1)
+      else tlcfg.subDirName
+    } else {
       key = record.getTypeName()
       if (fc.useTypeFullNameForPartition) {
         key = if (fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
@@ -703,11 +696,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 nextRolloverTime = newDt + (fc.rolloverInterval * 60 * 1000)
                 val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
                 "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, extensions.getOrElse(defaultExtension, ""))
-              }
-              else initialFileName
-            }
-            else initialFileName
-
+              } else initialFileName
+            } else initialFileName
 
           if (isParquet) {
             //TODO : is it better to cache parsed schemas in a map ?
@@ -764,7 +754,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     return partKey
   }
 
-
   /*private def reopenPartitionFile(pf: PartitionFile): PartitionFile = {//only for stream, not applicable for parquet
     LOG.info("Smart File Producer :" + fc.Name + " : In PartitionFile key - [" + pf.getKey + "]")
     WriteLock(_reent_lock)
@@ -785,7 +774,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     // Not implemented yet
   }
 
-
   // Locking before we write into file
   // To send an array of messages. messages.size should be same as partKeys.size
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
@@ -801,7 +789,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         }
       }
     }
-
+    var filename: String = ""
     try {
       // Op is not atomic
       var idx = 0
@@ -809,6 +797,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       outputContainers.foreach(record => {
 
         val pf = getPartionFile(record);
+        filename = pf.getFilePath
         pf.synchronized {
           val status = pf.send(tnxCtxt, record, this)
 
@@ -818,15 +807,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             if (record != null) {
               getOAVelocityMetrics(this, record, true)
             }
-            getFileVelocityMetrics(this, fc.Name, true)
+            getFileVelocityMetrics(this, filename, true)
           } else {
-/*
+            /*
             /**VelocityMetrics****/
             if (record != null) {
               getOAVelocityMetrics(this, record, false)
             }
 */
-            getFileVelocityMetrics(this, fc.Name, false)
+            getFileVelocityMetrics(this, filename, false)
           }
         }
 
@@ -834,7 +823,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     } catch {
       case e: Exception => {
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
-        getFileVelocityMetrics(this, fc.Name, false)
+        getFileVelocityMetrics(this, filename, false)
         throw FatalAdapterException("Unable to send message", e)
       }
     }
