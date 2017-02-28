@@ -102,7 +102,7 @@ case class JZKInfo(ZooKeeperNodeBasePath: String, ZooKeeperConnectString: String
 
 case class PythonInfo(PYTHON_PATH: String, SERVER_BASE_PORT : String, SERVER_PORT_LIMIT : String, SERVER_HOST : String, PYTHON_LOG_CONFIG_PATH : String, PYTHON_BIN_DIR : String, PYTHON_LOG_PATH : String)
 
-case class JEnvCtxtJsonStr(classname: String, jarname: String, dependencyjars: Option[List[String]])
+case class JEnvCtxtJsonStr(classname: String, optjarname: Option[String], dependencyjars: Option[List[String]])
 
 case class MetadataApiArg(ObjectType: String, NameSpace: String, Name: String, Version: String, FormatType: String)
 

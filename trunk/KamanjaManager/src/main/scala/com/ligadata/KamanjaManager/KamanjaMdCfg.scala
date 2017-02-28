@@ -131,7 +131,7 @@ object KamanjaMdCfg {
     implicit val jsonFormats: Formats = DefaultFormats
     val evnCtxtJson = parse(envCtxtStr).extract[JEnvCtxtJsonStr]
 
-    val jarName = evnCtxtJson.jarname.replace("\"", "").trim
+    val jarName = if (evnCtxtJson.optjarname != None) evnCtxtJson.optjarname.get.replace("\"", "").trim else null
     val dependencyJars = if (evnCtxtJson.dependencyjars == None || evnCtxtJson.dependencyjars == null) null else evnCtxtJson.dependencyjars.get.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     var allJars: collection.immutable.Set[String] = null
 
@@ -200,7 +200,7 @@ object KamanjaMdCfg {
 
     //BUGBUG:: Not yet validating required fields
     val className = evnCtxtJson.classname.replace("\"", "").trim
-    val jarName = evnCtxtJson.jarname.replace("\"", "").trim
+    val jarName = if (evnCtxtJson.optjarname != None) evnCtxtJson.optjarname.get.replace("\"", "").trim else null
     val dependencyJars = if (evnCtxtJson.dependencyjars == None || evnCtxtJson.dependencyjars == null) null else evnCtxtJson.dependencyjars.get.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     var allJars: collection.immutable.Set[String] = null
 

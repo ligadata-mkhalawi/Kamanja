@@ -50,10 +50,7 @@
 	},
       "EnvironmentContext": {
         "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
-        "jarname": "KamanjaInternalDeps_2.10-1.6.2.jar",
         "dependencyjars": [
-          "ExtDependencyLibs_2.10-1.6.2.jar",
-          "ExtDependencyLibs2_2.10-1.6.2.jar"
         ]
       },
       "Cache": {
@@ -78,7 +75,7 @@
             "RestAPI",
             "ProcessingEngine"
           ],
-          "Classpath": ".:{InstallDirectory}/lib/system/ExtDependencyLibs_2.10-1.6.2.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.10-1.6.2.jar:{InstallDirectory}/lib/system/ExtDependencyLibs2_2.10-1.6.2.jar"
+          "Classpath": "."
         }
       ],
       "Adapters": [
@@ -101,10 +98,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -155,10 +149,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -172,10 +163,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -202,10 +190,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -232,10 +217,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -262,10 +244,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -279,10 +258,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -296,10 +272,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -326,10 +299,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -343,10 +313,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -360,10 +327,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
           "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.2.jar",
-            "ExtDependencyLibs_2.10-1.6.2.jar",
-            "ExtDependencyLibs2_2.10-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -377,10 +341,7 @@
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
           "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.11-1.6.2.jar",
-            "ExtDependencyLibs_2.11-1.6.2.jar",
-            "ExtDependencyLibs2_2.11-1.6.2.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
