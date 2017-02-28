@@ -809,12 +809,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             }
             getFileVelocityMetrics(this, filename, true)
           } else {
-            /*
+            
             /**VelocityMetrics****/
             if (record != null) {
               getOAVelocityMetrics(this, record, false)
             }
-*/
+
             getFileVelocityMetrics(this, filename, false)
           }
         }
