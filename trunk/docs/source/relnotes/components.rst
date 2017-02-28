@@ -37,8 +37,8 @@ that are supported:
      - 1.8
      - Earlier versions of Kamanja 1.6.2 worked with JDK 1.7
    * - Scala
-     - v2.11.7,
-       v2.10.
+     - v2.11_7,
+       v2.10_4.
      - v2.11 is recommended unless you have compelling reasons
        to use Scala v2.10.
        Different versions of the Kamanja installation package
@@ -50,8 +50,8 @@ that are supported:
      - 0.13.7
      - Use the latest versions of sbt plugins
    * - Kafka
-     - 2.11_0.9
-     -
+     - 2.11_0.10
+     - 2.11_0.8 and 2.11_0.9 should work in most cases
    * - Zookeeper
      - 3.4.6+
      -

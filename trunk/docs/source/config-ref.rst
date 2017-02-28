@@ -32,7 +32,7 @@ Configuration File Reference Pages
    * - :ref:`metadataapiconfig-config-ref`
      - 
    * - :ref:`migrateconfig-template-config-ref`
-     -
+     - Generated file used to upgrade from an earlier release
    * - :ref:`modelcfg-config-ref`
      - Control compilation of a Java or Scala model
    * - :ref:`tenant-def-config-ref`

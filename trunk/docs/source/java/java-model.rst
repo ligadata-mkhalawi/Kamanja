@@ -151,15 +151,14 @@ To get a JavaRDD, call the following method in the TransactionMsgFactory.java.
 Passing Explicit Functions to RDD Methods
 -----------------------------------------
 
-This is not currently supported in Java 7
-(will be available in Java 8 once it is certified for the product).
-So, a number of interfaces have been provided
-that can be implemented by an inner Java class (contained within the model),
-and then an instantiated object of that class is passed to the RDD method.
+Interfaces are provided
+that can be implemented by an inner Java class (contained within the model);
+an instantiated object of that class
+is then passed to the RDD method.
 
-The interfaces that are provided are listed here
-and the developer must choose the appropriate interface to implement
-based on the RDD method that he/she wishes to use.
+The interfaces that are provided are listed here;
+choose the appropriate interface to implement
+based on the RDD method upi want to use.
 
 All the interfaces are defined in the
 com.ligadata.KamanjaBase.api.java.function package:

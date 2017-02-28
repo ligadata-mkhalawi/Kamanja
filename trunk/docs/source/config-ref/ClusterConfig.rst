@@ -38,7 +38,7 @@ File structure
            "StoreType": "h2db",
            "connectionMode": "embedded",
            "SchemaName": "kamanja",
-           "Location": "/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/storage/syscatalog",
+           "Location": "/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/storage/syscatalog",
            "portnumber": "9100",
            "user": "test",
            "password": "test"
@@ -53,10 +53,10 @@ File structure
         },
         "EnvironmentContext": {
            "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
-           "jarname": "KamanjaInternalDeps_2.11-1.5.3.jar",
+           "jarname": "KamanjaInternalDeps_2.11-1.6.2.jar",
            "dependencyjars": [
-             "ExtDependencyLibs_2.11-1.5.3.jar",
-             "ExtDependencyLibs2_2.11-1.5.3.jar"
+             "ExtDependencyLibs_2.11-1.6.2.jar",
+             "ExtDependencyLibs2_2.11-1.6.2.jar"
         ]
         },
         "Cache": {
@@ -75,8 +75,8 @@ File structure
            "NodePort": 6541,
            "NodeIpAddr": "localhost",
            "JarPaths": [
-             "/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/lib/system",
-             "/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/lib/application"
+             "/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/lib/system",
+             "/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/lib/application"
            ],
            "Scala_home": "/usr",
            "Java_home": "/opt/jdk1.8.0_91",
@@ -84,13 +84,18 @@ File structure
              "RestAPI",
              "ProcessingEngine"
            ],
-           "Classpath": ".:/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar"
+           "Classpath": ".:/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/
+                     lib/system/ExtDependencyLibs_2.11-1.6.2.jar
+               :/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/
+                     lib/system/KamanjaInternalDeps_2.11-1.6.2.jar
+               :/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/
+                     lib/system/ExtDependencyLibs2_2.11-1.6.2.jar"
          }
        ],
         "Adapters": [
-            ... see :ref:`adapter-def-config-ref`
-        ],
         ... {some config}
+            ... 
+        ],
       }
     ],
         "VelocityStatsInfo": {
@@ -126,6 +131,11 @@ Parameters
   - **portnumber** - port used to access the database.
   - **user** - user ID for access to this cluster
   - **password** - password used to access this cluster
+
+Tenants section
+~~~~~~~~~~~~~~~
+
+See :ref:`tenant-def-config-ref`
 
 ZooKeeper parameters
 ~~~~~~~~~~~~~~~~~~~~
@@ -194,14 +204,25 @@ giving the following error message:
   When a Kamanja node starts up or is notified of a change in metadata,
   any JARs that are currently missing
   are downloaded into one of these two folders (usually the first one listed).
-- **Scala_home** - home directory of Scala
-- **Java_home** - home directory of Java
+- **Scala_home** - home directory of Scala;
+  should be set to $SCALA_HOME
+  or the full path of the Scala installation directory
+  such as /opt/apps/scala-2.11.7.
+- **Java_home** - home directory of Java;
+  should be set to $JDK_HOME
+  or the full path of the JDK installation directory
+  such as /opt/apps/jdk1.8.0_05.
 - **Roles** - Not currently used
 
   - **RESTAPI** -
   - **ProcessingEngine** -
 
 - **Classpath** - default class path used by this node.
+
+Adapters section
+~~~~~~~~~~~~~~~~
+
+See :ref:`adapter-def-config-ref`.
 
 .. _velmetr-clustconfig:
 
@@ -288,10 +309,10 @@ to install your multi-node Kamanja cluster.
         },
         "EnvironmentContext": {
           "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
-          "jarname": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "jarname": "KamanjaInternalDeps_2.11-1.6.2.jar",
           "dependencyjars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.2.jar",
+            "ExtDependencyLibs2_2.11-1.6.2.jar"
         ]
       },
         "Cache": {
@@ -307,8 +328,8 @@ to install your multi-node Kamanja cluster.
             "NodePort": 6541,
             "NodeIpAddr": "ip.of.node.1",
             "JarPaths": [
-              "/root/binary/Kamanja-1.5.3_2.11/lib/system",
-              "/root/binary/Kamanja-1.5.3_2.11/lib/application"
+              "/root/binary/Kamanja-1.6.2_2.11/lib/system",
+              "/root/binary/Kamanja-1.6.2_2.11/lib/application"
             ],
             "Scala_home": "/usr/bin",
             "Java_home": "/usr/bin",
@@ -316,9 +337,9 @@ to install your multi-node Kamanja cluster.
               "RestAPI",
               "ProcessingEngine"
             ],
-            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:
-                 $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:
-                 $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar"
+            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.2.jar:
+                 $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.2.jar:
+                 $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.2.jar"
           },
    {
             "NodeId": "2",
@@ -334,9 +355,9 @@ to install your multi-node Kamanja cluster.
               "RestAPI",
               "ProcessingEngine"
             ],
-            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:
-                $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:
-                $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar"
+            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.2.jar:
+                $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.2.jar:
+                $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.2.jar"
           },
    {
             "NodeId": "3",
@@ -352,9 +373,9 @@ to install your multi-node Kamanja cluster.
               "RestAPI",
               "ProcessingEngine"
             ],
-            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:
-               $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:
-               $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar"
+            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.2.jar:
+               $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.2.jar:
+               $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.2.jar"
           },
    {
             "NodeId": "4",
@@ -370,9 +391,9 @@ to install your multi-node Kamanja cluster.
               "RestAPI",
               "ProcessingEngine"
             ],
-            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:
-               $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:
-               $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar"
+            "Classpath": ".:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.2.jar:
+               $KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.2.jar:
+               $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.2.jar"
           }
 
 
@@ -392,11 +413,11 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Input",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -408,11 +429,11 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Input",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -424,11 +445,11 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Input",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -440,11 +461,11 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Input",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": "ip.of.kafka.server:6667",
@@ -456,11 +477,11 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Input",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -472,11 +493,11 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Output",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -488,7 +509,7 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Output",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar"
             ],
@@ -502,7 +523,7 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Output",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar"
             ],
@@ -516,7 +537,7 @@ to install your multi-node Kamanja cluster.
             "TypeString": "Output",
             "TenantId": "System",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
-            "JarName": "kamanjakafkaadapters_0_10_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.10.0.0.jar"
             ],
