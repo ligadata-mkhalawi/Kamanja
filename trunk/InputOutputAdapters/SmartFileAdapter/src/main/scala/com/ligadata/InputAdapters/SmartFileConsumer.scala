@@ -1275,15 +1275,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val assignedFilesList = ArrayBuffer[String]()
       //<node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
       initialFilesToProcess.foreach(fileInfo => {
-
         if (assignedFilesList.contains(fileInfo._3)) {
           if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - Initial files : file ({}) was already assigned", fileInfo._3)
         }
-
         else {
-
           var requestToAssign: String = ""
-
           requestQueue.find(requestStr => {
             val reqTokens = requestStr.split(":")
             val participantPathTokens = reqTokens(0).split("/")
@@ -1328,7 +1324,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
                 assignedFilesList.append(fileToProcessFullPath)
 
-                val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
+                val newProcessingItem = createProcessingItemJsonFromGroup(nodeId.toInt, partitionId.toInt, List[String](fileToProcessFullPath))
                 addToProcessingQueue(newProcessingItem) //add to processing queue
 
                 val offset = fileInfo._4
