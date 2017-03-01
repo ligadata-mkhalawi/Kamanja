@@ -1,0 +1,95 @@
+@import url("theme.css");
+@font-face {
+    font-family: 'Open Sans';
+    src: url("../fonts/OpenSans-Regular.ttf");
+}
+h1, h2, .rst-content .toctree-wrapper p.caption, h3, h4, legend,a, a.icon {
+    font-family: "Open Sans", Arial, "sans-serif";
+}
+table.ld-wrap-fixed-table{
+    width:100%;
+    table-layout: fixed;
+}
+table.ld-wrap-fixed-table td, table.ld-wrap-fixed-table th{
+    white-space: -o-pre-wrap;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: pre-wrap;
+}
+h1{
+    color:#00d49c;
+}
+h5
+{
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: .7em;
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: normal;
+    color: #666666 !important;
+}
+h6
+{
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: .6em;
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: normal;
+    color: #666666 !important;
+}
+
+p
+{
+    font-family: Glegoo, Arial, sans-serif;
+}
+
+a:link, a:visited {
+    color: #1e73be;
+    text-decoration: underline;
+}
+
+a:link:active, a:visited:active {
+    color: #1e73be;
+}
+
+.wy-side-nav-search{
+    background-color: #00b1c0;
+}
+
+.caption-text{
+    color: #f0f0f0;
+    text-transform: none;
+    font-size: 18px;
+}
+.wy-menu a.reference.internal {
+    color: #f0f0f0;
+    text-decoration: none;
+}
+.wy-menu.wy-menu-vertical ul {
+    margin-bottom: 15px;
+}
+.wy-menu-vertical li.current>a span.toctree-expand{
+    display: none;
+}
+.wy-menu-vertical a {
+    padding: 0.4045em 1.45em;
+}
+.wy-menu ul.current .toctree-l1.current .reference.internal{
+    color:black;
+    padding: 0.4045em 1.45em;
+}
+.wy-menu ul.current .toctree-l1.current .toctree-l2 .reference.internal{
+    color: #666666;
+}
+.wy-menu ul.current .toctree-l1.current .toctree-l2.current .reference.internal{
+    color: black;
+}
+.wy-menu ul.current .toctree-l1.current .toctree-l2.current .toctree-l3 .reference.internal{
+    color: #666666;
+    padding: 0.4045em 2.5em;
+}

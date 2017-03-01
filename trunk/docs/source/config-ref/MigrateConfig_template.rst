@@ -1,0 +1,66 @@
+
+.. _migrateconfig-template-config-ref:
+
+MigrateConfig_template.json
+===========================
+
+This file has several configurable values
+as well as a number of values that are automatically filled
+with information gleaned from other files accessed by the
+:ref:`clusterinstallerdriver-command-ref` command.
+
+File structure
+--------------
+
+::
+
+  {
+    "clusterConfigFile": "{ClusterConfigFile}",
+    "apiConfigFile": "{ApiConfigFile}",
+    "unhandledMetadataDumpDir": "{UnhandledMetadataDumpDir}",
+    "migratingFrom": {
+      "version": "{KamanjaFromVersion}",
+      "scalaVersion": "{ScalaFromVersion}",
+      "versionInstallPath": "{OldPackageInstallPath}",
+      "implemtedClass": "com.ligadata.Migrate.MigrateFrom_V_{KamanjaFromVersionWithUnderscore}",
+      "jars": [
+        "{NewPackageInstallPath}/lib/system/commons-pool2-2.4.2.jar",
+        "{NewPackageInstallPath}/lib/system/migratefrom_v_{KamanjaFromVersionWithUnderscore}_{ScalaFromVersion}-1.6.2.jar",
+        "{OldPackageInstallPath}/bin/KamanjaManager-1.0"
+      ]
+    },
+    "migratingTo": {
+      "version": "1.6.2",
+      "scalaVersion": "{ScalaToVersion}",
+      "versionInstallPath": "{NewPackageInstallPath}",
+      "implemtedClass": "com.ligadata.Migrate.MigrateTo_V_1_6",
+      "jars": [
+        "{NewPackageInstallPath}/lib/system/migratebase-1.6.2.jar",
+        "{NewPackageInstallPath}/lib/system/migrateto_v_1_6_{ScalaToVersion}-1.6.2.jar",
+        "{NewPackageInstallPath}/lib/system/KamanjaInternalDeps_{ScalaToVersion}-1.6.2.jar",
+        "{NewPackageInstallPath}/lib/system/ExtDependencyLibs_{ScalaToVersion}-1.6.2.jar",
+        "{NewPackageInstallPath}/lib/system/ExtDependencyLibs2_{ScalaToVersion}-1.6.2.jar"
+      ],
+      "tenantId" : "{TenantId}",
+      "adapterMessageBindings" : "{AdapterMessageBindings}"
+    },
+    "dataSaveThreshold": 2048,
+    "parallelDegree": 16,
+    "mergeContainersAndMessages": false,
+    "excludeMetadata": [
+      "JarDef",
+      "OutputMsgDef"
+    ],
+    "excludeData": false
+  }
+  
+
+
+Parameters
+----------
+
+Usage
+-----
+
+See also
+--------

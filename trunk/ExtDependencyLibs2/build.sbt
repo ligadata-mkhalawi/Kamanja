@@ -197,4 +197,3 @@ libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.12"
 
 // org.apache.commons // commons-csv
 libraryDependencies += "org.apache.commons" % "commons-csv" % "1.4"
-
