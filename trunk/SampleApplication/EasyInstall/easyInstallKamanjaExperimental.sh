@@ -237,7 +237,7 @@ cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.10/kamanjakafkaadapters*
 
 cp Utils/ExtractData/target/scala-2.10/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.10/jdbcdatacollector* $systemlib
-#cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
+cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.10/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.10/cleanutil* $systemlib
 cp Utils/ClusterInstaller/ClusterInstallerDriver/target/ClusterInstallerDriver* $kamanjainstallbin
@@ -649,7 +649,7 @@ cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.11/kamanjakafkaadapters*
 
 cp Utils/ExtractData/target/scala-2.11/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.11/jdbcdatacollector* $systemlib
-#cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
+cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.11/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.11/cleanutil* $systemlib
 cp Utils/ClusterInstaller/ClusterInstallerDriver/target/ClusterInstallerDriver* $kamanjainstallbin
