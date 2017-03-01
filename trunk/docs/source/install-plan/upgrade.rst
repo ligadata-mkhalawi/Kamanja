@@ -5,69 +5,70 @@ Upgrade to 1.6.2
 ================
 
 You can upgrade to Release 1.6.2 from an earlier Kamanja release,
+The steps are:
+
+- Verify that you have the correct versions of
+  the Kamanja prerequises packages installed on your system;
+  see :ref:`pkgs-prereqs-install`.
+- Verify that all other software on the system
+  is a version that is compatible with Kamanja 1.6.2;
+  check the list at :ref:`component-versions`.
+- Edit your *.bashrc* file (Linux) or *.bash_profile* (Mac)
+  file to ensure that you have the correct path defined
+  for all software components;
+  see :ref:`env-variables-install`.
+- Download and unzip the 1.6.2 package to $KAMANJA_INSTALL;
+  follow the instructions in :ref:`kamanja-download`
+- Edit the :ref:`clusterconfig-config-ref` file
+  with information about your environment.
+  Much of this information can be gleaned from the
+  existing *ClusterConfig.json* file.
+  See :ref:`upgrade-cluster-config`.
+- Edit the :ref:`clustercfgmetadataapiconfig-config-ref` file
+  with information about your installation
+  and the metadata objects used by your application.
+  see :ref:`upgrade-metadata-config`
+- Run the :ref:`clusterinstallerdriver-command-ref` command
+  to upgrade the system to the new Kamanja release.
+  See :ref:`run-clusterinstaller`.
+- Make sure that the $KAMANJA_HOME environment variable
+  points to the newly installed cluster.
+- Stop the cluster.
+- Run the :ref:`clusterinstallerdriver-command-ref` command
+  with the **-update** flag; see :ref:`run-clusterinstaller`
+- Check and possibly modify your applications
+  for the new release;  see :ref:`check-apps-upgrade`.
+- Start the cluster,
+  following the instructions in :ref:`start-node-install-guide`.
+- To rollback the cluster to the previous release,
+  redefine $KAMANJA_HOME to point to the old release directory structure.
 
 
-Follow the instructions in :ref:`kamanja-download`
-to download and unzip the 1.6.2 package to $KAMANJA_INSTALL.
 
 
-- two options:
+.. _upgrade-cluster-config:
 
-  - copy existing MetadataAPI and ClusterConfig to /tmp and
-    make mods in old docs
-  - modify these files in /tmp and copy info about application
-    objects in old files into the new files
+Edit the ClusterConfig.json file
+--------------------------------
 
-- may need to change jars from versions with 1.5.3 in the name.
-  All jars are in /lib/system -- look there for the jar file
-  to use -- probably just change "1.5.3.jar" string to "1.6.2.jar"
+Update the :ref:`clusterconfig-config-ref` cluster configuration file
+to define your environment;
+see the reference pages for details about the contents of this file.
+Specifically, set the following:
 
-Step 4: Update ClusterCfgMetadataAPIConfig.properties and ClusterConfig.json
+- Define each node in the cluster,
+  populating the **NodeId**, **NodePort**, and **NodeIpAddr** parameters
+  for each node.
+- Define all :ref:`tenants<tenancy-term>` to be used.
+- Set the **Scala_home** and **Java_home** parameters;
+  be sure that the values match what is assigned
+  to the **SCALA_HOME** and **JAVA_HOME** parameters
+  in the *ClusterCfgMetadataAPIConfig.properties* file.
 
-Run the :ref:`clusterinstallerdriver-command-ref` command:
-Go to the directory where the 1.6.2 tar file was extracted:
-
-::
-
-  cd $KAMANJA_INSTALL/Kamanja-1.6.2_2.11/ClusterInstall
-
-Update the ClusterCfgMetadataAPIConfig.properties properties file
-according to the following matrix.
-Update the ClusterConfig.json cluster configuration file
-according to the following matrix.
-The first "matrix" link includes the following items:
-
-- {ScalaInstallDirectory} is replaced with the Scala installation directory,
-  such as /opt/apps/scala-2.11.7.
-
-- {JavaInstallDirectory} is replaced with the JDK installation directory,
-  such as /opt/apps/jdk1.8.0_05 (depending on the Java version used).
-
-- {InstallDirectory} is replaced with the current Kamanja home,
-  such as /opt/apps/kamanja12 (assuming the current version is 12).
-  Note: When the upgrade completes,
-  the current Kamanja home is saved with a different name.
-  But the same path contains the 1.6.0 binaries.
-
-- {HostName} is updated with one of the Kamanja cluster node IP addresses
-  if using the Kamanja metadata API REST service.
-  For example, the SERVICE_HOST={HostName} line is replaced
-  with SERVICE_HOST=180.34.23.1 where 180.34.23.1
-  is the IP address of the cluster node
-  where running the Kamanja metadata API service.
-
-The second "matrix" link includes the following items:
-
-- {ScalaInstallDirectory} is replaced with the Scala installation directory,
-  such as /opt/apps/scala-2.11.7.
-
-- {JavaInstallDirectory} is replaced with the JDK installation directory, such as /opt/apps/jdk1.8.0_05 (depending on the Java version used).
-
-- {InstallDirectory} is replaced with the current Kamanja home, such as /opt/apps/kamanja12 (assuming the current version is 12).Note: When the upgrade completes, the current Kamanja home is saved with a different name, but the same path contains the 1.5.0 binaries.
-
-- Replace the SystemCatalog section in ClusterConfig.json
+- Replace the **SystemCatalog** section
   with the datastore information for the current Kamanja deployment,
-  if needed.For example, if using sqlserver as the data source, replace:
+  if needed.
+  For example, if using sqlserver as the data source, replace:
 
 ::
 
@@ -106,7 +107,7 @@ with
     },
 
 
-- Replace the PrimaryDataStore section in ClusterConfig.json
+- Replace the **PrimaryDataStore** section in the *ClusterConfig.json* file
   with the datastore information for the current Kamanja deployment, if needed.
   For example, if using sqlserver as the data source, replace:
 
@@ -146,37 +147,71 @@ with
      "autoCreateTables": "YES"
     },
 
+.. _upgrade-metadata-config:
 
-Step 5: Stop the cluster
+Edit the ClusterCfgMetadataAPIConfig.properties file
+----------------------------------------------------
 
-Step 6: Run ClusterInstallerDriver-1.6.0
+Update the :ref:`clustercfgmetadataapiconfig-config-ref` file
+to values appropriate for your environment.
+Specifically, set the following:
 
-Run ClusterInstallerDriver-1.6.0 using the adapters binding file,
-ClusterCfgMetadataAPIConfig.properties,
-and ClusterConfig.json with the 1.6.0 release package.
+- Set the **SCALA_HOME**, **JAVA_HOME**, **JAR_TARGET_DIR**
+  parameters.
+  Be sure that they contain the same values as the
+  comparable parameters in the *ClusterConfig.json* file.
+- Set the **ROOT_DIR** parameter
 
-A sample shell script:
-
-::
-
-  export KAMANJA_ROOT=/media/home2/installKamanja162
-  export KAMANJA_INSTALL_HOME=$KAMANJA_ROOT/Kamanja-1.6.2_2.11/ClusterInstall
-
-  java -Dlog4j.configurationFile=file:$KAMANJA_INSTALL_HOME/log4j2.xml -jar $KAMANJA_INSTALL_HOME/ClusterInstallerDriver-1.5.0 --clusterId “kamanjacluster150” --apiConfig “$KAMANJA_INSTALL_HOME/ClusterCfgMetadataAPIConfig.properties” --clusterConfig “$KAMANJA_INSTALL_HOME/ClusterConfig.json” --tarballPath “$KAMANJA_ROOT/Kamanja-1.6.0_2.11.tar.gz” --fromKamanja “1.3” --fromScala “2.10” --toScala “2.11” --upgrade --externalJarsDir /media/home2/external_libs --tenantId kamanja --adapterMessageBindings /tmp/AdapterMessageBindings.json
-
-where /tmp/AdapterMessageBindings.json is the file generated in step two.
-
+- Set the **SERVICE_HOST** and **SERVICE_PORT** parameters
+  with the IP address and port number used for the
+  Kamanja metadata API REST service,
+  if you are using it..
+  is updated with one of the Kamanja cluster node IP addresses
+  For example, the SERVICE_HOST={HostName} line is replaced
+  with SERVICE_HOST=180.34.23.1 where 180.34.23.1
+  is the IP address of the cluster node
+  where running the Kamanja metadata API service.
 
 
-For a description of ClusterInstallerDriver-1.6.0 parameters,
-see ClusterInstallerDriver-1.6.0 parameters.
+.. _run-clusterinstaller:
 
-Step 7: Make sure that $KAMANJA_HOME points to the newly installed cluster
+Run the ClusterInstallerDriver.sh command
+-----------------------------------------
 
-Step 8: Add new messages and/or JTMs as appropriate
+Run the :ref:`clusterinstallerdriver-command-ref` command
+with the **-update** flag.
+See the reference page for the specific syntax.
 
-If the input adapter definition contains an AssociatedMessage, it is called tagged. So if the input adapters contain tagged messages, add new messages and/or JTMs as appropriate. Refer to the JTMs for more information.
+**ClusterInstallerDriver.sh** uses the information
+in the configuration files you edited
+plus information specified on the command line
+to poulate the :ref:`migrateconfig-template-config-ref` file.
+It then creates a new directory tree
+under the same parent directory used for the old release
+and installs the new release in that new directory structure.
 
-Step 9: Start the cluster
+.. _check-apps-upgrade:
+
+Check applications
+------------------
+
+**ClusterInstallerDriver** upgrades Kamanja software
+but you may need to make some additional changes
+to your application code before restarting the cluster.
+Some examples of things to check:
+
+- Verify that all jars associated with your application
+  include the correct strings for the Kamanja release
+  and Scala version.
+  All jars are in /lib/system -- look there for the jar file to use;
+  in most cases, you just need to change,
+  for example, the "1.5.3.jar" string to "1.6.2.jar"
+- Add new messages and/or JTMs as appropriate.
+  If the input adapter definition contains an AssociatedMessage,
+  it is called tagged.
+  So if the input :ref:`adapters<adapter-term>` contain tagged messages,
+  add new messages and/or JTMs as appropriate.
+  Refer to the :ref:`jtm-guide-top` for more information.
+
 
 

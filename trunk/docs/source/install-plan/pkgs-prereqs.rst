@@ -73,10 +73,10 @@ Note: QuorumPeerMain is ZooKeeper.
 Install Scala
 -------------
 
-Download and install :ref:`Scala<scala-term>` 2.11 from the
+Download and install :ref:`Scala<scala-term>` 2.11_7 from the
 `Scala 2.11 download site <http://www.scala-lang.org/download/2.11.7.html>`_.
 
-Kamanja can instead use Scala 2.10, which can be downloaded from
+Kamanja can instead use Scala 2.10_4, which can be downloaded from
 `the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`_.
 
 .. _zookeeper-install:
@@ -234,7 +234,7 @@ For example:
   export ZOOKEEPER_HOME=/usr/local/zookeeper-3.4.6
   export PATH=$ZOOKEEPER_HOME/bin:$PATH
 
-  export KAFKA_HOME=/usr/local/kafka_2.11-0.9.0.0
+  export KAFKA_HOME=/usr/local/kafka_2.11-0.10.0.0
   export PATH=$KAFKA_HOME/bin:$PATH
 
   export HBASE_HOME=/usr/local/hbase

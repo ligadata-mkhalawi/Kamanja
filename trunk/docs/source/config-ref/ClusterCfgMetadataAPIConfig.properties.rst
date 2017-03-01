@@ -65,14 +65,25 @@ Parameters
   - **SchemaName** -
   - **Location** -
 
-- **ROOT_DIR** - This is the root directory
-  for the Kamanja installation directory;
-  when upgrading, this should match the name of the root directory
+- **ROOT_DIR** - This is the parent directory
+  for the Kamanja installation directory,
+  such as /opt/kamanja;
+  all Kamanja installations will be located in subdirectory trees.
+  When upgrading, this should match the name of the root directory
   used for the old release.
 - **GIT_ROOT** -
 - **JAR_TARGET_DIR** -
-- **SCALA_HOME** -
-- **JAVA_HOME** -
+- **SCALA_HOME** - replace with the $SCALA_HOME environment variable
+  or the full path of the Scala installation directory
+  such as /opt/apps/scala-2.11.7.
+  such as /opt/apps/jdk1.8.0_05.
+  Be sure that this value matches what is defined in
+  the **Java_home** parameter of the *ClusterConfig.json* file.
+- **JAVA_HOME** - replace with the $JDK_HOME environment variable
+  or the full pathname of the JDK installation directory
+  such as /opt/apps/jdk1.8.0_05.
+  Be sure that this value matches what is defined in
+  the **Java_home** parameter of the *ClusterConfig.json* file.
 - **MANIFEST_PATH** -
 - **TYPE_FILES_DIR** -
 - **FUNCTION_FILES_DIR** -
