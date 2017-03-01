@@ -20,83 +20,122 @@ Options and arguments
 ---------------------
 
 
-Configuration file
-------------------
+Configuration file properties
+-----------------------------
 
 ::
 
-  # Directory to watch (required parameter). This directory is monitored for new incoming files.
   dirToWatch=/tmp/watch
- 
-  # Directory where the processed files are moved after the utility is finished with them. If nothing is specified,
-  # then the file is renamed inside the dirToWatch directory by appending a d_COMPLETE to the
-  # file.
   moveToDir=/data/cops_processed
- 
-  # Path to the metadata configuration properties file. This is needed because the utility needs to access metadata
-  # storage to retrieve MessageDef for the message being processed. (required parameter)
   metadataConfigFile=/tmp/Kamanja/config/MetadataAPIConfig.properties
- 
-  # Full name of a message definition (namespace.name) of a message being processed. (required parameter).
   messageName=com.bofa.messages.inputmessage
- 
-  # Message format (required parameter). KV is the only format supported now.
   msgFormat=kv
- 
-  # Kafka broker to connect to (required parameter).
   kafkaBroker=localhost:9092
- 
-  # Topic name where the messages are to be inserted (required parameter).
   topic=TestIn_1
- 
-  # Character to be used to determine the end of a message.
   messageSeparator=10
- 
-  # Character that indicates where fields in the message are separated. Defaults to x01.
   fieldSeparator=,
- 
-  # Character that indicates where KV values in the message are separated. Defaults to x01.
   kvSeparator=-
- 
-  # Number of file consumers - number of concurrent files that can be processed. Defaults to 1.
   fileConsumers=1
- 
-  # The extension of the file to process. Defaults to gzip.
   readyMessageMask=gzip
- 
-  # Number of internal parallel threads within each file consumer - the internal threads used to parse/validate messages
-  # in the files. Defaults to 1.
   workerdegree=3
- 
-  # Size of a buffer to be used for internal storage. A file being processed is split up into chunks of this size.
-  # Defaults to 4MB.
   workerbuffersize=4
- 
-  # MB of heap storage to be used to perform file processing operations. Defaults to 512MB.
   maxAllowedMemory=500
- 
-  # Name of the Kafka queue where utility status messages are written. If not specified, no status messages are
-  # written.
   statusTopic=statusTest
- 
-  # Name of the Kafka queue where messages that unable to be parsed are written. If not specified, no error
-  # messages are written.
   errorTopic=messageErrors
- 
-  # If the utility detects that it is using too much memory, wait for this many milliseconds before retrying
-  # to acquire more memory. Defaults to 250ms.
   throttle_ms=1000
- 
-  # The utility reports when a call to an external component (such as Zookeeper, Kafka, NAS, etc) takes too long.
-  # If any call takes longer then this threshold, then a WARNING message is sent to the log. This value is in
-  # milliseconds and defaults to 5000ms (5 sec) (new in v1.5.2).
   delayWarningThreshold
- 
-  # The utility has a soft queue limit for actively processed files. If the number of files exceeds this value,
-  # no new files are read until the total number of files drops below this number. The number of files on the
-  # internal queue can be greater than this if a spike of input files exceeds the value and
-  # is processed in the same time interval. The default value is 300 (new in v1.5.2).
   fileQueueFullValue
+
+To implement Velocity Metrics,
+add the following properties to the configuration file:
+
+::
+
+  vm.rotationtimeinsecs=3000
+  vm.emittimeinsecs=5
+  vm.category=input
+  vm.componentname=fileconsumer
+  vm.kafka.topic=velocitymetrics
+  velocitymetricsinfo={"VelocityMetrics":[{"MetricsByFileName":
+     {"TimeIntervalInSecs":5}},{"MetricsByMsgType":{"ValidMsgTypes":
+     ["com.ligadata.kamanja.samples.messages.msg1"],"TimeIntervalInSecs":
+     5,"MetricsTime":{"MetricsTimeType":"LocalTime"}}},{"MetricsByMsgKeys":
+     {"ValidMsgTypes":["com.ligadata.kamanja.samples.messages.msg1"],"Keys":
+     ["id"],"TimeIntervalInSecs":5}},{"MetricsByMsgFixedString":
+     {"KeyString":["name"],"TimeIntervalInSecs":5}}]}
+  
+Properties
+----------
+
+- **dirToWatch** - Directory to watch (required parameter).
+  This directory is monitored for new incoming files.
+- **moveToDir** - Directory where the processed files are moved
+  after the utility is finished with them.
+  If nothing is specified, then the file is renamed
+  inside the *dirToWatch* directory by appending a d_COMPLETE to the file.
+- **metadataConfigFile** - Full path of the
+  :ref:`metadataapiconfig-config-ref` file.
+  This is required because the utility must access metadata storage
+  to retrieve MessageDef for the message being processed. (required parameter)
+- **messageName** - Full name of a message definition (namespace.name)
+  of a message being processed. (required parameter).
+- **msgFormat** - Message format (required parameter).
+  KV is the only format currently supported.
+- **kafkaBroker** - Kafka broker to connect to (required parameter).
+- **topic=TestIn_1** - Topic name where the messages are to be inserted
+  (required parameter).
+- **messageSeparator** - Character to be used to determine the end of a message.
+- **fieldSeparator** - Character that indicates where fields in the message
+  are separated. Defaults to x01.
+- **kvSeparator** - Character that indicates where KV values in the message
+  are separated. Defaults to x01.
+- **fileConsumers** - Number of file consumers,
+  which defines the number of concurrent files that can be processed.
+  Default value is 1.
+- **readyMessageMask** - The extension of the file to process.
+  Default value is gzip.
+- **workerdegree** - Number of internal parallel threads
+  within each file consumer.
+  The internal threads are used to parse and validate messages in the files.
+  Default value is 1.
+- **workerbuffersize** - Size of a buffer to be used for internal storage.
+  A file being processed is split up into chunks of this size.
+  Default value is 4MB.
+- **maxAllowedMemory** - Amount of heap storage, in MB
+  to be used to perform file processing operations. Default value is 512MB.
+- **statusTopic** - Name of the Kafka queue
+  where utility status messages are written.
+  If not specified, no status messages are written.
+- **errorTopic=messageErrors** - Name of the Kafka queue
+  where messages that cannot be parsed are written.
+  If not specified, no error messages are written.
+- **throttle_ms** - Time, in milliseconds,
+  to wait before retrying to acquire more memory
+  if the utility detects that it is using too much memory.
+  Default value is 250ms.
+- **delayWarningThreshold** - Time, in milliseconds,
+  to wait for a call to an eternal component
+  (such as Zookeeper, Kafka, NAS, etc)
+  before sending a WARNING message to the log.
+  Default value is 5000ms.
+- **fileQueueFullValue** - Soft queue limit for actively processed files.
+  If the number of files exceeds this value,
+  no new files are read until the total number of files drops below this number.  The number of files on the internal queue can be greater than this
+  if a spike of input files exceeds the value
+  and is processed in the same time interval.
+  The default value is 300.
+
+The Velocity Metrics properties are:
+
+- **vm.rotationtimeinsecs** -
+- **vm.emittimeinsecs** -
+- **vm.category** -
+- **vm.componentname** -
+- **vm.kafka.topic=velocitymetrics** -
+- **velocitymetricsinfo** -
+
+
+
 
 Usage
 -----
@@ -119,7 +158,7 @@ Files
 -----
 
 This tool is included in a separate stand-alone
-FileDataConsumer-X.X.X fat JAR located in the /bin directory.
+FileDataConsumer-X.X.X fat JAR located in the */bin* directory.
 
 See also
 --------

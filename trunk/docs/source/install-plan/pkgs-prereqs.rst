@@ -57,7 +57,7 @@ command in a separate window:
 **jps** is the Java Process Tool,
 a built-in Unix command to list Java processes running.
 
-Expected output:
+Sample output:
 
 ::
 
@@ -78,6 +78,12 @@ Download and install :ref:`Scala<scala-term>` 2.11_7 from the
 
 Kamanja can instead use Scala 2.10_4, which can be downloaded from
 `the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`_.
+
+Note that the Scala version must be specified
+when you issue the **ClusterInstallerDriver** command
+
+Note that the Scala version must be specified
+when you issue the **ClusterInstallerDriver** command.
 
 .. _zookeeper-install:
 
@@ -163,8 +169,8 @@ After Cassandra has downloaded, untar the file.
 
 .. _elastic-install:
 
-Download and install ElasticSearch
-----------------------------------
+Download and install ElasticSearch (optional)
+---------------------------------------------
 
 Install ElasticSearch 2.4.3 from the
 `Elastic download page

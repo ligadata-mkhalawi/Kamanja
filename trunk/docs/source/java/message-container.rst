@@ -4,7 +4,8 @@
 Generating Message/Container Sources and the Corresponding JARs
 ===============================================================
 
-The first thing to do is to create the messages and containers
+The first thing to do is to create the
+:ref:`messages<messages-term>` and :ref:`containers<container-term>`
 needed for model execution.
 Then, when the JSON messages are submitted to the metadata API,
 the API creates the JAR files.
@@ -18,7 +19,7 @@ This section has some JSON files that are examples of the kinds
 of messages and containers that need to be created.
 
 Look at the
-/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/container directory.
+*/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/container* directory.
 Notice the following files in this directory:
 
 ::
@@ -93,13 +94,16 @@ Compiling Message/Container Definitions into JARs
 Five message/container documents need to be compiled
 by adding them to the engine.
 The metadata API then generates the proper code/JAR files.
-This can be done via either through the Kamanja CLI (metadataAPI-1.0)
-or a REST service.
+This can be done using either
+the :ref:`kamanja-command-ref` command or a REST service.
 
 The Kafka topics have already been created.
 The next step is to add the containers.
 
-For example, run the kamanja add container command.
+For example, run the **kamanja add container** command,
+specifying the :ref:`metadataapiconfig-config-ref` file to use,
+the JSON file that defines your :ref:`container-def-config-ref`,
+and the :ref:`tenant<tenancy-term>` ID:
 
 Type:
 
@@ -110,11 +114,6 @@ Type:
     $KAMANJA_HOME/input/SampleApplications/metadata/container/CustAlertHistory_Finance.json
     TENANTID tenant1
 
-Note: Kamanja has basic multi-tenancy (new in v1.4).
-Therefore, every time a container, message, or model is added or updated,
-specify the tenant ID.
-Multi-tenancy allows deployment of more than one use case to a cluster.
-Multiple use cases can exist on the same cluster.
 
 Expected output:
 
@@ -318,7 +317,7 @@ of the TransactionMsg.json message here:
 Go to /Users/userid/Downloads/installKamanja/lib/application
 (this is the JAR_TARGET_DIR directory) and see the two generated JAR files.
 
-Run ls on the JAR_TARGET_DIR directory.
+Run the **ls** command on the *JAR_TARGET_DIR* directory.
 The expected output is:
 
 ::

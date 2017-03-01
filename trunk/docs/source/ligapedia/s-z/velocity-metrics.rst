@@ -15,6 +15,7 @@ for any or all of the following:
 - file/message
 - message type
 - messages by key value
+- key string
 
 To implement Velocity Metrics:
 
@@ -30,6 +31,9 @@ To implement Velocity Metrics:
   and associated :ref:`containers<container-term>`
   into the :ref:`adapter-binding-config-ref` file.
   See :ref:`kamanjavelocitymetrics-msg-ref`.
+
+- Add the Velocity Metrics properties to the configuration file
+  used for the :ref:`filedataconsumer-command-ref` command.
 
 After you run your application with Velocity Metrics implemented,
 the results can be viewed using the

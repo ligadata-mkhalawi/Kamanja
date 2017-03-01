@@ -12,6 +12,8 @@ Configuration File Reference Pages
 
    * - File
      - Description
+   * - :ref:`adapter-def-config-ref`
+     - Define adapters for the cluster
    * - :ref:`adapter-binding-config-ref`
      - Bind a message to an adapter and a serializer
    * - :ref:`clusterconfig-config-ref`

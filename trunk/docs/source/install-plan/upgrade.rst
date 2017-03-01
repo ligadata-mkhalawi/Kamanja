@@ -19,29 +19,32 @@ The steps are:
   see :ref:`env-variables-install`.
 - Download and unzip the 1.6.2 package to $KAMANJA_INSTALL;
   follow the instructions in :ref:`kamanja-download`
-- Edit the :ref:`clusterconfig-config-ref` file
-  with information about your environment.
-  Much of this information can be gleaned from the
-  existing *ClusterConfig.json* file.
+- Copy the :ref:`clusterconfig-config-ref` file
+  from your current Kamanja installation
+  to the *$KAMANJA_INSTALL/config* directory
+  and edit it to be appropriate for the new release
+  by referencing the *ClusterConfig.json* file that is located there..
   See :ref:`upgrade-cluster-config`.
-- Edit the :ref:`clustercfgmetadataapiconfig-config-ref` file
-  with information about your installation
-  and the metadata objects used by your application.
+- Copy the :ref:`metadataapiconfig-config-ref` file
+  from your current Kamanja installation
+  to the *$KAMANJA_INSTALL/config* directory
+  and edit it to be appropriate for the new release
+  by referencing the :ref:`clustercfgmetadataapiconfig-config-ref` file
+  that is in the same directory;
   see :ref:`upgrade-metadata-config`
-- Run the :ref:`clusterinstallerdriver-command-ref` command
-  to upgrade the system to the new Kamanja release.
-  See :ref:`run-clusterinstaller`.
-- Make sure that the $KAMANJA_HOME environment variable
-  points to the newly installed cluster.
 - Stop the cluster.
 - Run the :ref:`clusterinstallerdriver-command-ref` command
-  with the **-update** flag; see :ref:`run-clusterinstaller`
+  with the **-update** flag,
+  specifying the edited configuration files you created above;
+  see :ref:`run-clusterinstaller`
+- Make sure that the $KAMANJA_HOME environment variable
+  points to the newly installed cluster.
 - Check and possibly modify your applications
   for the new release;  see :ref:`check-apps-upgrade`.
 - Start the cluster,
   following the instructions in :ref:`start-node-install-guide`.
-- To rollback the cluster to the previous release,
-  redefine $KAMANJA_HOME to point to the old release directory structure.
+- If you need to rollback the cluster to the previous release,
+  follow the instructions in :ref:`rollback-guide`.
 
 
 
@@ -51,8 +54,11 @@ The steps are:
 Edit the ClusterConfig.json file
 --------------------------------
 
+<KamanjaInstallDir>/ClusterInstall/ClusterConfig*.json
+
 Update the :ref:`clusterconfig-config-ref` cluster configuration file
-to define your environment;
+in your */tmp* directory
+to define the environment to be created;
 see the reference pages for details about the contents of this file.
 Specifically, set the following:
 
@@ -213,5 +219,9 @@ Some examples of things to check:
   add new messages and/or JTMs as appropriate.
   Refer to the :ref:`jtm-guide-top` for more information.
 
+.. _rollback-guide:
+
+Rollback to previous version
+----------------------------
 
 

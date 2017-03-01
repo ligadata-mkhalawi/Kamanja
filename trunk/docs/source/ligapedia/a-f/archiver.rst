@@ -63,7 +63,7 @@ that were archived into same destination archive file
 See also:
 
 - :ref:`smart-input-config-ref` gives details about implementing
-  the archiver.
+  the archiver, including an example configuration.
 - :ref:`archiver-arch` gives details about how the archiver
   is implemented internally
 

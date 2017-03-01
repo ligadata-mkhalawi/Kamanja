@@ -29,3 +29,8 @@ For details about implementing multi-tenancy:
   :ref:`messages<messages-term>`, and :ref:`containers<container-term>`
   that are controlled by that adapter.
 
+- You must specify a TENANTID every time you add or update
+  a :ref:`container<container-term>`, :ref:`message<messages-term>`,
+  :ref:`model<model-term>` using either the
+  :ref:`kamanja-command-ref` command or a REST service.
+

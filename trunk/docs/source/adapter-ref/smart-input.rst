@@ -119,7 +119,7 @@ with the following parameters set as shown:
 
 ::
 
-  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
+  "ClassName": "com.ligadata.InputAdapters.SamrtFileInputAdapter$",
   "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
   
 
@@ -318,7 +318,7 @@ SFTP input with public key authentication
 	  "Name": "SftpAdapter_1",
 	  "TypeString": "Input",
 	  "TenantId": "tenant1",
-	  "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
+	  "ClassName": "com.ligadata.InputAdapters.SamrtFileInputAdapter$",
 	  "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
 	  "DependencyJars": [],
 	  "AdapterSpecificCfg": {
@@ -493,8 +493,14 @@ HDFS input, specifying DetailedLocation
     }
   } 
 
+.. archive-sftp2hdfs-ex:
+
 Archiver from SFTP to HDFS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is an example of an input adapter configuration
+with detailed location and archiving
+to archive SFTP data to HDFS.
 
 ::
 
@@ -503,10 +509,10 @@ Archiver from SFTP to HDFS
     "TypeString": "Input",
     "TenantId": "tenant1",
     "ClassName": "com.ligadata.InputAdapters.SmartFileConsumer$",
-    "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+    "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
     "DependencyJars": [
-	  "ExtDependencyLibs_2.11-1.5.3.jar",
-	  "ExtDependencyLibs2_2.11-1.5.3.jar"
+	  "ExtDependencyLibs_2.11-1.6.2.jar",
+	  "ExtDependencyLibs2_2.11-1.6.2.jar"
     ],
     "AdapterSpecificCfg": {
 	  "Type": "SFTP",

@@ -10,8 +10,8 @@ This section describes how the archiver functionality works.
 
 - When the input adapter processes a file,
   it adds a record to the archive files queue.
-- A directories status map is built based on the archive directory,
-  not individual files.
+- A directories status map is built based in the archive directory
+  rather than individual files.
   For each directory, the status map includes:
 
   - memory stream; contents of source files are read into this stream
@@ -28,7 +28,7 @@ This section describes how the archiver functionality works.
     when the archive data is flushed to disk.
   - active flag; this is used to ensure
     that one thread does not archive a file
-    when another file fromthe same directory
+    when another file from the same directory
     is being processed by another thread.
     If this happens, the thread that is blocked
     searches for another file to archive.
@@ -67,7 +67,7 @@ destFileEndOffset, ArchiveTimestamp
 The archive index is rolled over daily.
 
 The archiver preserves data through :ref:`failover<failover-nodes-term>`
-through the following techniques:
+by using the following techniques:
 
 - The index is flushed before the memory stream is flushed.
 - This way, when the engine is restarted,
