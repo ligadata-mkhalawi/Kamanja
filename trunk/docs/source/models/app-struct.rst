@@ -1,10 +1,10 @@
 
 .. _app-structure:
 
-Katmanja application structure
+Kamanja application structure
 ------------------------------
 
-Katmanja applications should be modularized into a pipeline
+Kamanja applications should be modularized into a pipeline
 of :ref:`messages<messages-term>`,
 :ref:`containers<container-term>`, and :ref:`models<model-term>`.
 Even very complex applications are implemented
@@ -114,6 +114,6 @@ this is much less serious than the havoc that can ensue
 if you pass invalid data down the pipeline.
 
 For information about how Kamanja processes exceptions,
-see :ref:`failure-tracking-admin`.
+see tha :ref:`kamanjamessageevent-msg-ref` reference page.
 
 

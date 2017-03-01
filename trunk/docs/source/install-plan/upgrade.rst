@@ -28,10 +28,7 @@ The steps are:
 - Copy the :ref:`metadataapiconfig-config-ref` file
   from your current Kamanja installation
   to the *$KAMANJA_INSTALL/config* directory
-  and edit it to be appropriate for the new release
-  by referencing the :ref:`clustercfgmetadataapiconfig-config-ref` file
-  that is in the same directory;
-  see :ref:`upgrade-metadata-config`
+  and edit it to be appropriate for the new release.
 - Stop the cluster.
 - Run the :ref:`clusterinstallerdriver-command-ref` command
   with the **-update** flag,
@@ -54,129 +51,74 @@ The steps are:
 Edit the ClusterConfig.json file
 --------------------------------
 
-<KamanjaInstallDir>/ClusterInstall/ClusterConfig*.json
+Copy the :ref:`clusterconfig-config-ref` file
+from your current Kamanja installation
+to the *$KAMANJA_INSTALL/config* directory,
+giving it a name like *myClusterConfig.json*.
+Edit this file to be appropriate for the new release
+by referencing the *ClusterConfig.json* file that is located there.
 
-Update the :ref:`clusterconfig-config-ref` cluster configuration file
-in your */tmp* directory
-to define the environment to be created;
-see the reference pages for details about the contents of this file.
+See the reference pages for details about the contents of this file.
 Specifically, set the following:
 
-- Define each node in the cluster,
-  populating the **NodeId**, **NodePort**, and **NodeIpAddr** parameters
-  for each node.
+- Be sure that each node in the cluster is defined;
+  you can add nodes to the cluster at this time if you like.
+- Be sure that the **NodeId**, **NodePort**, and **NodeIpAddr** parameters
+  are populated appropriately for each node.
 - Define all :ref:`tenants<tenancy-term>` to be used.
 - Set the **Scala_home** and **Java_home** parameters;
   be sure that the values match what is assigned
   to the **SCALA_HOME** and **JAVA_HOME** parameters
   in the *ClusterCfgMetadataAPIConfig.properties* file.
+  The easiest and safest approach is to use environment variables
+  such as $JAVA_HOME and $SCALA_HOME to populate these parameters.
+- If you want to change the data store used for the cluster,
+  follow the instructions in :ref:`change-data-store-cluster`.
+- If you want to implement new 1.6.2 features
+  such as Velocity Metrics in your cluster,
+  copy and populate those sections from the
+  *$KAMANJA_HOME/config/ClusterConfig.json* file.
 
-- Replace the **SystemCatalog** section
-  with the datastore information for the current Kamanja deployment,
-  if needed.
-  For example, if using sqlserver as the data source, replace:
+.. note:: You can instead make a copy of the *ClusterConfig.json* file
+   that is in the *$KAMANJA_INSTALL/config* directory
+   and modify that with information about your cluster.
 
-::
-
-    Before
-
-    "SystemCatalog": {
-     "StoreType": "hbase",
-     "SchemaName": "syscatalog",
-     "Location": "localhost",
-     "authentication": "kerberos",
-     "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
-     "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
-     "principal": "ligadata@INTRANET.LIGADATA.COM",
-     "keytab": "/home/ligadata/keytab/ligadata.keytab"
-    },
-
-with
-
-::
-
-    After
-
-    "SystemCatalog": {
-     "StoreType": "sqlserver",
-     "hostname": "192.168.56.1",
-     "instancename": "KAMANJA",
-     "portnumber": "1433",
-     "database": "syscatalog",
-     "user": "catalog_user",
-     "SchemaName": "catalog_user",
-     "password": "catalog_user",
-     "jarpaths": "/media/home2/jdbc",
-     "jdbcJar": "sqljdbc4-2.0.jar",
-     "clusteredIndex": "YES",
-     "autoCreateTables": "YES"
-    },
-
-
-- Replace the **PrimaryDataStore** section in the *ClusterConfig.json* file
-  with the datastore information for the current Kamanja deployment, if needed.
-  For example, if using sqlserver as the data source, replace:
-
-::
-
-    Before
-
-    "PrimaryDataStore": {
-     "StoreType": "hbase",
-     "SchemaName": "tenant1_default",
-     "Location": "localhost",
-     "authentication": "kerberos",
-     "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
-     "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
-     "principal": "ligadata@INTRANET.LIGADATA.COM",
-     "keytab": "/home/ligadata/keytab/ligadata.keytab"
-    },
-
-with
-
-::
-
-    After
-
-    "PrimaryDataStore": {
-     "StoreType": "sqlserver",
-     "hostname": "192.168.56.1",
-     "instancename": "KAMANJA",
-     "portnumber": "1433",
-     "database": "kamanja_tenant",
-     "user": "all_tenants",
-     "SchemaName": "all_tenants",
-     "password": "all_tenants",
-     "jarpaths": "/media/home2/jdbc",
-     "jdbcJar": "sqljdbc4-2.0.jar",
-     "clusteredIndex": "YES",
-     "autoCreateTables": "YES"
-    },
 
 .. _upgrade-metadata-config:
 
 Edit the ClusterCfgMetadataAPIConfig.properties file
 ----------------------------------------------------
 
-Update the :ref:`clustercfgmetadataapiconfig-config-ref` file
-to values appropriate for your environment.
+Copy the :ref:`metadataapiconfig-config-ref` file
+from your current Kamanja installation
+to the *$KAMANJA_INSTALL/config* directory,
+giving it a name like *myMetadataAPIConfig.properties*,
+and edit it to be appropriate for the new release.
+
+.. note:: You can instead make a copy of the
+   :ref:`clustercfgmetadataapiconfig-config-ref` file
+   that is in *$KAMANJA_INSTALL/config* and edit that
+   with information about your environment.
+
 Specifically, set the following:
 
-- Set the **SCALA_HOME**, **JAVA_HOME**, **JAR_TARGET_DIR**
+- Check the **SCALA_HOME**, **JAVA_HOME**, **JAR_TARGET_DIR**
   parameters.
   Be sure that they contain the same values as the
   comparable parameters in the *ClusterConfig.json* file.
-- Set the **ROOT_DIR** parameter
-
+  The easiest and safest approach is to use environment variables
+  such as $JAVA_HOME and $SCALA_HOME to populate these parameters.
+- Set the **ROOT_DIR** parameter to indicate the parent
+  directory (such as */opt/kamanja*)
+  being used for your current Kamanja software.
 - Set the **SERVICE_HOST** and **SERVICE_PORT** parameters
   with the IP address and port number used for the
   Kamanja metadata API REST service,
-  if you are using it..
-  is updated with one of the Kamanja cluster node IP addresses
+  if you are using it.
   For example, the SERVICE_HOST={HostName} line is replaced
   with SERVICE_HOST=180.34.23.1 where 180.34.23.1
   is the IP address of the cluster node
-  where running the Kamanja metadata API service.
+  where the Kamanja metadata API service runs.
 
 
 .. _run-clusterinstaller:
