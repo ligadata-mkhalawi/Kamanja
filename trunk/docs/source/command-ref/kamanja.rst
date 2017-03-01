@@ -196,9 +196,9 @@ An example:
       $KAMANJA_HOME/input/SampleApplications/metadata/message/beneficiary_Medical.json
       TENANTID <id>
 
-Note Kamanja has basic multi-tenancy (new in v1.4).
+Note Kamanja uses :ref:`tenancy<tenancy-term>`.
 Therefore, every time a container, message, or model is added or updated,
-specify the tenant ID.
+you must specify the tenant ID.
 Multi-tenancy allows deployment of more than one use case to a cluster.
 Multiple use cases can exist on the same cluster.
 

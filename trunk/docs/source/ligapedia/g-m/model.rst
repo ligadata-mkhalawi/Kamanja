@@ -53,4 +53,10 @@ that are applied to each new data event that enters the decision layer:
     but also expands the "model" term to refer to
     executable modules written in Java or Python.
 
+For more information:
+
+- Use the :ref:`kamanja-command-ref` command
+  to add, remove, update, get, activate, and deactivate a model.
+- See :ref:`java-scala-guide-java` for information
+  about creating a Java model.
 

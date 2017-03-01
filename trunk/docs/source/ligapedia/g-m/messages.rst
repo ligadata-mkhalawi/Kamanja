@@ -38,10 +38,15 @@ Use the :ref:`kamanja<kamanja-command-ref>` command
 to add, remove, update, etc. the message definition
 to the metadata for the cluster.
 
-See also:
+For more information:
 
 - :ref:`message definition<message-def-config-ref>` gives details
   about the format of the JSON file that defines a message.
 
 - :ref:`kamanja<kamanja-command-ref>` reference page
-  gives details about the commands used to manage message definitions. 
+  gives details about the commands used to add, remove,
+  update, and get  message definitions. 
+
+- :ref:`java-scala-guide-message-container`
+
+

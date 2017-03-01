@@ -12,6 +12,9 @@ Each input, output, or storage adapter used in the cluster
 has its own "Adapter" section,
 identified by a unique "Name".
 
+All adapters that are defined in the *ClusterConfig.json* file
+run on every node in the cluster.
+
 Application pipelines define 
 :ref:`adapter message bindings<adapter-binding-config-ref>`
 that define how to process messages in the pipeline.
@@ -40,10 +43,10 @@ File structure
             "TypeString": "Input",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
-            "JarName": "KamanjaInternalDeps_2.11-1.4.0.jar",
+            "JarName": "KamanjaInternalDeps_2.11-1.6.2.jar",
             "DependencyJars": [
-              "ExtDependencyLibs_2.11-1.4.0.jar",
-              "ExtDependencyLibs2_2.11-1.4.0.jar"
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": "localhost:9092",
@@ -55,12 +58,12 @@ File structure
             "TypeString": "Output",
             "TenantId": "tenant1",
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$",
-            "JarName": "kamanjakafkaadapters_0_9_2.11-1.5.3.jar",
+            "JarName": "kamanjakafkaadapters_0_9_2.11-1.6.2.jar",
             "DependencyJars": [
               "kafka-clients-0.9.0.1.jar",
-              "KamanjaInternalDeps_2.11-1.5.3.jar",
-              "ExtDependencyLibs_2.11-1.5.3.jar",
-              "ExtDependencyLibs2_2.11-1.5.3.jar"
+              "KamanjaInternalDeps_2.11-1.6.2.jar",
+              "ExtDependencyLibs_2.11-1.6.2.jar",
+              "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": "localhost:9092",
@@ -81,7 +84,8 @@ File structure
             "StoreType": "h2db",
             "connectionMode": "embedded",
             "SchemaName": "testdata",
-            "Location": "/home/flare/Binaries/Kamanja911/Kamanja-1.5.3_2.11/storage/tenant1_storage_1",
+            "Location": "/home/flare/Binaries/Kamanja911/Kamanja-1.6.2_2.11/
+                storage/tenant1_storage_1",
             "portnumber": "9100",
             "user": "test",
             "password": "test"
@@ -202,14 +206,14 @@ that is used in your application:
 
 ::
 
-  		"VelocityMetrics": [
-            {
+  	"VelocityMetrics": [
+              {
               "MetricsByFileName": {
                 "TimeIntervalInSecs": 30,
                 "MetricsTime": {
                   "MetricsTimeType": "LocalTime"
-                }
-              }
+                 }
+               }
             },
             {
               "MetricsByMsgType": {
@@ -232,6 +236,19 @@ that is used in your application:
                 ],
                 "TimeIntervalInSecs":30
               }
+            {
+            "MetricsByMsgFixedString": {
+        
+                    "KeyString": [
+                      "name"
+                    ],
+                    "TimeIntervalInSecs": 1,
+                    "MetricsTime": {
+                      "MetricsTimeType": "LocalTime"
+          
+                    }
+                  }
+                }
             }
           ]
 
@@ -239,14 +256,31 @@ The meaning of these parameters is:
 
 - **MetricsByFileName** - Metrics Keys for the File Consumer
   and SmartFileConsumer; accumulates the metrics based on the filename
-- **ValidMsgTypes** - Accumulate the metrics for these messages
-- **Key** -: Accumulate the messages for these key values in the above messages
-- **MetricsTimeType** - The metrics time type, either LocalTime or Field value,
-  if its field value provides the fields name and format type
+
 - **MetricsByMsgType** - The metrics are accumulated based on the message type
+
+  - **ValidMsgTypes** - Accumulate the metrics for these messages
+  - **MetricsTimeType** - The metrics time type,
+    either LocalTime or Field value,
+    if its field value provides the fields, name and format type
+
 - **MetricsByMsgKeys** - The metrics are accumulated
   as per the messages and its key values	
 
+  - **Keys** -: Accumulate the messages for these key values
+    in the above messages
+
+- **MetricsByMsgFixedString** - Accumulate metrics
+  per the specified **Keys** string
+  which provides global counters.
+
+  - **KeyString** -: Accumulate the messages for these key values
+    in the above messages
+
+.. _archiver-input-config-ref:
+
+Implement archiving in an input adapter
+---------------------------------------
 
 See:
 
@@ -308,7 +342,6 @@ Examples
 --------
 
 
-
 See also
 --------
 
@@ -316,5 +349,7 @@ See also
 - :ref:`adapters-output-guide`
 - :ref:`adapters-storage-guide`
 
+- :ref:`smart-input-config-ref`
+- :ref:`smart-output-config-ref`
 
 
