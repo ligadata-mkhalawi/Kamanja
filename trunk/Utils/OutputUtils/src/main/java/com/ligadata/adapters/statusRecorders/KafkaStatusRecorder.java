@@ -65,10 +65,10 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Record the given message in the Kafka storage.
-     * @param batchId
-     * @param retryNumber
-     * @param sourceOfStatus
-     * @return
+     * @param batchId batchId
+     * @param retryNumber retryNumber
+     * @param sourceOfStatus sourceOfStatus
+     * @return boolean
      */
     public boolean externalizeStatusMessage(long batchId, long retryNumber, String sourceOfStatus) {
         try {
@@ -138,7 +138,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
     /**
      *  Initialize the kafka stats recorder
      * @param config - values to initialize the underlying Kafka Producer
-     * @throws Exception
+     * @throws Exception exception is thrown
      */
     public void init (String config, String destinationComponentName) throws Exception {
         try {
@@ -212,9 +212,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
     /**
      * Add the status message to the underlying status sturcutre. the whole thing will be externalized when
      * externalizeStatusMessage(String message, String sourceOfStatus) is called
-     * @param key
-     * @param successValue
-     * @param failedValue
+     * @param key the key
+     * @param successValue the success value
+     * @param failedValue the failed value
      */
     public void addStatus(String key, String successValue, String failedValue) {
         try {
@@ -235,9 +235,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Add a message to appear under the Messages[] array in the Status message
-     * @param key
-     * @param msg
-     * @param isRequired
+     * @param key the key
+     * @param msg the msg
+     * @param isRequired is it required
      */
     public void addStatusMessage(String key, String msg, boolean isRequired) {
         try {
@@ -266,8 +266,8 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Set the completion code for this batch
-     * @param key
-     * @param status
+     * @param key the key
+     * @param status the status
      */
     public void setCompletionCode(String key, String status) {
         try {

@@ -33,8 +33,6 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
 
     /**
      * Create an instance of KafkaStatsRecorder
-     * 
-     * @throws Exception
      */
     public KafkaVelocityMetrics() {
 	props = new Properties();
@@ -138,9 +136,10 @@ public class KafkaVelocityMetrics implements VelocityMetricsCallback {
     /**
      * Initialize the kafka stats recorder
      * 
-     * @param config
-     *            - values to initialize the underlying Kafka Producer
-     * @throws Exception
+     * @param topic kafka topic name
+     * @param destinationComponentName type of component
+	 * @param bootstrapserver kafka servers
+     * @throws Exception an exception is thrown
      */
     public void init(String topic, String bootstrapserver,
 	    String destinationComponentName) throws Exception {

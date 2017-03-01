@@ -109,6 +109,7 @@ public class DecryptUtils{
      * 
      * @param config
      *          : AdapterConfiguraton contains property hash map
+	 * @param PasswordPropertyName Password property name
      * @return password as plain text
      */
     public static String getPassword(AdapterConfiguration config, String PasswordPropertyName) {

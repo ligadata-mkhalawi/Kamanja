@@ -144,7 +144,7 @@ public class EncryptionUtil {
      * @param bytes
      *          : an array of bytes
      * @return String
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception an exception is thrown when failing to convert a hex string to a byte array
      */
     public static String bytesToHex(byte[] bytes) throws Exception {
 	try{
@@ -167,7 +167,7 @@ public class EncryptionUtil {
      * @param s
      *          : a string containing hex characters
      * @return byte array
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception an exception is thrown
      */
 
     public static byte[] hexStringToByteArray(String s) throws Exception{
@@ -192,7 +192,7 @@ public class EncryptionUtil {
      * @param bytes
      *          : an array of bytes corresponding to string being encoded
      * @return String
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
 
 
@@ -213,7 +213,7 @@ public class EncryptionUtil {
      * @param s
      *          : an encoded string 
      * @return byte array
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
 
     public static byte[] decode(String s) throws Exception{
@@ -233,7 +233,7 @@ public class EncryptionUtil {
      * @param bytes
      *          : the encoded value as array of bytes 
      * @return decoded value as a String
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception an exception is thrown
      */
 
     public static String decode(byte[] bytes) throws Exception{
@@ -257,7 +257,7 @@ public class EncryptionUtil {
      * @param publicKeyFile
      *          :The public key file
      * @return Encrypted text
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
     public static byte[] encrypt(String algorithm,String text, String publicKeyFile) throws Exception {
 	byte[] cipherText = null;
@@ -289,7 +289,7 @@ public class EncryptionUtil {
      * @param privateKeyFile
      *          :The private key
      * @return plain text
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
     public static String decrypt(String algorithm,byte[] text, String privateKeyFile) throws Exception {
 	byte[] dectyptedText = null;
