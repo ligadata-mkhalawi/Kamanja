@@ -93,3 +93,16 @@ a:link:active, a:visited:active {
     color: #666666;
     padding: 0.4045em 2.5em;
 }
+div[itemprop=articleBody] .section h1:first-of-type{
+    display: none;
+}
+#ld-top-icons a{
+    margin-right:15px;
+}
+#ld-top-icons {
+    margin-top: -15px;
+    margin-bottom: 11px;
+}
+.ld-nodecoration, a:link.ld-nodecoration {
+    text-decoration: none;
+}
