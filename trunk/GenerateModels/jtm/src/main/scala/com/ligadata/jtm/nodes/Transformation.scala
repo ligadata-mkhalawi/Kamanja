@@ -43,6 +43,11 @@ class Transformation {
     */
   val outputs: scala.collection.Map[String, Output] = scala.collection.Map.empty[String, Output]
 
+  /**
+    *
+    */
+  val conditionalComputes: scala.collection.Map[String, ConditionalComputesGroup] = scala.collection.Map.empty[String, ConditionalComputesGroup]
+
   /** Single comment, to be output to code
     *
     */
