@@ -63,7 +63,9 @@ that were archived into same destination archive file
 See also:
 
 - :ref:`smart-input-config-ref` gives details about implementing
-  the archiver, including an example configuration.
+  the archiver, including a description of the new parameters
+  in :ref:`archiver-adapter-params` and an example configuration
+  in :ref:`archive-sftp2hdfs-ex`.
 - :ref:`archiver-arch` gives details about how the archiver
   is implemented internally
 

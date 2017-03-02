@@ -43,6 +43,7 @@ Smart File Input Adapter definition
     ],
     "AdapterSpecificCfg": {
       "Type": "HDFS",
+      "StatusMsgTypeName": "com.ligadata.messages.InputAdapterStatsMsg",
       "ConnectionConfig": {
           "HostLists": "hdfs://host1:port1,hdfs://host2:port2",
           "Authentication": "kerberos",
@@ -73,7 +74,7 @@ Smart File Input Adapter definition
            {
              "srcDir": "/data/input/msg0",
              "targetDir": "/data/processed0",
-             "MsgTags": ["Msg0"],
+             "MsgTagsKV": ["Msg0"],
              "TagDelimiter":"$$",
              "OrderBy" : "$File_Name"
            },
@@ -89,7 +90,7 @@ Smart File Input Adapter definition
               },
               "OrderBy":["serial", "$FILE_MOD_TIME"],
               "TagDelimiter": "$$",
-              "MsgTags": ["Msg1", "$File_Name", "$Line_Number"],
+              "MsgTagsKV": ["Msg1", "$File_Name", "$Line_Number"],
               "MessageSeparator": "10"
           },
           {
@@ -134,6 +135,10 @@ which must be populated when configuring the adapter:
 
 - **Type** – type of file system to ingest.
   Valid values are HDFS, SFTP, DAS/NAS.
+- **StatusMsgTypeName** - Kamanja message
+  (:ref:`inputadaptersstatssg-msg-ref`)
+  to which the input adapter can send a status message
+  for each file when it has finished processing that file.
 - **ConnectionConfig** – information necessary to connect to the file system:
 
   - **HostLists** – comma-separated list of (server:port)
@@ -215,26 +220,32 @@ for all smart input adapters:
     - **targetDir** – directory to move files to after processing.
       If no value is specified for this parameter,
       the value of the **TargetMoveDir** is used.
-    - **MsgTags** – in case the user wants the input adapter
-      to send other information with the messages it reads.
+    - **MsgTagsKV** – Used to have the input adapter
+      send other information with the messages it reads.
+      The structure is a map so that the tag also has a name,
+      which can be used to parse the tags part of the message (in models)
+      and change it into a map,
+      then access the values by keys rather than order.
       There are two types of tags – fixed and predefined.
-      Fixed tags mean to add the string as is.
-      Predefined tags mean to add the value of the attribute.
+      For fixed tags, the string is added as it is.
+      For predefined tags, the value of the attribute is added.
       Currently, the supported predefined tags are:
-      $Dir_Name, $File_Name, $File_Full_Path, $File_Full_Path, and $Line_Number.
+      $Dir_Name, $File_Name, $File_Full_Path, $File_Full_Path, $Line_Number,
+      and $Msg_Start_Offset (byte offset of the message in the input file).
     - **TagDelimiter** – delimiter between tags.  For example:
 
       ::
 
-        ("TagDelimiter" : "$$", "MsgTags" :["Msg1", "$File_Name", "$Line_Number"])
+        ("TagDelimiter" : "$$", "MsgTagsKV" :["msgType":"MsgTagsKV",
+             "file_name":"$File_Name", "line_num":"$Line_Number"])
 
-      and assuming the input adapter reads the message (1,hello,5)
+      Assuming that the input adapter reads the message (1,hello,5)
       at line number (50) from the file (file1.txt),
       the final message sent by the input adapter looks like this:
 
       ::
 
-        (Msg1$$file1.txt$$50$$1,hello,5).
+        msgType:Msg1$$file_name:file1.txt$$line_num:50$$1,hello,5
 
   - **MessageSeparator** – same as (MessageSeparator) in the upper level
     (that is, MessageSeparator under MonitoringConfig directly).
@@ -281,6 +292,34 @@ for all smart input adapters:
   the default value is ($FILE_MOD_TIME),
   meaning files are ordered by modification time.
 
+.. _archiver-adapter-params:
+
+Parameters to implement archiver
+--------------------------------
+
+The **ArchiveConfig** section of the Smart File Input Adapter
+is similar to the configuration of
+the :ref:`smart-output-config-ref`
+with the addition of these attributes:
+
+- **ConsolidationMaxSizeMB** - Maximum size (in MB)
+  of the destination archive files; default value is 100.
+- **ArchiveParallelism** - Number of archiving threads;
+  default value is 1.
+- **ArchiveSleepTimeInMs** - Duration (in Ms) for archiving threads to sleep
+  when no data is available to process; default value is 10.
+
+In addition, one new parameter is included in the
+**DetailedLocations** and **MessageSeparator** sections
+when implementing the Archiver:
+
+- **ArchiveRelativePath** - Represents the subfolders
+  that will be created under the main archive destination path,
+  which is *ArchiveConfig.Uri*.
+
+
+
+
 
 Usage
 -----
@@ -294,7 +333,7 @@ for your installation.
 You can specify the directories from which to read input data
 using either the **Locations** or the **DetailedLocations** parameter.
 The difference is how the **MessageSeparator**, **OrderBy**,
-**TagDelimiter**, and **MsgTags** parameters are treated:
+**TagDelimiter**, and **MsgTagsKV** parameters are treated:
 
 - If the **Location** parameter is used,
   these settings apply to all input directories
@@ -466,7 +505,7 @@ HDFS input, specifying DetailedLocation
            { 
              "srcDir": "/data/input/msg0",
              "targetDir": "/data/processed0",
-             "MsgTags": ["Msg0"],
+             "MsgTagsKV": ["Msg0"],
              "TagDelimiter":"$$",
              "OrderBy" : "$File_Name"
            },
@@ -482,7 +521,7 @@ HDFS input, specifying DetailedLocation
               },
               "OrderBy":["serial", "$FILE_MOD_TIME"],
               "TagDelimiter": "$$",
-              "MsgTags": ["Msg1", "$File_Name", "$Line_Number"],
+              "MsgTagsKV": ["Msg1", "$File_Name", "$Line_Number"],
               "MessageSeparator": "10"
           },
           { 
@@ -497,7 +536,7 @@ HDFS input, specifying DetailedLocation
     }
   } 
 
-.. archive-sftp2hdfs-ex:
+.. _archive-sftp2hdfs-ex:
 
 Archiver from SFTP to HDFS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -602,6 +641,15 @@ to archive SFTP data to HDFS.
 	  }
     }
   }
+
+Differences between versions
+----------------------------
+
+- **StatusMsgTypeName** is new in Release 1.6.2.
+- **MsgTagsKV** is new it Release 1.6.2
+  to replace the **MsgTags** parameter.
+  It provides similar functionality but the structure is a map.
+  The **Msg_Start_Offset** tag for this parameter is also new in 1.6.2.
 
 
 See also
