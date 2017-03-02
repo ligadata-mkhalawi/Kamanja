@@ -48,7 +48,10 @@ Smart File Input Adapter definition
           "Authentication": "kerberos",
           "principal": "user@GROUP.LOCAL",
           "keytab": "/home/user/user.keytab",
-          "Encrypted.Encoded.Password": "HlC3OVDz5gC+HbDnmN8BUJ41MO9+ofHIlvm0sgFmmG4hKw+xB5hvrHpJ9vMQKOVECwTephZB222OH/VqoldeaT47e2TGskhSTkWfYn1GMhiM5T93ldUyuwWjb5U1HvG20sZkZhMNxnad3QXtf+ERtvtlCpQJ/ViVjEddEfTjwkw=",
+          "Encrypted.Encoded.Password":
+              "HlC3OVDz5gC+HbDnmN8BUJ41MO9+ofHIlvm0sgFmmG4hKw+xB5hvrHpJ9vMQKOVECwTephZB222OH/
+              VqoldeaT47e2TGskhSTkWfYn1GMhiM5T93ldUyuwWjb5U1HvG20sZkZhMNxnad3QXtf+ERtvtlCpQJ/
+              ViVjEddEfTjwkw=",
           "PrivateKeyFile": "/home/kamanja/programs/kamanja/config/private.key"
           "hadoopConfig":{
              "dfs.nameservices":"NameService",
@@ -56,7 +59,8 @@ Smart File Input Adapter definition
              "dfs.namenode.rpc-address.NameService-namenode1":"node1:8020",
              "dfs.namenode.rpc-address.NameService-ns.namenode2": "node2:8020",
              "hadoop.rpc.protection":"privacy",
-             "dfs.client.failover.proxy.provider.NameService":"org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
+             "dfs.client.failover.proxy.provider.NameService":
+                  "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
             },
       "MonitoringConfig": {
         "MaxTimeWait": "10000",

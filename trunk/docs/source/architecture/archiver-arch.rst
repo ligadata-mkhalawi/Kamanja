@@ -60,6 +60,8 @@ The memory stream is processed as follows:
   with the possible exception of the last file in the stream
   which is not flushed if processing has not completed.
 
+
+
 Each record in the archive index contains the following fields:
 srcFile (path is from processed directory), destFile,
 srcFileStartOffset, srcFileEndOffset, destFileStartOffset,

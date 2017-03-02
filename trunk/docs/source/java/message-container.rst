@@ -314,7 +314,7 @@ of the TransactionMsg.json message here:
 - TransactionMsg_local.scala
 - TransactionMsgFactory.java
 
-Go to /Users/userid/Downloads/installKamanja/lib/application
+Go to */Users/userid/Downloads/installKamanja/lib/application*
 (this is the JAR_TARGET_DIR directory) and see the two generated JAR files.
 
 Run the **ls** command on the *JAR_TARGET_DIR* directory.

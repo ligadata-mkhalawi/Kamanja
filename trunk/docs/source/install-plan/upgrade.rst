@@ -8,11 +8,10 @@ You can upgrade to Release 1.6.2 from an earlier Kamanja release,
 The steps are:
 
 - Verify that you have the correct versions of
-  the Kamanja prerequises packages installed on your system;
+  the Kamanja prerequite packages installed on your system;
   see :ref:`pkgs-prereqs-install`.
 - Verify that all other software on the system
-  is a version that is compatible with Kamanja 1.6.2;
-  check the list at :ref:`component-versions`.
+  is a version that is compatible with Kamanja 1.6.2.
 - Edit your *.bashrc* file (Linux) or *.bash_profile* (Mac)
   file to ensure that you have the correct path defined
   for all software components;
@@ -31,7 +30,7 @@ The steps are:
   and edit it to be appropriate for the new release.
 - Stop the cluster.
 - Run the :ref:`clusterinstallerdriver-command-ref` command
-  with the **-update** flag,
+  with the **-upgrade** flag,
   specifying the edited configuration files you created above;
   see :ref:`run-clusterinstaller`
 - Make sure that the $KAMANJA_HOME environment variable
@@ -39,7 +38,7 @@ The steps are:
 - Check and possibly modify your applications
   for the new release;  see :ref:`check-apps-upgrade`.
 - Start the cluster,
-  following the instructions in :ref:`start-node-install-guide`.
+  following the instructions in :ref:`start-multi-cluster`.
 - If you need to rollback the cluster to the previous release,
   follow the instructions in :ref:`rollback-guide`.
 
@@ -65,7 +64,8 @@ Specifically, set the following:
   you can add nodes to the cluster at this time if you like.
 - Be sure that the **NodeId**, **NodePort**, and **NodeIpAddr** parameters
   are populated appropriately for each node.
-- Define all :ref:`tenants<tenancy-term>` to be used.
+- Define all :ref:`tenants<tenancy-term>` to be used;
+  see the :ref:`tenant-def-config-ref` reference page for details.
 - Set the **Scala_home** and **Java_home** parameters;
   be sure that the values match what is assigned
   to the **SCALA_HOME** and **JAVA_HOME** parameters
@@ -127,7 +127,7 @@ Run the ClusterInstallerDriver.sh command
 -----------------------------------------
 
 Run the :ref:`clusterinstallerdriver-command-ref` command
-with the **-update** flag.
+with the **-upgrade** flag.
 See the reference page for the specific syntax.
 
 **ClusterInstallerDriver.sh** uses the information

@@ -11,6 +11,5 @@ Kamanja 1.6.2 Release Notes
    relnotes/features
    relnotes/fixed
    relnotes/known-issues
-   relnotes/components
 
 

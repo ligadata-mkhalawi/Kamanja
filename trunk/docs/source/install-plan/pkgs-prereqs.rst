@@ -11,8 +11,7 @@ that must be installed before Kamanja is installed.
   you must install these packages.
 - If you are installing on a Hadoop stack or existing servers,
   you may already have some of these packages installed;
-  be sure that you are running a compatible version of each package;
-  see :ref:`component-versions` for a list of supported versions.
+  be sure that you are running a compatible version of each package.
 - After you install the packages,
   :ref:`define environment variables<env-variables-install>`
   that identify the installation path for each package.
