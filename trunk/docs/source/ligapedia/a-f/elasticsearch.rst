@@ -13,7 +13,7 @@ to Elasticsearch.
 
 For more information:
 
-- :ref:`Elasticsearch installation instructions<elastic-install>`_
+- :ref:`Elasticsearch installation instructions<elastic-install>`
 - :ref:`elastic-output-adapter-ref` 
 
 See also:

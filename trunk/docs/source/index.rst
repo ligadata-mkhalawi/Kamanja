@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Kamanja's documentation! (Under construction)
-========================================================
+Welcome to Kamanja's documentation!
+===================================
 
 Kamanja is a high-performance real-time event processing engine.
 The engine provides a run-time execution environment
