@@ -1,11 +1,11 @@
 
 
-.. _startkamanjacluster-command-ref:
+.. _stopkamanjacluster-command-ref:
 
-StartKamanjaCluster.sh
+StopKamanjaCluster.sh
 ======================
 
-Start the specified cluster using the specified 
+Stop the specified cluster using the specified 
 Metadata API file.
 
 Syntax
@@ -36,25 +36,18 @@ Usage
 
 This script reads the cluster metadata,
 contacts each of the nodes described by it,
-and starts the Kamanja engine at that location.
-A Process Identifier (PID) is recorded
-and written to the installation directory's *run* directory
-for each of the nodes started.
-This PID file is used by the
-:ref:`statuskamanjacluster-command-ref` script
-to verify that a process is alive on each respective cluster node.
-The :ref:`stopkamanjacluster-command-ref` script
-uses the PID to stop the cluster nodes that are running.
+and stops the process with the Process Identifier (PID)
+that was written by the :ref:`startkamanjacluster-command-ref` command.
 
-Use the :ref:`kamanja-command-ref` **start** command
-to start individual nodes in the cluster.
+Use the :ref:`kamanja-command-ref` **stop** command
+to stop individual nodes in the cluster.
 
 Example
 -------
 
 ::
 
-  ./StartKamanjaCluster.sh --ClusterId ligadata1
+  ./StopKamanjaCluster.sh --ClusterId ligadata1
     --MetadataAPIConfig ../config/MetadataAPIConfig.properties
 
 
@@ -65,7 +58,7 @@ See also
 - :ref:`metadataapiconfig-config-ref`
 - :ref:`kamanja-command-ref`
 
-- :ref:`stopkamanjacluster-command-ref` 
+- :ref:`startkamanjacluster-command-ref` 
 - :ref:`statuskamanjacluster-command-ref` 
 
 

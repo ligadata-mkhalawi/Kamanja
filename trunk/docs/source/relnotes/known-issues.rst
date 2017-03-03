@@ -15,10 +15,15 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
   It is planned to create subdirectories for each date
   and write the archiver files to those subdirectories.
 
-- The :ref:`elastic-output-adapter-ref` should be able
-  to report results for each message processed
+- The :ref:`elastic-output-adapter-ref` does not
+  report results for each message processed
   (successful, rejected, or threw an exception).
-  This functionality is not currently implemented.
+
+- To stop the KamanjaManager process,
+  use ctrl-c or the **kill** command;
+  **kill -9** should not be used
+  because it can cause data to be lost,
+  especially when using Elasticsearch.
 
 - The :ref:`simplekafkaproducer-command-ref` command
   may throw spurious errors that reference
@@ -31,18 +36,6 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
 - The FileProcessor may throw spurious WARN messages
   into the logs; this does not impact processing.
   (`1507 <https://github.com/LigaData/Kamanja/issues/1507>`_)
-
-- Issuing the :ref:`kamanja-command-ref` command with the
-  **start webservice** option fails with the following message:
-
-  ::
-
-   Error: Could not find or load main class
-      com.ligadata.metadataapiservice.APIService
-
-  The APIService does exist but is apparently not included
-  in the generated jar file.
-  (`1498 <https://github.com/LigaData/Kamanja/issues/1498>`_)
 
 - When configuring :ref:`adapters<adapter-def-config-ref>`,
   adding jars to the dependency jars list under "adapters"
@@ -58,29 +51,27 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
   without fear of having version compatibility issues with other adapters.
   (`1493 <https://github.com/LigaData/Kamanja/issues/1493>`_)
 
-- The :ref:`kamanja-command-ref` command run with the **add model** option
+- The :ref:`kamanja-command-ref` **add model** command
   to add a model that imports classes from a specified jar may fail.
   Even though the **upload jar my.jar** command
   ran successfully and the uploaded jar is persisted in the metadata storage,
   the model fails to compile because the classes are not visible to the model
   at compile time.
   We are investigating this issue;
-  it may be that my.jar is not being downloaded automatically
+  it may be that *my.jar* is not being downloaded automatically
   although it should be.
   (`1492 <https://github.com/LigaData/Kamanja/issues/1492>`_)
 
 - The Delete function for the :ref:`elastic-output-adapter-ref`
-  does not work.  (`1490 <https://github.com/LigaData/Kamanja/issues/1490>`_)
+  does not work.
+  (`1490 <https://github.com/LigaData/Kamanja/issues/1490>`_)
 
-- The Kamanja •readme* file incorrectly shows that the JPMML evaluator
+- The Kamanja *readme* file incorrectly shows that the JPMML evaluator
   is licensed under BSD.
   LigaData has negotiated a special arrangement with Villu (owner of JPMML),
   so we can embed JPMML in Kamanja and release the combination
   under the Apache license. The readme file should be corrected.
   (`1482 <https://github.com/LigaData/Kamanja/issues/1482>`_)
-
-- OutputUtils require JDK 1.8
-  (`1479 <https://github.com/LigaData/Kamanja/issues/1479>`_)
 
 - No error message is generated for the error queue
   nor is an error attached to the :ref:`kamanjamessageevent-msg-ref`
@@ -90,9 +81,14 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
   Information about the error can be found by digging through the logs.
   (`1476 <https://github.com/LigaData/Kamanja/issues/1476>`_)
 
-- Non-versioned messages and containers
-  may show versioned child containers.
-  (`1479 <https://github.com/LigaData/Kamanja/issues/1479>`_)
+- When a :ref:`message definition<message-def-config-ref>`
+  contains one or more containers as attributes,
+  the versioned message code that is generated
+  correctly shows the versioned containers as parameters
+  but incorrectly shows the versioned containers as parameters
+  for the unversioned message code.
+  This does not affect functionality.
+  (`1469 <https://github.com/LigaData/Kamanja/issues/1469>`_)
 
 - If you upload an :ref:`adapter binding<adapter-binding-config-ref>`
   that has already been added successfully,

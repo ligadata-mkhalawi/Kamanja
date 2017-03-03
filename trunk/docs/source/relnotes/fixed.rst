@@ -16,29 +16,10 @@ Fixed issues
   has been fixed.
   (`1517 <https://github.com/LigaData/Kamanja/issues/1517>`_)
 
-- :ref:`Velocity Metrics<velocity-metrics-term>`
-  now properly includes the the name of the file
-  to which output messages were written.
-  (`1516 <https://github.com/LigaData/Kamanja/issues/1516>`_)
-
-- A problem that caused the KamanjaManager process to hang
-  when configured to use the :ref:`elastic-output-adapter-ref`
-  if the ctrl-c, kill, or kill -9 commands were issued
-  has been resolved.
-  Note that kill -9 should not be used
-  because it can cause data to be lost.
-  (`1510 <https://github.com/LigaData/Kamanja/issues/1510>`_)
-
-- :ref:`elastic-output-adapter-ref` can now connect to clusters
-  that have names other than "elasticsearch".
-  (`1478 <https://github.com/LigaData/Kamanja/issues/1478>`_)
-
 - The condition that caused the
   **No net.sf.ehcache.EhcacheInit services found** error
   to be output when running the engine has been resolved.
   (`1470 <https://github.com/LigaData/Kamanja/issues/1470>`_)
-
-- (`1467 <https://github.com/LigaData/Kamanja/issues/1467>`_)
 
 - The *Engine1Config.properties* file no longer requires
   the ROOT_DIR property; this information is obtained
