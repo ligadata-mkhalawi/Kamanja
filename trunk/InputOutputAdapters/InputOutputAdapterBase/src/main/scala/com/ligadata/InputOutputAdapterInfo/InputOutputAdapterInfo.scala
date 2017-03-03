@@ -21,6 +21,7 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.HeartBeat._
 import com.ligadata.kamanja.metadata.MdMgr
 import com.ligadata.transactions.{ NodeLevelTransService, SimpleTransService }
+import java.util.concurrent.atomic.AtomicInteger
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
@@ -65,6 +66,11 @@ class StartProcPartInfo {
   var _validateInfoVal: PartitionUniqueRecordValue = null
 }
 
+class ThreadPartitions {
+  var threadId: Int = -1
+  var threadPartitions: Array[StartProcPartInfo] = null
+}
+
 // Input Adapter
 trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   val nodeContext: NodeContext
@@ -85,7 +91,9 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def StopProcessing: Unit
 
-  def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit
+  //def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit  
+
+  def StartProcessing(partitionInfo: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit
 
   // each value in partitionInfo is (PartitionUniqueRecordKey, PartitionUniqueRecordValue, Long, PartitionUniqueRecordValue). // key, processed value, Start transactionid, Ignore Output Till given Value (Which is written into Output Adapter) & processing Transformed messages (processing & total)
   def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey]
@@ -161,7 +169,6 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
 trait ExecContext {
   val input: InputAdapter
-  val curPartitionKey: PartitionUniqueRecordKey
   val nodeContext: NodeContext
 
   private val LOG = LogManager.getLogger(getClass);
@@ -252,7 +259,7 @@ trait ExecContext {
     }
   }
 
-  final def execute(msg: ContainerInterface, data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long): Unit = {
+  final def execute(msg: ContainerInterface, data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long, callback: CallbackInterface): Unit = {
     if (msg == null) {
       SendFailedEvent(data, "", "", uniqueKey, uniqueVal, null, msg)
       return
@@ -296,12 +303,13 @@ trait ExecContext {
       txnCtxt = new TransactionContext(transId, nodeContext, data, EventOriginInfo(uk, uv), readTmMilliSecs, msgEvent)
       txnCtxt.setInitialMessage("", msg)
       ThreadLocalStorage.txnContextInfo.set(txnCtxt)
-      executeMessage(txnCtxt)
+      executeMessage(txnCtxt, callback)
     } catch {
       case e: Throwable => {
         LOG.error("Failed to execute message : " + msg.getFullTypeName, e)
       }
     } finally {
+      /*
       try {
         commitData(txnCtxt);
       } catch {
@@ -311,11 +319,13 @@ trait ExecContext {
       } finally {
         ThreadLocalStorage.txnContextInfo.remove
       }
+*/
+      ThreadLocalStorage.txnContextInfo.remove
     }
   }
 
   // Raw data deserialized and send to another send method which takes msg
-  final def execute(data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long): Unit = {
+  final def execute(data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long, callback: CallbackInterface): Unit = {
     val deserializer = ""
     val failedMsg = ""
     var messageName = ""
@@ -341,7 +351,7 @@ trait ExecContext {
       val deserializer = if (tDeserializerName != null) tDeserializerName else ""
       val failedMsg = if (msgName != null) msgName else ""
       if (tMsg != null) {
-        execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
+        execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs, callback)
         val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
         if (input.getVelocityInstances == null || input.getVelocityInstances.length == 0) {
           input.vm.getMsgVelocityInstances(input.VMFactory, input.Category, input.inputConfig.Name, input.inputConfig.fullAdapterConfig, input.nodeContext)
@@ -377,14 +387,14 @@ trait ExecContext {
     }
   }
 
-  protected def executeMessage(txnCtxt: TransactionContext): Unit
+  protected def executeMessage(txnCtxt: TransactionContext, callback: CallbackInterface): Unit
 
   protected def commitData(txnCtxt: TransactionContext): Unit
 
 }
 
 trait ExecContextFactory {
-  def CreateExecContext(input: InputAdapter, curPartitionKey: PartitionUniqueRecordKey, nodeContext: NodeContext): ExecContext
+  def CreateExecContext(input: InputAdapter, nodeContext: NodeContext): ExecContext
 }
 
 trait PartitionUniqueRecordKey {
@@ -402,6 +412,21 @@ trait PartitionUniqueRecordValue {
 
   // Making String from Value
   def Deserialize(key: String): Unit // Making Value from Serialized String
+}
+
+trait CallbackInterface {
+  def onCompletion(tranId: Long, exception: Exception): Unit
+  def onTranCreation(tranId: Long, exception: Exception): Unit
+}
+
+class CompletionCallback(counter: AtomicInteger) extends CallbackInterface {
+  override def onCompletion(tranId: Long, exception: Exception): Unit = {
+    counter.incrementAndGet()
+  }
+
+  override def onTranCreation(tranId: Long, exception: Exception): Unit = {
+    counter.decrementAndGet()
+  }
 }
 
 

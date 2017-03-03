@@ -112,20 +112,9 @@ case class InitConfigs(val dataDataStoreInfo: String, val jarPaths: collection.i
 object KamanjaConfiguration {
   var configFile: String = _
   var allConfigs: Properties = _
-  //  var metadataDataStoreInfo: String = _
-  //  var dataDataStoreInfo: String = _
-  //  var jarPaths: collection.immutable.Set[String] = _
   var nodeId: Int = _
   var clusterId: String = _
   var nodePort: Int = _
-  //  var zkConnectString: String = _
-  //  var zkNodeBasePath: String = _
-  //  var zkSessionTimeoutMs: Int = _
-  //  var zkConnectionTimeoutMs: Int = _
-
-  //  var txnIdsRangeForNode: Int = 100000 // Each time get txnIdsRange of transaction ids for each Node
-  //  var txnIdsRangeForPartition: Int = 10000 // Each time get txnIdsRange of transaction ids for each partition
-
   // Debugging info configs -- Begin
   var waitProcessingSteps = collection.immutable.Set[Int]()
   var waitProcessingTime = 0
@@ -136,25 +125,23 @@ object KamanjaConfiguration {
 
   var shutdown = false
   var participentsChangedCntr: Long = 0
-  var baseLoader = new KamanjaLoaderInfo
-  //  var adaptersAndEnvCtxtLoader = new KamanjaLoaderInfo(baseLoader, true, true)
-  //  var metadataLoader = new KamanjaLoaderInfo(baseLoader, true, true)
 
-  //  var adapterInfoCommitTime = 5000 // Default 5 secs
+  // Stop processing should reset this to 1. So that way only one thread will be processed all system msgs at this moment.
+  var totalPartitionCount: Int = 1
+  var totalProcessingThreadCount: Int = 1
+  var totalReadThreadCount: Int = 1
+
+  val defaultLocallyExecFlag = false
+  var locallyExecFlag = defaultLocallyExecFlag
+
+  var baseLoader = new KamanjaLoaderInfo
 
   def Reset: Unit = {
     configFile = null
     allConfigs = null
-    //    metadataDataStoreInfo = null
-    //    dataDataStoreInfo = null
-    //    jarPaths = null
     nodeId = 0
     clusterId = null
     nodePort = 0
-    //    zkConnectString = null
-    //    zkNodeBasePath = null
-    //    zkSessionTimeoutMs = 0
-    //    zkConnectionTimeoutMs = 0
 
     // Debugging info configs -- Begin
     waitProcessingSteps = collection.immutable.Set[Int]()
@@ -166,6 +153,11 @@ object KamanjaConfiguration {
 
     shutdown = false
     participentsChangedCntr = 0
+
+    totalPartitionCount = 1
+    totalProcessingThreadCount = 1
+    totalReadThreadCount = 1
+    locallyExecFlag = defaultLocallyExecFlag
   }
 }
 
@@ -445,6 +437,7 @@ class KamanjaManager extends Observer {
     ClearExecContext
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
+    AkkaActorSystem.shutDown
     ShutdownAdapters
     KamanjaMetadata.ShutdownMetadata
     PostMessageExecutionQueue.shutdown
@@ -714,6 +707,32 @@ class KamanjaManager extends Observer {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      var foundLocallyExecFlagSetting = false
+      try {
+        val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "DisableLogicalPartitioning").toString.replace("\"", "").trim
+        if (!flagStr.isEmpty) {
+          KamanjaConfiguration.locallyExecFlag = flagStr.toBoolean
+          foundLocallyExecFlagSetting = true
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      if (!foundLocallyExecFlagSetting) {
+        try {
+          val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "DisableLogicalPartitioning".toLowerCase).toString.replace("\"", "").trim
+          if (!flagStr.isEmpty) {
+            KamanjaConfiguration.locallyExecFlag = flagStr.toBoolean
           }
         } catch {
           case e: Exception => {
@@ -1296,6 +1315,7 @@ class KamanjaManager extends Observer {
     if (mem == null) return "{\"UsedMemory\":\"0 MB\",\"FreeMomory\":\"0 MB\",\"TotalMemory\":\"0 MB\",\"MaxMemory\":\"0 MB\"}\", "
     return "{\"UsedMemory\":\"" + mem.usedMemory + " MB\",\"FreeMomory\":\"" + mem.freeMemory + " MB\",\"TotalMemory\":\"" + mem.totalMemory + " MB\",\"MaxMemory\":\"" + mem.maxMemory + " MB\"}\", "
   }
+
   private class SignalHandler extends Observable with sun.misc.SignalHandler {
     def handleSignal(signalName: String) {
       sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)

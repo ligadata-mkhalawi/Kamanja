@@ -18,18 +18,20 @@
 package com.ligadata.KamanjaManager
 
 import com.ligadata.KamanjaBase._
-import com.ligadata.InputOutputAdapterInfo.{ InputAdapter, OutputAdapter, PartitionUniqueRecordKey, PartitionUniqueRecordValue, StartProcPartInfo }
+import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter, PartitionUniqueRecordKey, PartitionUniqueRecordValue, StartProcPartInfo, ThreadPartitions}
 import com.ligadata.StorageBase.DataStore
 import com.ligadata.Utils.ClusterStatus
-import com.ligadata.kamanja.metadata.{ BaseElem, MappedMsgTypeDef, BaseAttributeDef, StructTypeDef, EntityType, AttributeDef, MessageDef, ContainerDef, ModelDef }
+import com.ligadata.kamanja.metadata.{AttributeDef, BaseAttributeDef, BaseElem, ContainerDef, EntityType, MappedMsgTypeDef, MessageDef, ModelDef, StructTypeDef}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
+
 import scala.collection.mutable.TreeSet
-import com.ligadata.KamanjaBase.{ ContainerFactoryInterface, MessageFactoryInterface, ContainerInterface, EnvContext }
+import com.ligadata.KamanjaBase.{ContainerFactoryInterface, ContainerInterface, EnvContext, MessageFactoryInterface}
+
 import scala.collection.mutable.HashMap
-import org.apache.logging.log4j.{ Logger, LogManager }
+import org.apache.logging.log4j.{LogManager, Logger}
+
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Serialize._
 import com.ligadata.ZooKeeper._
@@ -38,23 +40,45 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.apache.curator.utils.ZKPaths
-import scala.actors.threadpool.{ Executors, ExecutorService }
-import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
+
+import scala.actors.threadpool.{ExecutorService, Executors}
+import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
+
 import scala.collection.JavaConversions._
-import com.ligadata.KvBase.{ Key }
+import com.ligadata.KvBase.Key
+import com.ligadata.Distribution._
+import com.ligadata.cache.{CacheCallback, CacheCallbackData, CacheQueueElement}
+import com.ligadata.throttler.ThrottleControllerCache
+import java.util.concurrent.ConcurrentHashMap
 
 case class AdapMaxPartitions(Adap: String, MaxParts: Int)
-case class NodeDistMap(Adap: String, Parts: List[String])
-case class DistributionMap(Node: String, Adaps: List[NodeDistMap])
+
+//case class NodeDistMap(Adap: String, Parts: List[String])
+//case class DistributionMap(Node: String, Adaps: List[NodeDistMap])
 case class FoundKeysInValidation(K: String, V1: String, V2: Int, V3: Int, V4: Long)
+
 case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap]])
+
+case class ClusterDistributionInfo(ClusterId: String, GlobalProcessThreads: Int, GlobalReaderThreads: Int, LogicalPartitions: Int, NodesDist: ArrayBuffer[NodeDistInfo])
+
+case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
+
+case class DistributionMap(var action: String, var distributionname: Option[String], var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
+
+case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
+
+case class PhysicalPartitions(var ThreadId: Short, Adaps: List[Adaps])
+
+case class Adaps(var Adap: String, var ReadPartitions: List[String])
+
+case class LogicalPartitions(var ThreadId: Short, var SRange: Int, var ERange: Int)
 
 object KamanjaLeader {
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val lock = new Object()
   private[this] val lock1 = new Object()
   private[this] var clusterStatus = ClusterStatus("", false, "", null)
-//  private[this] var zkLeaderLatch: ZkLeaderLatch = _
+  //  private[this] var zkLeaderLatch: ZkLeaderLatch = _
   private[this] var nodeId: String = _
   private[this] var zkConnectString: String = _
   private[this] var engineLeaderZkNodePath: String = _
@@ -63,19 +87,24 @@ object KamanjaLeader {
   private[this] var adaptersStatusPath: String = _
   private[this] var zkSessionTimeoutMs: Int = _
   private[this] var zkConnectionTimeoutMs: Int = _
-//  private[this] var zkEngineDistributionNodeListener: ZooKeeperListener = _
-//  private[this] var zkAdapterStatusNodeListener: ZooKeeperListener = _
-//  private[this] var zkDataChangeNodeListener: ZooKeeperListener = _
+  //  private[this] var zkEngineDistributionNodeListener: ZooKeeperListener = _
+  //  private[this] var zkAdapterStatusNodeListener: ZooKeeperListener = _
+  //  private[this] var zkDataChangeNodeListener: ZooKeeperListener = _
   private[this] var zkcForSetData: CuratorFramework = null
   private[this] val setDataLockObj = new Object()
-  private[this] var distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]() // Nodeid & Unique Keys (adapter unique name & unique key)
-//  private[this] var foundKeysInValidation: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = _
-  private[this] var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]() // Adapters & Max Partitions
+  // Nodeid & Unique Keys (adapter unique name & unique key)
+  private[this] var distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]()
+  private[this] var clusterDistributionMap: ClusterDistributionMap = null
+  //  private[this] var foundKeysInValidation: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = _
+  // Adapters & Max Partitions
+  private[this] var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
   private[this] var allPartitionsToValidate = scala.collection.mutable.Map[String, Set[String]]()
-  private[this] var nodesStatus = scala.collection.mutable.Set[String]() // NodeId
+  // NodeId
+  private[this] var nodesStatus = scala.collection.mutable.Set[String]()
   private[this] var expectedNodesAction: String = _
   private[this] var nodesActionIssuedTime: Long = 0
-  private[this] var curParticipents = Set[String]() // Derived from clusterStatus.participants
+  // Derived from clusterStatus.participants
+  private[this] var curParticipents = Set[String]()
   private[this] var canRedistribute = false
   private[this] var inputAdapters: ArrayBuffer[InputAdapter] = _
   private[this] var outputAdapters: ArrayBuffer[OutputAdapter] = _
@@ -84,12 +113,18 @@ object KamanjaLeader {
   private[this] var updatePartitionsFlag = false
   private[this] var saveEndOffsets = false
   private[this] var distributionExecutor = Executors.newFixedThreadPool(1)
+  private[this] var isLocallyExecuting = true
+  private[this] var globalLogicalPartitionsToThreadId = Array[Short]()
+  private[this] var isLogicalThreadProcessingOnLocalNode = Array[Boolean]()
+  private[this] var logicalPartitionAkkaExecs = Array[LogicalPartitionAkkaExecution]()
+  private[this] val localCacheQueueEntriesForCache = new ConcurrentHashMap[Long, KamanjaCacheQueueEntry](4096)
+  private[this] var globalThreadIdToLogicalPartitions = scala.collection.mutable.Map[Short, (Int, Int, Boolean)]()
+  private[this] var throttleControllerCache: ThrottleControllerCache = null
 
   private val MAX_ZK_RETRIES = 1
 
   def Reset: Unit = {
     clusterStatus = ClusterStatus("", false, "", null)
-//    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
     engineLeaderZkNodePath = null
@@ -98,12 +133,9 @@ object KamanjaLeader {
     adaptersStatusPath = null
     zkSessionTimeoutMs = 0
     zkConnectionTimeoutMs = 0
-//    zkEngineDistributionNodeListener = null
-//    zkAdapterStatusNodeListener = null
-//    zkDataChangeNodeListener = null
     zkcForSetData = null
     distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]() // Nodeid & Unique Keys (adapter unique name & unique key)
-//    foundKeysInValidation = null
+    clusterDistributionMap = null
     adapterMaxPartitions = scala.collection.mutable.Map[String, Int]() // Adapters & Max Partitions
     allPartitionsToValidate = scala.collection.mutable.Map[String, Set[String]]()
     nodesStatus = scala.collection.mutable.Set[String]() // NodeId
@@ -200,7 +232,8 @@ object KamanjaLeader {
       LOG.info("UpdatePartitionsNodeData => eventType: %s, eventPath: %s, eventPathData: %s, Extracted Node:%s".format(eventType, eventPath, evntPthData, extractedNode))
 
       if (eventType.compareToIgnoreCase("CHILD_UPDATED") == 0) {
-        if (curParticipents(extractedNode)) { // If this node is one of the participent, then work on this, otherwise ignore
+        if (curParticipents(extractedNode)) {
+          // If this node is one of the participent, then work on this, otherwise ignore
           try {
             val json = parse(evntPthData)
             if (json == null || json.values == null) // Not doing any action if not found valid json
@@ -222,8 +255,11 @@ object KamanjaLeader {
 
                 // Set DISTRIBUTE Action on engineDistributionZkNodePath
                 // Send all Unique keys to corresponding nodes 
-                val distribute =
-                  ("action" -> "distribute") ~
+
+                val sendJson = Distribution.createDistributionJson(clusterDistributionMap)
+
+                /** Commenting below code for LogicalParitions updates - Start **/
+                /* ("action" -> "distribute") ~
                     ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
                       ("Adap" -> kv._1) ~
                         ("MaxParts" -> kv._2))) ~
@@ -231,7 +267,10 @@ object KamanjaLeader {
                       ("Node" -> kv._1) ~
                         ("Adaps" -> kv._2.map(kv1 => ("Adap" -> kv1._1) ~
                           ("Parts" -> kv1._2.toList)))))
-                val sendJson = compact(render(distribute))
+                val sendJson = compact(render(distribute))*/
+                /** Commenting below code for LogicalParitions updates - End **/
+
+                SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, true)
                 LOG.warn("Partition Distribution: " + sendJson)
                 nodesActionIssuedTime = System.currentTimeMillis
                 SetNewDataToZkc(engineDistributionZkNodePath, sendJson.getBytes("UTF8"))
@@ -306,7 +345,7 @@ object KamanjaLeader {
     return (allPartitionUniqueRecordKeys.toArray, allPartsToValidate.toMap)
   }
 
-/*
+  /*
   private def getValidateAdaptersInfo: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = lock.synchronized {
 
     val savedValidatedAdaptInfo = envCtxt.GetValidateAdapterInformation
@@ -407,7 +446,7 @@ object KamanjaLeader {
   }
 */
 
-  private def UpdatePartitionsIfNeededOnLeader: Unit = lock.synchronized {
+  private def UpdatePartitionsIfNeededOnLeader(clusterId: String): Unit = lock.synchronized {
     val cs = GetClusterStatus
     if (cs.isLeader == false || cs.leaderNodeId != cs.nodeId) return // This is not leader, just return from here. This is same as (cs.leader != cs.nodeId)
 
@@ -432,21 +471,23 @@ object KamanjaLeader {
         })
 
         val (allPartitionUniqueRecordKeys, allPartsToValidate) = getAllPartitionsToValidate
-//        val validateFndKeysAndVals = getValidateAdaptersInfo
+        //        val validateFndKeysAndVals = getValidateAdaptersInfo
 
         allPartsToValidate.foreach(kv => {
           AddPartitionsToValidate(kv._1, kv._2)
         })
 
-//        foundKeysInValidation = validateFndKeysAndVals
+        //        foundKeysInValidation = validateFndKeysAndVals
 
-        // Update New partitions for all nodes and Set the text
-        val totalParticipents: Int = cs.participantsNodeIds.size
+        /** Commenting below code for LogicalParitions updates - Start **/
+        // Update New partitions for all nodes and Set the text   
+
+        /*  val totalParticipents: Int = cs.participantsNodeIds.size
         if (allPartitionUniqueRecordKeys != null && allPartitionUniqueRecordKeys.size > 0) {
           LOG.debug("allPartitionUniqueRecordKeys: %d".format(allPartitionUniqueRecordKeys.size))
           var cntr: Int = 0
           allPartitionUniqueRecordKeys.foreach(k => {
-//            val fnd = foundKeysInValidation.getOrElse(k._2.toLowerCase, null)
+            //            val fnd = foundKeysInValidation.getOrElse(k._2.toLowerCase, null)
             val af = tmpDistMap(cntr % totalParticipents)._2.getOrElse(k._1, null)
             if (af == null) {
               val af1 = new ArrayBuffer[String]
@@ -461,7 +502,18 @@ object KamanjaLeader {
 
         tmpDistMap.foreach(tup => {
           distributionMap(tup._1) = tup._2
-        })
+        })*/
+        /** Commenting below code for LogicalParitions updates - End **/
+
+        val clusterDistInfo = getClusterNodeThreadsInfo(clusterId)
+
+        LOG.debug("clusterId : " + clusterDistInfo.ClusterId + "  cluster.GlobalProcessThreads:  " + clusterDistInfo.GlobalProcessThreads + " cluster.GlobalReaderThreads: " + clusterDistInfo.GlobalReaderThreads + " cluster.LogicalPartitions:  " + clusterDistInfo.LogicalPartitions)
+        clusterDistInfo.NodesDist.foreach { node => {
+          LOG.debug("nodeId : " + node.Nodeid + " node.ProcessThreads:  " + node.ProcessThreads + " node.ReaderThreads: " + node.ReaderThreads)
+        }
+        }
+        clusterDistributionMap = Distribution.createDistribution(clusterDistInfo, allPartitionUniqueRecordKeys, cs.leaderNodeId)
+
       }
 
       expectedNodesAction = "stopped"
@@ -535,15 +587,16 @@ object KamanjaLeader {
     LOG.debug("EventChangeCallback => Exit")
   }
 
-  private def GetUniqueKeyValue(uk: String): String  = {
+  private def GetUniqueKeyValue(uk: String): String = {
     envCtxt.getAdapterUniqueKeyValue(uk)
   }
 
-  private def StartNodeKeysMap(nodeKeysMap: scala.collection.immutable.Map[String, Array[String]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
+  // private def StartNodeKeysMap(nodeKeysMap: scala.collection.immutable.Map[String, Array[String]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {   /** Commenting - LogicalParitions updates  **/
+  private def StartNodeKeysMap(nodeKeysMap: scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
+
     if (nodeKeysMap == null || nodeKeysMap.size == 0) {
       return true
     }
-
     var remainingInpAdapters = inputAdapters.toArray
     var failedWaitTime = 15000 // Wait time starts at 15 secs
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
@@ -552,13 +605,61 @@ object KamanjaLeader {
     while (remainingInpAdapters.size > 0) {
       var failedInpAdapters = ArrayBuffer[InputAdapter]()
       remainingInpAdapters.foreach(ia => {
+        var threadPartitions = ArrayBuffer[ThreadPartitions]()
         val name = ia.UniqueName
         try {
-          val uAK = nodeKeysMap.getOrElse(name, null)
-          if (uAK != null) {
-            val uKV = uAK.map(uk => { GetUniqueKeyValue(uk) })
+          //val uAK = nodeKeysMap.getOrElse(name, null) ///** Commenting - LogicalParitions updates  **/
+          val threadUAK = nodeKeysMap.getOrElse(name, null)
 
-            val maxParts = adapMaxPartsMap.getOrElse(name, 0)
+          if (threadUAK != null) {
+            threadUAK.foreach(tUAK => {
+              if (tUAK != null) {
+                val uAK = tUAK._2
+                if (uAK != null) {
+                  uAK.foreach { u => {
+                    LOG.debug(" GetUniqueKeyValue(uk)  " + GetUniqueKeyValue(u))
+                  }
+                  }
+                  val uKV = uAK.map(uk => {
+                    GetUniqueKeyValue(uk)
+                  })
+                  val maxParts = adapMaxPartsMap.getOrElse(name, 0)
+                  LOG.info("DistributionCheck:On Node %s for Adapter %s with Max Partitions %d UniqueKeys %s, UniqueValues %s".format(nodeId, name, maxParts, uAK.mkString(","), uKV.mkString(",")))
+                  LOG.debug("Deserializing Keys")
+                  val keys = uAK.map(k => ia.DeserializeKey(k))
+
+                  LOG.debug("Deserializing Values")
+                  val vals = uKV.map(v => ia.DeserializeValue(if (v != null) v else null))
+                  LOG.debug("Deserializing Keys & Values done")
+
+                  val quads = new ArrayBuffer[StartProcPartInfo](keys.size)
+
+                  for (i <- 0 until keys.size) {
+                    val key = keys(i)
+
+                    val info = new StartProcPartInfo
+                    info._key = key
+                    info._val = vals(i)
+                    info._validateInfoVal = vals(i)
+                    quads += info
+                  }
+                  var threadPartInfo = new ThreadPartitions
+                  threadPartInfo.threadId = tUAK._1.toInt
+                  threadPartInfo.threadPartitions = quads.toArray
+                  threadPartitions += threadPartInfo
+                }
+              }
+            })
+            LOG.info(ia.UniqueName + " ==> Processing Keys & values: " + threadPartitions.map(qt => {
+              qt.threadPartitions.map(q => {
+                (q._key.Serialize, q._val.Serialize, q._validateInfoVal.Serialize)
+              })
+            }).mkString(","))
+            ia.StartProcessing(threadPartitions.toArray, true)
+          }
+
+          /** Commenting below code for LogicalParitions updates - Start **/
+          /*   val maxParts = adapMaxPartsMap.getOrElse(name, 0)
             LOG.info("DistributionCheck:On Node %s for Adapter %s with Max Partitions %d UniqueKeys %s, UniqueValues %s".format(nodeId, name, maxParts, uAK.mkString(","), uKV.mkString(",")))
 
             LOG.debug("Deserializing Keys")
@@ -583,7 +684,9 @@ object KamanjaLeader {
 
             LOG.info(ia.UniqueName + " ==> Processing Keys & values: " + quads.map(q => { (q._key.Serialize, q._val.Serialize, q._validateInfoVal.Serialize) }).mkString(","))
             ia.StartProcessing(quads.toArray, true)
-          }
+          }*/
+          /** Commenting below code for LogicalParitions updates - End **/
+
         } catch {
           case fae: FatalAdapterException => {
             LOG.error("Failed to start processing input adapter:" + name, fae)
@@ -607,7 +710,9 @@ object KamanjaLeader {
           LOG.error("Failed to start processing %d input adapters while distributing. Waiting for another %d milli seconds and going to start them again.".format(remainingInpAdapters.size, failedWaitTime))
           Thread.sleep(failedWaitTime)
         } catch {
-          case e: Exception => { LOG.warn("", e) }
+          case e: Exception => {
+            LOG.warn("", e)
+          }
         }
         // Adjust time for next time
         if (failedWaitTime < maxFailedWaitTime) {
@@ -632,23 +737,104 @@ object KamanjaLeader {
     adapterMax.toMap
   }
 
-  private def GetDistMapForNodeId(distributionmap: Option[List[DistributionMap]], nodeId: String): scala.collection.immutable.Map[String, Array[String]] = {
+  private def GetLogicalPartitionsForNodeId(distributionmap: List[NodeDistMap], nodeId: String): Array[LogicalPartitions] = {
+    var nodeLogicalParts: Array[LogicalPartitions] = null
+    distributionmap.foreach(nodedist => {
+      if (nodedist.Node == nodeId) {
+        nodeLogicalParts = nodedist.LogicalPartitions.toArray
+      }
+    })
+    nodeLogicalParts
+  }
+
+  private def GetNodeDistMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]] = {
+    var threadsPartitionMap = scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]]()
+    distributionmap.foreach { nodedist => {
+      if (nodedist.Node == nodeId) {
+        if (nodedist.PhysicalPartitions == null || (nodedist.PhysicalPartitions != null && nodedist.PhysicalPartitions.size == 0)) throw new Exception("PhysicalPartitions in distribution map is null")
+        nodedist.PhysicalPartitions.foreach { physicalPart => {
+          physicalPart.Adaps.foreach { adap => {
+            val threadPartsMap = (physicalPart.ThreadId, adap.ReadPartitions)
+            println(physicalPart.ThreadId + "  " + adap.ReadPartitions)
+            if (threadsPartitionMap.contains(adap.Adap))
+              threadsPartitionMap(adap.Adap) += threadPartsMap
+            else threadsPartitionMap(adap.Adap) = ArrayBuffer(threadPartsMap)
+          }
+          }
+        }
+        }
+        LOG.debug(threadsPartitionMap)
+      }
+    }
+    }
+    threadsPartitionMap
+  }
+
+  private def GetNodeDistLogicalPartsMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[Int, (Int, Int)] = {
+    var threadsPartitionMap = scala.collection.mutable.Map[Int, (Int, Int)]()
+    distributionmap.foreach { nodedist => {
+      if (nodedist.Node == nodeId) {
+        if (nodedist.LogicalPartitions == null || (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size == 0)) throw new Exception("LogicalPartitions in distribution map is null")
+        if (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size > 0) {
+          nodedist.LogicalPartitions.foreach { logicalPart => {
+            var low: Int = 0
+            var high: Int = 0
+            if (logicalPart != null) {
+              low = logicalPart.SRange
+              high = logicalPart.ERange
+              val range = (low.toInt, high.toInt)
+              threadsPartitionMap(logicalPart.ThreadId.toInt) = range
+            }
+          }
+          }
+        }
+        LOG.debug("Logical APrts " + threadsPartitionMap)
+      }
+    }
+    }
+    threadsPartitionMap
+  }
+
+  /** Commenting below code for LogicalParitions updates - Start **/
+
+  /*  private def GetDistMapForNodeId(distributionmap: Option[List[DistributionMap]], nodeId: String): scala.collection.immutable.Map[String, Array[String]] = {
     val retVals = scala.collection.mutable.Map[String, Array[String]]()
+    LOG.debug("nodeId " + nodeId)
     if (distributionmap != None && distributionmap != null) {
       val nodeDistMap = distributionmap.get.filter(ndistmap => { (ndistmap.Node.compareToIgnoreCase(nodeId) == 0) })
       if (nodeDistMap != None && nodeDistMap != null) { // At most 1 value, but not enforcing
+        if (LOG.isTraceEnabled) LOG.trace("1.exec")
         nodeDistMap.foreach(ndistmap => {
+          if (LOG.isTraceEnabled) LOG.trace("2.exec")
           ndistmap.Adaps.map(ndm => {
             retVals(ndm.Adap) = ndm.Parts.toArray
           })
         })
       }
     }
-
+    if (LOG.isTraceEnabled) LOG.trace("3.exec -- " + retVals.toMap)
     retVals.toMap
+  }*/
+  /** Commenting below code for LogicalParitions updates - End **/
+
+  private def SaveProcessingOffsetsAndClearEntries(adapterNames: Set[String], clearCache: Boolean): Unit = {
+    if (clearCache) {
+      // This has to be done on every node
+      localCacheQueueEntriesForCache.clear()
+    }
+    if (!IsLeaderNode)
+      return
+
+    val allValues = getThrottleControllerCache.getAll()
+
+    //BUGBUG:: Save all data for keys
+
+    if (clearCache) {
+      getThrottleControllerCache.clear()
+    }
   }
 
-  // Using canRedistribute as startup mechanism here, because until we do bootstap ignore all the messages from this 
+  // Using canRedistribute as startup mechanism here, because until we do bootstap ignore all the messages from this
   private def ActionOnAdaptersDistImpl(receivedJsonStr: String): Unit = lock.synchronized {
     if (LOG.isDebugEnabled)
       LOG.debug("ActionOnAdaptersDistImpl => receivedJsonStr: " + receivedJsonStr)
@@ -672,14 +858,18 @@ object KamanjaLeader {
     try {
       // Perform the action here (STOP or DISTRIBUTE for now)
       val json = parse(receivedJsonStr)
-      if (json == null || json.values == null) { // Not doing any action if not found valid json
+      if (json == null || json.values == null) {
+        // Not doing any action if not found valid json
         LOG.error("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
         return
       }
 
       implicit val jsonFormats: Formats = DefaultFormats
-      val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap]
-
+      // val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap]   /** Commenting - LogicalParitions updates  **/
+      val actionOnAdaptersMap = json.extract[DistributionMap]
+      LOG.debug("actionOnAdaptersMap.action " + actionOnAdaptersMap.action)
+      LOG.debug("totalprocessthreads " + actionOnAdaptersMap.totalprocessthreads)
+      LOG.debug("totalreaderthreads " + actionOnAdaptersMap.totalreaderthreads)
       actionOnAdaptersMap.action match {
         case "stop" => {
           try {
@@ -689,7 +879,8 @@ object KamanjaLeader {
             val maxTries = 5
             var tryNo = 0
 
-            while (remInputAdaps.size > 0 && tryNo < maxTries) { // maximum trying only 5 times
+            while (remInputAdaps.size > 0 && tryNo < maxTries) {
+              // maximum trying only 5 times
               tryNo += 1
               var failedInputAdaps = ArrayBuffer[InputAdapter]()
 
@@ -714,14 +905,15 @@ object KamanjaLeader {
                   }
                 }
               })
-
               remInputAdaps = failedInputAdaps.toArray
               if (remInputAdaps.size > 0 && distributionExecutor.isShutdown == false) {
                 try {
                   LOG.error("Failed to stop %d input adapters. Waiting for another %d milli seconds and going to start them again.".format(remInputAdaps.size, failedWaitTime))
                   Thread.sleep(failedWaitTime)
                 } catch {
-                  case e: Exception => { LOG.warn("", e) }
+                  case e: Exception => {
+                    LOG.warn("", e)
+                  }
                 }
                 // Adjust time for next time
                 if (failedWaitTime < maxFailedWaitTime) {
@@ -733,6 +925,37 @@ object KamanjaLeader {
               if (distributionExecutor.isShutdown) // If it is shutting down, no more retries
                 tryNo = maxTries
             }
+
+            // Wait for some time if we are in the middle of processing
+            // Loop upto 5000 times
+            val TxnsMaxTries = 5000
+            tryNo = 0
+
+            var runningTxns = KamanjaLeader.getThrottleControllerCache.size
+            while (runningTxns > 0 && tryNo < TxnsMaxTries) {
+              try {
+                // Waiting only 1ms
+                Thread.sleep(1)
+              } catch {
+                case e: Throwable => {
+                  // LOG.error("Failed to sleep", e)
+                }
+              }
+              runningTxns = KamanjaLeader.getThrottleControllerCache.size
+              tryNo += 1
+            }
+
+            // BUGBUG:: Need to save the state in case if we shutdown
+            if (LOG.isInfoEnabled())
+              LOG.info("Stopping processing")
+            isLocallyExecuting = true
+            KamanjaConfiguration.totalReadThreadCount = 1
+            KamanjaConfiguration.totalProcessingThreadCount = 1
+            globalThreadIdToLogicalPartitions.clear
+            globalLogicalPartitionsToThreadId = Array[Short](1)
+            isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
+            ClearAllLogicalPartitionAkkaExecs
+            SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, false)
 
             // Sleep for a sec
             try {
@@ -764,7 +987,7 @@ object KamanjaLeader {
             }
 
             // Write all adapters end points in case if requested
-            if (saveEndOffsets) {
+            if (false && saveEndOffsets) {
               saveEndOffsets = false
               inputAdapters.foreach(ia => {
                 try {
@@ -780,7 +1003,7 @@ object KamanjaLeader {
                           value = kv._2.Serialize
                           if (key != null && value != null && key.size > 0 && value.size > 0) {
                             envCtxt.setAdapterUniqueKeyValue(key, value)
-                            // LOG.warn("===============> Partition Key:%s, Partition Value:%s".format(key, value))
+                            if (LOG.isTraceEnabled) LOG.trace("Partition Key:%s, Partition Value:%s".format(key, value))
                           }
                         } catch {
                           case e: Throwable => {}
@@ -799,10 +1022,10 @@ object KamanjaLeader {
 
             if (distributionExecutor.isShutdown == false) {
               // Save the state and Clear the maps
-//              ProcessedAdaptersInfo.CommitAdapterValues
+              //              ProcessedAdaptersInfo.CommitAdapterValues
               ProcessedAdaptersInfo.clearInstances
               // envCtxt.PersistLocalNodeStateEntries
-//              envCtxt.clearIntermediateResults
+              //              envCtxt.clearIntermediateResults
 
               // Set STOPPED action in adaptersStatusPath + "/" + nodeId path
               val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
@@ -818,25 +1041,94 @@ object KamanjaLeader {
           }
         }
         case "distribute" => {
-//          envCtxt.clearIntermediateResults // We may not need it here. But anyway safe side
+          //          envCtxt.clearIntermediateResults // We may not need it here. But anyway safe side
           // Clear the maps
           ProcessedAdaptersInfo.clearInstances
           var distributed = true
           try {
             // get Unique Keys for this nodeId
             // Distribution Map 
+            LOG.debug("nodeId " + nodeId)
+            LOG.debug("actionOnAdaptersMap.distributionmap  " + actionOnAdaptersMap.distributionmap)
             if (actionOnAdaptersMap.distributionmap != None && actionOnAdaptersMap.distributionmap != null) {
               val adapMaxPartsMap = GetAdaptersMaxPartitioinsMap(actionOnAdaptersMap.adaptermaxpartitions)
-              val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+
+              //  val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId) /** Commenting - LogicalParitions updates  **/
+              val nodeDistMap = GetNodeDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+              val logicalPartsForNode = GetLogicalPartitionsForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+
+              if (LOG.isInfoEnabled())
+                LOG.info("Stopping processing")
+              KamanjaConfiguration.totalReadThreadCount = 1
+              KamanjaConfiguration.totalProcessingThreadCount = 1
+              globalThreadIdToLogicalPartitions.clear
+              globalLogicalPartitionsToThreadId = new Array[Short](KamanjaConfiguration.totalPartitionCount)
+
+              KamanjaConfiguration.totalProcessingThreadCount = if (actionOnAdaptersMap.totalprocessthreads != None) actionOnAdaptersMap.totalprocessthreads.get else 1
+              KamanjaConfiguration.totalReadThreadCount = if (actionOnAdaptersMap.totalreaderthreads != None) actionOnAdaptersMap.totalreaderthreads.get else 1
+
+              if (KamanjaConfiguration.totalProcessingThreadCount < 1)
+                KamanjaConfiguration.totalProcessingThreadCount = 1
+              if (KamanjaConfiguration.totalReadThreadCount < 1)
+                KamanjaConfiguration.totalReadThreadCount = 1
+
+              isLogicalThreadProcessingOnLocalNode = new Array[Boolean](KamanjaConfiguration.totalProcessingThreadCount)
+
+              // Preparing global mapping between startPartRange, endPartitionRange to threadId
+              actionOnAdaptersMap.distributionmap.foreach(nodedist => {
+                val isLocalThread = nodedist.Node == nodeId
+                nodedist.LogicalPartitions.foreach(lp => {
+                  val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
+                  for (i <- startPartRange to endPartitionRange)
+                    globalLogicalPartitionsToThreadId(i) = threadId
+                  globalThreadIdToLogicalPartitions(threadId) = (startPartRange, endPartitionRange, isLocalThread)
+                  isLogicalThreadProcessingOnLocalNode(threadId) = isLocalThread
+                })
+              })
+
+              if (!KamanjaConfiguration.locallyExecFlag) {
+                if (LOG.isInfoEnabled())
+                  LOG.info("Creating %d logical partition queues".format(KamanjaConfiguration.totalProcessingThreadCount))
+                logicalPartitionAkkaExecs = new Array[LogicalPartitionAkkaExecution](KamanjaConfiguration.totalProcessingThreadCount)
+                // BUGBUG get this cache basename from distribution
+                val cacheBaseName: String = if (actionOnAdaptersMap.distributionname != None) actionOnAdaptersMap.distributionname.get else "Dist_" + com.ligadata.Utils.Utils.GetCurDtTmStr
+                val cluster1 = mdMgr.Clusters.getOrElse(KamanjaConfiguration.clusterId, null)
+                var localNodeLogicalPartsPort = cluster1.GlobalLogicalPartitionCachePort
+                var localhostIp = "localhost"
+                val localNodeId = KamanjaConfiguration.nodeId.toString
+                val hostsMap = scala.collection.mutable.Map[String, String]()
+                val hosts = mdMgr.Nodes.values.map(nd => {
+                  hostsMap(nd.nodeId) = nd.nodeIpAddr
+                  val port = if (nd.logicalPartitionCachePort <= 0) cluster1.GlobalLogicalPartitionCachePort else nd.logicalPartitionCachePort
+                  if (nd.nodeId.equalsIgnoreCase(localNodeId)) {
+                    localNodeLogicalPartsPort = port
+                    localhostIp = nd.nodeIpAddr
+                  }
+                  "%s[%d]".format(nd.nodeIpAddr, port)
+                }).mkString(",")
+
+                globalThreadIdToLogicalPartitions.foreach(kv => {
+                  if (LOG.isDebugEnabled())
+                    LOG.debug("Creating %d logical partition executor".format(kv._1))
+                  logicalPartitionAkkaExecs(kv._1) = new LogicalPartitionAkkaExecution(cacheBaseName, kv._1, kv._2._1, kv._2._2, localhostIp, localNodeLogicalPartsPort, kv._2._3)
+                })
+              }
+
+              LOG.info("isLocallyExecuting:" + isLocallyExecuting)
+              isLocallyExecuting = KamanjaConfiguration.locallyExecFlag
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
 
-//              if (actionOnAdaptersMap.foundKeysInValidation != None && actionOnAdaptersMap.foundKeysInValidation != null) {
-//                actionOnAdaptersMap.foundKeysInValidation.get.foreach(ks => {
-//                  foundKeysInVald(ks.K.toLowerCase) = (ks.V1, ks.V2, ks.V3, ks.V4)
-//                })
-//
-//              }
+              LOG.debug("adapMaxPartsMap: " + adapMaxPartsMap)
+              nodeDistMap.foreach(n => {
+                LOG.debug("node " + n._1)
+                for (i <- 0 until n._2.size) LOG.debug(n._2(i))
+              })
+
+              LOG.debug("receivedJsonStr:  " + receivedJsonStr)
+              LOG.debug("foundKeysInVald.toMap:  " + foundKeysInVald.toMap)
+
+              // StartNodeKeysMap(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)  /** Commenting below code for LogicalParitions updates - Start **/
               StartNodeKeysMap(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)
             }
 
@@ -886,6 +1178,15 @@ object KamanjaLeader {
       LOG.debug("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
   }
 
+  /*
+    class LogicalPartitionCallback(threadId: Int) extends CacheCallback {
+      @throws(classOf[Exception])
+      override def call(callbackData: CacheCallbackData): Unit = {
+        //BUGBUG:: make sure this trigger LeanringEngineRemoteExecution.executeModels for execution
+      }
+    }
+  */
+
   private def ActionOnAdaptersDistribution(receivedJsonStr: String): Unit = {
     ActionOnAdaptersDistImpl(receivedJsonStr)
   }
@@ -903,37 +1204,16 @@ object KamanjaLeader {
     try {
       // Perform the action here
       val json = parse(receivedJsonStr)
-      if (json == null || json.values == null) { // Not doing any action if not found valid json
+      if (json == null || json.values == null) {
+        // Not doing any action if not found valid json
         LOG.error("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
         return
       }
 
       val values = json.values.asInstanceOf[Map[String, Any]]
-//      val changedMsgsContainers = values.getOrElse("changeddata", null)
+      //      val changedMsgsContainers = values.getOrElse("changeddata", null)
       val tmpChngdContainersAndKeys = values.getOrElse("changeddatakeys", null)
 
-//      if (changedMsgsContainers != null) {
-//        // Expecting List/Array of String here
-//        var changedVals: Array[String] = null
-//        if (changedMsgsContainers.isInstanceOf[List[_]]) {
-//          try {
-//            changedVals = changedMsgsContainers.asInstanceOf[List[String]].toArray
-//          } catch {
-//            case e: Exception => { LOG.warn("", e) }
-//          }
-//        } else if (changedMsgsContainers.isInstanceOf[Array[_]]) {
-//          try {
-//            changedVals = changedMsgsContainers.asInstanceOf[Array[String]]
-//          } catch {
-//            case e: Exception => { LOG.warn("", e) }
-//          }
-//        }
-//
-//        if (changedVals != null) {
-//          envCtxt.clearIntermediateResults(changedVals)
-//        }
-//      }
-//
       if (tmpChngdContainersAndKeys != null) {
         val changedContainersAndKeys = if (tmpChngdContainersAndKeys.isInstanceOf[List[_]]) tmpChngdContainersAndKeys.asInstanceOf[List[_]] else if (tmpChngdContainersAndKeys.isInstanceOf[Array[_]]) tmpChngdContainersAndKeys.asInstanceOf[Array[_]].toList else null
         if (changedContainersAndKeys != null && changedContainersAndKeys.size > 0) {
@@ -961,25 +1241,33 @@ object KamanjaLeader {
                   try {
                     keys = tmpKeys.asInstanceOf[List[Any]]
                   } catch {
-                    case e: Exception => { LOG.warn("", e) }
+                    case e: Exception => {
+                      LOG.warn("", e)
+                    }
                   }
                 } else if (tmpKeys.isInstanceOf[Array[_]]) {
                   try {
                     keys = tmpKeys.asInstanceOf[Array[Any]].toList
                   } catch {
-                    case e: Exception => { LOG.warn("", e) }
+                    case e: Exception => {
+                      LOG.warn("", e)
+                    }
                   }
                 } else if (tmpKeys.isInstanceOf[Map[_, _]]) {
                   try {
                     keys = tmpKeys.asInstanceOf[Map[String, Any]].toList
                   } catch {
-                    case e: Exception => { LOG.warn("", e) }
+                    case e: Exception => {
+                      LOG.warn("", e)
+                    }
                   }
                 } else if (tmpKeys.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
                   try {
                     keys = tmpKeys.asInstanceOf[scala.collection.mutable.Map[String, Any]].toList
                   } catch {
-                    case e: Exception => { LOG.warn("", e) }
+                    case e: Exception => {
+                      LOG.warn("", e)
+                    }
                   }
                 }
 
@@ -991,25 +1279,33 @@ object KamanjaLeader {
                       try {
                         oneKey = k.asInstanceOf[List[(String, Any)]].toMap
                       } catch {
-                        case e: Exception => { LOG.warn("", e) }
+                        case e: Exception => {
+                          LOG.warn("", e)
+                        }
                       }
                     } else if (k.isInstanceOf[Array[_]]) {
                       try {
                         oneKey = k.asInstanceOf[Array[(String, Any)]].toMap
                       } catch {
-                        case e: Exception => { LOG.warn("", e) }
+                        case e: Exception => {
+                          LOG.warn("", e)
+                        }
                       }
                     } else if (k.isInstanceOf[Map[_, _]]) {
                       try {
                         oneKey = k.asInstanceOf[Map[String, Any]]
                       } catch {
-                        case e: Exception => { LOG.warn("", e) }
+                        case e: Exception => {
+                          LOG.warn("", e)
+                        }
                       }
                     } else if (k.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
                       try {
                         oneKey = k.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap
                       } catch {
-                        case e: Exception => { LOG.warn("", e) }
+                        case e: Exception => {
+                          LOG.warn("", e)
+                        }
                       }
                     }
 
@@ -1039,96 +1335,7 @@ object KamanjaLeader {
                   }
                 }
               }
-            } // else // not handling              if (contName.size > 0 && tmpKeys != null) {
-            // Expecting List/Array of Keys
-//            var keys: List[Any] = null
-//            if (tmpKeys.isInstanceOf[List[_]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[List[Any]]
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            } else if (tmpKeys.isInstanceOf[Array[_]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[Array[Any]].toList
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            } else if (tmpKeys.isInstanceOf[Map[_, _]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[Map[String, Any]].toList
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            } else if (tmpKeys.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[scala.collection.mutable.Map[String, Any]].toList
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            }
-//
-//            if (keys != null && keys.size > 0) {
-//              var loadableKeys = ArrayBuffer[Key]()
-//              val ks = keys.map(k => {
-//                var oneKey: Map[String, Any] = null
-//                if (k.isInstanceOf[List[_]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[List[(String, Any)]].toMap
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                } else if (k.isInstanceOf[Array[_]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[Array[(String, Any)]].toMap
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                } else if (k.isInstanceOf[Map[_, _]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[Map[String, Any]]
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                } else if (k.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                }
-//
-//                if (oneKey != null) {
-//                  val bk = oneKey.getOrElse("bk", null)
-//                  if (bk != null) {
-//                    val tm = oneKey.getOrElse("tm", "0").toString().toLong
-//                    val tx = oneKey.getOrElse("tx", "0").toString().toLong
-//                    val rid = oneKey.getOrElse("rid", "0").toString().toInt
-//                    loadableKeys += Key(tm, bk.asInstanceOf[List[String]].toArray, tx, rid)
-//                  }
-//                }
-//              })
-//
-//              if (loadableKeys.size > 0) {
-//                try {
-//                  logger.debug("Loading Keys => Txnid:%d, ContainerName:%s, Keys:%s".format(txnid, contName, loadableKeys.map(k => (k.timePartition, k.bucketKey.mkString("="), k.transactionId, k.rowId)).mkString(",")))
-//                  envCtxt.ReloadKeys(txnid, contName, loadableKeys.toList)
-//                } catch {
-//                  case e: Exception => {
-//                    logger.error("Failed to reload keys for container:" + contName, e)
-//                  }
-//                  case t: Throwable => {
-//                    logger.error("Failed to reload keys for container:" + contName, t)
-//                  }
-//                }
-//              }
-//            }
-//
-//
-//          }
-//        } // else // not handling
-//
-//
+            }
           })
         }
       }
@@ -1151,7 +1358,8 @@ object KamanjaLeader {
   private def ParticipentsAdaptersStatus(eventType: String, eventPath: String, eventPathData: Array[Byte], childs: Array[(String, Array[Byte])]): Unit = {
     if (LOG.isDebugEnabled)
       LOG.debug("ParticipentsAdaptersStatus => Enter, eventType:%s, eventPath:%s ".format(eventType, eventPath))
-    if (IsLeaderNode == false) { // Not Leader node
+    if (IsLeaderNode == false) {
+      // Not Leader node
       if (LOG.isDebugEnabled)
         LOG.debug("ParticipentsAdaptersStatus => Exit, eventType:%s, eventPath:%s ".format(eventType, eventPath))
       return
@@ -1233,7 +1441,8 @@ object KamanjaLeader {
       }
     }
   }
-/*
+
+  /*
   private def GetEndPartitionsValuesForValidateAdapters: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
     val uniqPartKeysValues = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
 
@@ -1312,12 +1521,12 @@ object KamanjaLeader {
         envCtxt.createZkPathChildrenCacheListener(adaptersStatusPath, false, ParticipentsAdaptersStatus)
         envCtxt.createZkPathListener(engineDistributionZkNodePath, ActionOnAdaptersDistribution)
         envCtxt.createZkPathListener(dataChangeZkNodePath, ActionOnDataChange)
-//        zkAdapterStatusNodeListener = new ZooKeeperListener
-//        zkAdapterStatusNodeListener.CreatePathChildrenCacheListener(zkConnectString, adaptersStatusPath, false, ParticipentsAdaptersStatus, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-//        zkEngineDistributionNodeListener = new ZooKeeperListener
-//        zkEngineDistributionNodeListener.CreateListener(zkConnectString, engineDistributionZkNodePath, ActionOnAdaptersDistribution, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-//        zkDataChangeNodeListener = new ZooKeeperListener
-//        zkDataChangeNodeListener.CreateListener(zkConnectString, dataChangeZkNodePath, ActionOnDataChange, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkAdapterStatusNodeListener = new ZooKeeperListener
+        //        zkAdapterStatusNodeListener.CreatePathChildrenCacheListener(zkConnectString, adaptersStatusPath, false, ParticipentsAdaptersStatus, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkEngineDistributionNodeListener = new ZooKeeperListener
+        //        zkEngineDistributionNodeListener.CreateListener(zkConnectString, engineDistributionZkNodePath, ActionOnAdaptersDistribution, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkDataChangeNodeListener = new ZooKeeperListener
+        //        zkDataChangeNodeListener.CreateListener(zkConnectString, dataChangeZkNodePath, ActionOnDataChange, zkSessionTimeoutMs, zkConnectionTimeoutMs)
         try {
           Thread.sleep(500)
         } catch {
@@ -1389,7 +1598,8 @@ object KamanjaLeader {
                     }
                   }
 
-                  if (allNodesUp == false) { // If all nodes are not up then wait for long time
+                  if (allNodesUp == false) {
+                    // If all nodes are not up then wait for long time
                     // (/* zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs */) = envCtxt.getZookeeperInfo()
                     mxTm = if (zkSessionTimeoutMs > zkConnectionTimeoutMs) zkSessionTimeoutMs else zkConnectionTimeoutMs
                     if (mxTm < 5000) // if the value is < 5secs, we are taking 5 secs
@@ -1397,7 +1607,8 @@ object KamanjaLeader {
                     LOG.warn("Got Redistribution request. Participents are {%s}. Looks like all nodes are not yet up. Waiting for %d milli seconds to see whether there are any more changes in participents".format(cs.participantsNodeIds.mkString(","), mxTm))
                     lastParticipentChngDistTime = System.currentTimeMillis + mxTm + 5000 // waiting another 5secs
                     execDefaultPath = false
-                  } else { // if all nodes are up, no need to wait any more
+                  } else {
+                    // if all nodes are up, no need to wait any more
                     LOG.warn("All Participents are {%s} up. Going to distribute the work now".format(cs.participantsNodeIds.mkString(",")))
                   }
                 } else if (lastParticipentChngDistTime > System.currentTimeMillis) {
@@ -1409,20 +1620,21 @@ object KamanjaLeader {
               if (execDefaultPath && distributionExecutor.isShutdown == false) {
                 lastParticipentChngCntr = 0
                 if (GetUpdatePartitionsFlagAndReset) {
-                  UpdatePartitionsIfNeededOnLeader
+                  UpdatePartitionsIfNeededOnLeader(KamanjaConfiguration.clusterId)
                   wait4ValidateCheck = 180 // When ever rebalancing it should be 180 secs
                   updatePartsCntr = 0
                   getValidateAdapCntr = 0
                 } else if (IsLeaderNode) {
                   if (GetUpdatePartitionsFlag == false) {
                     // Get Partitions for every N secs and see whether any partitions changes from previous get
-                    if (updatePartsCntr >= 30) { // for every 30 secs
+                    if (updatePartsCntr >= 30) {
+                      // for every 30 secs
                       CheckForPartitionsChange
                       updatePartsCntr = 0
                     } else {
                       updatePartsCntr += 1
                     }
-/*
+                    /*
                     if (wait4ValidateCheck > 0) {
                       // Get Partitions keys and values for every M secs
                       if (getValidateAdapCntr >= wait4ValidateCheck) { // for every waitForValidateCheck secs
@@ -1464,11 +1676,33 @@ object KamanjaLeader {
         envCtxt.registerNodesChangeNotification(EventChangeCallback)
         logger.warn("DistributionCheck:Done registerNodesChangeNotification in KamanjaLeader")
 
+        val clusterConfigInfo = mdMgr.ClusterCfgs.getOrElse(KamanjaConfiguration.clusterId, null)
+
+        val cacheInfo = clusterConfigInfo.cfgMap.getOrElse("Cache", null)
+        if (cacheInfo != null && cacheInfo.trim.size > 0) {
+          try {
+            implicit val jsonFormats: Formats = DefaultFormats
+            val cacheConfigParseInfo = parse(cacheInfo).extract[JCacheConfig]
+            val hosts = mdMgr.Nodes.values.map(nd => {
+              "%s[%d]".format(nd.nodeIpAddr, cacheConfigParseInfo.CacheStartPort)
+            }).mkString(",")
+            val tmpThrottleControllerCache = new ThrottleControllerCache(hosts, cacheConfigParseInfo.CacheStartPort, true)
+            tmpThrottleControllerCache.Init();
+            throttleControllerCache = tmpThrottleControllerCache
+          } catch {
+            case e: Throwable => {
+              throw new Exception("Not found valid Cache config to start logical partitions ThrottleControllerCache", e)
+            }
+          }
+        } else {
+          throw new Exception("Not found valid Cache config to start logical partitions ThrottleControllerCache")
+        }
+
         // Forcing to distribute
         // SetUpdatePartitionsFlag
 
-//          zkLeaderLatch = new ZkLeaderLatch(zkConnectString, engineLeaderZkNodePath, nodeId, EventChangeCallback, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-//        zkLeaderLatch.SelectLeader
+        //          zkLeaderLatch = new ZkLeaderLatch(zkConnectString, engineLeaderZkNodePath, nodeId, EventChangeCallback, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkLeaderLatch.SelectLeader
         /*
         // Set RE-DISTRIBUTED action in adaptersStatusPath + "/" + nodeId path
         val act = ("action" -> "re-distribute")
@@ -1493,7 +1727,7 @@ object KamanjaLeader {
           zkcForSetData.close
         } catch {
           case e: Throwable => {
-            LOG.warn("KamanjaLeader: unable to close zk connection due to",e )
+            LOG.warn("KamanjaLeader: unable to close zk connection due to", e)
           }
         }
       }
@@ -1508,14 +1742,13 @@ object KamanjaLeader {
         zkcForSetData = CreateClient.createSimple(zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs)
       } catch {
         case e: Throwable => {
-          LOG.warn("KamanjaLeader: unable to create new zk connection due to",e )
+          LOG.warn("KamanjaLeader: unable to create new zk connection due to", e)
         }
       }
     }
   }
 
   def SetNewDataToZkc(zkNodePath: String, data: Array[Byte]): Unit = {
-
     var retriesAttempted = 0
     while (retriesAttempted <= MAX_ZK_RETRIES) {
       try {
@@ -1528,8 +1761,7 @@ object KamanjaLeader {
           if ((zkcForSetData != null)) {
             zkcForSetData.setData().forPath(zkNodePath, data)
             return
-          }
-          else
+          } else
             throw new KamanjaException("Connection to ZK does not exists", null)
         }
       } catch {
@@ -1544,7 +1776,6 @@ object KamanjaLeader {
   }
 
   def GetDataFromZkc(zkNodePath: String): Array[Byte] = {
-
     var retriesAttempted = 0
     while (retriesAttempted <= MAX_ZK_RETRIES) {
       try {
@@ -1631,21 +1862,105 @@ object KamanjaLeader {
   }
 
   def Shutdown: Unit = {
+    if (LOG.isInfoEnabled())
+      LOG.info("Stopping processing")
+    isLocallyExecuting = true
+    KamanjaConfiguration.totalReadThreadCount = 1
+    KamanjaConfiguration.totalProcessingThreadCount = 1
+    globalThreadIdToLogicalPartitions.clear
+    globalLogicalPartitionsToThreadId = Array[Short](1)
+    isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
+    SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, true)
     distributionExecutor.shutdown
-//    if (zkLeaderLatch != null)
-//      zkLeaderLatch.Shutdown
-//    zkLeaderLatch = null
-//    if (zkEngineDistributionNodeListener != null)
-//      zkEngineDistributionNodeListener.Shutdown
-//    zkEngineDistributionNodeListener = null
-//    if (zkDataChangeNodeListener != null)
-//      zkDataChangeNodeListener.Shutdown
-//    zkDataChangeNodeListener = null
-//    if (zkAdapterStatusNodeListener != null)
-//      zkAdapterStatusNodeListener.Shutdown
-//    zkAdapterStatusNodeListener = null
+    ClearAllLogicalPartitionAkkaExecs
     CloseSetDataZkc
   }
+
+  private def getClusterNodeThreadsInfo(clusterId: String): ClusterDistributionInfo = {
+    var clusterDistributionInfo: ClusterDistributionInfo = null
+    if (clusterId == null || clusterId.trim() == "") throw new Exception("cluster id  is either null or empty string")
+
+    val cluster = mdMgr.Clusters.getOrElse(clusterId, null)
+    if (cluster == null) throw new Exception("cluster from metadata  is null")
+
+    var nodeDistInfo = ArrayBuffer[NodeDistInfo]()
+    var nodes: Array[NodeInfo] = mdMgr.NodesForCluster(clusterId)
+    if (nodes == null || nodes.size == 0) throw new Exception("Node Info not founbd for the cluster" + clusterId);
+    for (i <- 0 until nodes.size) {
+      val nodeInfo = new NodeDistInfo(nodes(i).NodeId, nodes(i).ProcessThreads, nodes(i).ReaderThreads)
+      nodeDistInfo += nodeInfo
+    }
+    clusterDistributionInfo = new ClusterDistributionInfo(cluster.clusterId, cluster.GlobalProcessThreads, cluster.globalReaderThreads, cluster.LogicalPartitions, nodeDistInfo)
+
+    clusterDistributionInfo
+  }
+
+  def getClusterLogicalPartitions(clusterId: String): Int = {
+    var clusterDistributionInfo: ClusterDistributionInfo = null
+    if (clusterId == null || clusterId.trim() == "") throw new Exception("cluster id  is either null or empty string")
+
+    val cluster = mdMgr.Clusters.getOrElse(clusterId, null)
+    if (cluster == null) throw new Exception("cluster from metadata  is null")
+
+    return if (cluster.LogicalPartitions > 0) cluster.LogicalPartitions else 1
+  }
+
+  def getThreadIdForPartitionId(partId: Int): Short = {
+    if (partId < globalLogicalPartitionsToThreadId.size)
+      globalLogicalPartitionsToThreadId(partId)
+    else
+      0
+  }
+
+  def getPartitionRangeForThreadId(threadId: Short): (Int, Int, Boolean) = {
+    globalThreadIdToLogicalPartitions.getOrElse(threadId, (0, 0, false))
+  }
+
+  def isLocalExecution: Boolean = {
+    (isLocallyExecuting || globalThreadIdToLogicalPartitions.size == 0)
+  }
+
+  def AddToRemoteProcessingBucket(partitionIdx: Int, cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
+    // Add to Queue to process in Remote
+    val threadId = globalLogicalPartitionsToThreadId(partitionIdx)
+    if (threadId >= 0 && threadId < logicalPartitionAkkaExecs.size) {
+      if (LOG.isTraceEnabled()) LOG.trace("Adding KamanjaCacheQueueEntry for transactionid:%d to threadId:%d (partitionIdx:%d), fromLocalThread:%s, logicalPartitionAkkaExecs.size:%d".format(cacheQueueEntry.txnCtxt.getTransactionId(), threadId, partitionIdx, cacheQueueEntry.fromLocalThread.toString, logicalPartitionAkkaExecs.size))
+      if (cacheQueueEntry.fromLocalThread)
+        AddToLocalCacheQueueEntriesForCache(cacheQueueEntry)
+      logicalPartitionAkkaExecs(threadId).process(cacheQueueEntry.txnCtxt.getTransactionId(), cacheQueueEntry)
+    } else {
+      throw new Exception("Not found proper threadId to add CacheEntry")
+    }
+  }
+
+  def AddToLocalCacheQueueEntriesForCache(cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
+    if (cacheQueueEntry.fromLocalThread) {
+      if (LOG.isTraceEnabled())
+        LOG.trace("Adding KamanjaCacheQueueEntry for transactionid:%d to local logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
+      localCacheQueueEntriesForCache.put(cacheQueueEntry.txnCtxt.getTransactionId(), cacheQueueEntry)
+    }
+  }
+
+  // Removing and getting what ever is removed for this id
+  def GetFromLocalCacheQueueEntriesForCache(id: Long): KamanjaCacheQueueEntry = {
+    if (LOG.isTraceEnabled())
+      LOG.trace("Getting KamanjaCacheQueueEntry for transactionid:%d from local logical partitions".format(id))
+    localCacheQueueEntriesForCache.remove(id)
+  }
+
+  def ClearAllLogicalPartitionAkkaExecs: Unit = {
+    // Shutdown all from logicalPartitionAkkaExecs
+    if (LOG.isInfoEnabled()) LOG.info("Cleaning logical partition info")
+    val tmp = logicalPartitionAkkaExecs
+    logicalPartitionAkkaExecs = Array[LogicalPartitionAkkaExecution]()
+    tmp.foreach(lp => if (lp != null) lp.shutDown)
+  }
+
+  def isLocalThread(threadId: Int): Boolean = isLogicalThreadProcessingOnLocalNode(threadId)
+
+  def isLocalThreadForPartitionId(partitionId: Int): Boolean = isLogicalThreadProcessingOnLocalNode(globalLogicalPartitionsToThreadId(partitionId))
+
+  def threadIdForPartitionId(partitionId: Int): Short = globalLogicalPartitionsToThreadId(partitionId)
+
+  final def getThrottleControllerCache: ThrottleControllerCache = throttleControllerCache
 }
-
-

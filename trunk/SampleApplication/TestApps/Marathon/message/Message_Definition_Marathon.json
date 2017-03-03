@@ -1,0 +1,37 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.logicalpartition.test.messages",
+    "Name": "marathon_in_msg",
+    "Version": "00.02.00",
+    "Description": "Marathon Processing Message",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "Ranking",
+        "Type": "System.Int"
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String"
+      },
+      {
+        "Name": "LapTime",
+        "Type": "System.String"
+      },
+      {
+        "Name": "Country",
+        "Type": "System.String"
+      },
+      {
+        "Name": "RaceCategory",
+        "Type": "System.String"
+      }
+    ],
+"PartitionKey": [
+      "RaceCategory"
+    ],
+    "PrimaryKey": [
+      "Ranking"
+    ]
+  }
+}

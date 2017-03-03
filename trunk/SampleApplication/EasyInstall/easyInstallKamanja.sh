@@ -410,6 +410,26 @@ cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver210/config
 #HelloWorld
 
+#Marathon
+cd $srcPath/SampleApplication/TestApps/Marathon/data
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/TestApps/Marathon/message
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/TestApps/Marathon/model
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/TestApps/Marathon/config
+cp -rf * $installPath/Kamanja-$ver210/config
+#Marathon
+
 #LoanRisk
 cd $srcPath/SampleApplication/LoanRisk/data
 cp * $installPath/Kamanja-$ver210/input/SampleApplications/data
@@ -802,6 +822,26 @@ cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
 cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver211/config
 #HelloWorld
+
+#Marathon
+cd $srcPath/SampleApplication/TestApps/Marathon/data
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/TestApps/Marathon/message
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/TestApps/Marathon/model
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/TestApps/Marathon/config
+cp -rf * $installPath/Kamanja-$ver211/config
+#Marathon
 
 #LoanRisk
 cd $srcPath/SampleApplication/LoanRisk/data

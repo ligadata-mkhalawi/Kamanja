@@ -280,7 +280,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                 uniqueKey.PartitionId = thisPartitionNumber
 
                 uniqueVals(thisPartitionNumber) = uniqueKey
-                execContexts(thisPartitionNumber) = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                execContexts(thisPartitionNumber) = execCtxtObj.CreateExecContext(input, nodeContext)
                 topicPartitions(thisPartitionNumber) = thisTopicPartition
                 initialOffsets(thisPartitionNumber) = partitionInfo._2.asInstanceOf[KafkaPartitionUniqueRecordValue].Offset.toLong
               }

@@ -6,12 +6,36 @@ package com.ligadata.cache.infinispan
 
 import com.ligadata.cache.{CacheCustomConfig, Config}
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.configuration.global.{GlobalConfigurationBuilder}
+import org.infinispan.configuration.global.GlobalConfigurationBuilder
 import org.infinispan.eviction.EvictionStrategy
 import org.infinispan.manager.DefaultCacheManager
+import org.infinispan.transaction.{LockingMode, TransactionMode}
+import org.infinispan.util.concurrent.IsolationLevel
+import org.infinispan.transaction.lookup.GenericTransactionManagerLookup
 
-class CacheCustomConfigInfinispan(val jsonconfig: Config, var cacheManager: DefaultCacheManager) {
+object CacheCustomConfigInfinispan {
+  private var cacheManager: DefaultCacheManager = null
 
+  def getDefaultCacheManager(configurationFile: String): DefaultCacheManager = {
+    if (cacheManager != null) {
+      return cacheManager
+    }
+    classOf[DefaultCacheManager] synchronized {
+      cacheManager = new DefaultCacheManager(GlobalConfigurationBuilder.defaultClusteredBuilder()
+        .transport()
+        .addProperty("configurationFile", configurationFile)
+        .globalJmxStatistics().allowDuplicateDomains(true).enable()
+        .build(),
+        new ConfigurationBuilder()
+          .transaction().transactionMode(TransactionMode.TRANSACTIONAL)
+          .build())
+
+      return cacheManager
+    }
+  }
+}
+
+class CacheCustomConfigInfinispan(val jsonconfig: Config) {
   private val some = jsonconfig.getvalue(Config.CACHECONFIG)
   private val values = some.get.asInstanceOf[Map[String, String]]
   private val cacheName = jsonconfig.getvalue(Config.NAME).getOrElse("Ligadata").toString
@@ -24,13 +48,8 @@ class CacheCustomConfigInfinispan(val jsonconfig: Config, var cacheManager: Defa
 
   def getcacheName(): String = cacheName;
 
-  def getDefaultCacheManager(): DefaultCacheManager = {
-    cacheManager = new DefaultCacheManager(GlobalConfigurationBuilder.defaultClusteredBuilder()
-      .transport()
-      .addProperty("configurationFile", values.getOrElse(CacheCustomConfig.PEERCONFIG, "jgroups_udp.xml"))
-      .build(),
-      null)
-
+  def defineConfiguration(): DefaultCacheManager = {
+    val cacheManager = CacheCustomConfigInfinispan.getDefaultCacheManager(values.getOrElse(CacheCustomConfig.PEERCONFIG, "jgroups_udp.xml"))
     cacheManager.defineConfiguration(cacheName,
       new ConfigurationBuilder().expiration
         .lifespan(values.getOrElse(CacheCustomConfig.TIMETOLIVESECONDS, "10000000").toLong)
@@ -40,8 +59,10 @@ class CacheCustomConfigInfinispan(val jsonconfig: Config, var cacheManager: Defa
         .cacheMode(CacheMode.DIST_SYNC)
         .hash.numOwners(jsonconfig.getvalue(Config.NUMBEROFKETOWNERS).getOrElse("1").toInt)
         .invocationBatching().enable()
+        .transaction().transactionMode(TransactionMode.TRANSACTIONAL).autoCommit(false)
+        .lockingMode(LockingMode.OPTIMISTIC).transactionManagerLookup(new GenericTransactionManagerLookup())
+        .locking().isolationLevel(IsolationLevel.REPEATABLE_READ)
         .build);
-
-    cacheManager
+    return cacheManager
   }
 }

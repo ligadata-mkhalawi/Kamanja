@@ -38,7 +38,7 @@ class TestIbmMqConsumer extends FlatSpec with MockFactory {
 
   // dummy objects to satisfy inputs for IbmMqConsumer
   class ClsExecContextObj extends ExecContextObj {
-    def CreateExecContext(input: InputAdapter, curPartitionKey: PartitionUniqueRecordKey, callerCtxt: InputAdapterCallerContext): ExecContext = {
+    def CreateExecContext(input: InputAdapter, callerCtxt: InputAdapterCallerContext): ExecContext = {
       class ClsExecContext extends ExecContext {
         val input: InputAdapter = null
         val curPartitionKey: PartitionUniqueRecordKey = null

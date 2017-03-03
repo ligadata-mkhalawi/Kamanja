@@ -1,26 +1,33 @@
 package com.ligadata.cache.infinispan
 
 import java.util
+import java.util.concurrent.TimeUnit
 
-import com.ligadata.cache.{Config, CacheCustomConfig, CacheCallback, DataCache}
+import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.manager.DefaultCacheManager;
-import org.infinispan.Cache;
+import org.infinispan.manager.DefaultCacheManager
+import org.infinispan.Cache
+import org.infinispan.cache.impl.CacheImpl;
 
 /**
   * Created by Saleh on 6/9/2016.
   */
 class MemoryDataCacheImp extends DataCache {
+  private var cacheManager: DefaultCacheManager = null
+  private var config: CacheCustomConfigInfinispan = null
+  private var cache: Cache[String, Any] = null
+  private var listenCallback: CacheCallback = null
 
-  var cacheManager: DefaultCacheManager = null
-  var config: CacheCustomConfigInfinispan = null
-  var cache: Cache[String, Any] = null
-  var listenCallback: CacheCallback = null
+  final def getCache(): Cache[String, Any] = cache
+
+  final def getCacheManager(): DefaultCacheManager = cacheManager
+
+  final def getCacheConfig(): CacheCustomConfigInfinispan = config
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
-    config = new CacheCustomConfigInfinispan(new Config(jsonString), cacheManager)
-    cacheManager = config.getDefaultCacheManager()
+    config = new CacheCustomConfigInfinispan(new Config(jsonString))
+    cacheManager = config.defineConfiguration()
     this.listenCallback = listenCallback
   }
 
@@ -40,14 +47,21 @@ class MemoryDataCacheImp extends DataCache {
   }
 
   override def get(key: String): AnyRef = {
+    val obj = cache.get(key).asInstanceOf[AnyRef]
+    return if (obj != null) obj else ""
+  }
+
+  override def remove(key: String): Unit = {
+    cache.remove(key)
+/*
     if (cache.containsKey(key)) {
-
-      val obj = cache.get(key).asInstanceOf[AnyRef]
-
-      return obj
-    } else {
-      return ""
+      cache.remove(key)
     }
+*/
+  }
+
+  override def clear(): Unit = {
+    cache.clear()
   }
 
   override def isKeyInCache(key: String): Boolean = (cache != null && cache.containsKey(key))
@@ -59,29 +73,27 @@ class MemoryDataCacheImp extends DataCache {
     map
   }
 
-  override def put(map: java.util.Map[_, _]): Unit = {
-    val map = new java.util.HashMap[String, AnyRef]
-    val keys = getKeys()
-    if (keys != null) {
-      keys.foreach(str => map.put(str, get(str)))
-    }
+  override def put(map: java.util.Map[String, AnyRef]): Unit = {
+    cache.putAll(map, -1, TimeUnit.HOURS)
   }
 
   override def getAll(): java.util.Map[String, AnyRef] = {
     val map = new java.util.HashMap[String, AnyRef]
-    val keys = getKeys()
-    if (keys != null) {
-      keys.foreach(str => map.put(str, get(str)))
+    var it = cache.entrySet.iterator()
+    while (it.hasNext) {
+      val thisEntry = it.next()
+      map.put(thisEntry.getKey, thisEntry.getValue().asInstanceOf[AnyRef])
     }
     map
   }
 
   override def getKeys(): Array[String] = {
-    val size: Int = cache.keySet().size()
-    val array = new Array[String](size)
-    cache.keySet().toArray[String](array)
+    cache.keySet().toArray.map(k => k.asInstanceOf[String])
+  }
 
-    array
+  override def size: Int = {
+    // This may include expried elements also
+    cache.size
   }
 
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {}
@@ -106,5 +118,39 @@ class MemoryDataCacheImp extends DataCache {
 
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {
     null
+  }
+
+  override def beginTransaction(): Transaction = {
+    new MemoryDataCacheTxnImp(this)
+  }
+}
+
+class MemoryDataCacheTxnImp(cache: DataCache) extends Transaction(cache) {
+  var tm = cache.asInstanceOf[MemoryDataCacheImp].getCache().asInstanceOf[CacheImpl[String, Any]].getAdvancedCache.getTransactionManager
+  tm.begin()
+
+  private def CheckForValidTxn: Unit = {
+    if (getDataCache == null)
+      throw new Exception("Not found valid DataCache in transaction")
+  }
+
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def commit(): Unit = {
+    CheckForValidTxn
+    tm.commit()
+    resetDataCache
+    tm = null
+  }
+
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def rollback(): Unit = {
+    CheckForValidTxn
+    tm.rollback()
+    resetDataCache
+    tm = null
   }
 }

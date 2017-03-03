@@ -5,10 +5,10 @@ import java.util
 import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.manager.DefaultCacheManager;
+import org.infinispan.manager.DefaultCacheManager
 import org.infinispan.Cache
-import org.infinispan.tree.{Node, Fqn, TreeCacheFactory, TreeCache}
-;
+import org.infinispan.cache.impl.CacheImpl
+import org.infinispan.tree.{Fqn, Node, TreeCache, TreeCacheFactory}
 
 /**
   * Created by Saleh on 6/9/2016.
@@ -22,9 +22,15 @@ class MemoryDataTreeCacheImp extends DataCache {
   var treeCache: TreeCache[String, Any] = null
   val root: Fqn = Fqn.fromString("/")
 
+  final def getCache(): Cache[String, Any] = cache
+
+  final def getCacheManager(): DefaultCacheManager = cacheManager
+
+  final def getCacheConfig(): CacheCustomConfigInfinispan = config
+
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
-    config = new CacheCustomConfigInfinispan(new Config(jsonString), cacheManager)
-    cacheManager = config.getDefaultCacheManager()
+    config = new CacheCustomConfigInfinispan(new Config(jsonString))
+    cacheManager = config.defineConfiguration()
     this.listenCallback = listenCallback
   }
 
@@ -57,6 +63,14 @@ class MemoryDataTreeCacheImp extends DataCache {
     }
   }
 
+  override def remove(key: String): Unit = {
+    treeCache.remove(root, key)
+  }
+
+  override def clear(): Unit = {
+    cache.clear()
+  }
+
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {
     val map = new java.util.HashMap[String, AnyRef]
     val fqn: Fqn = Fqn.fromString(rootNode)
@@ -79,7 +93,7 @@ class MemoryDataTreeCacheImp extends DataCache {
     map
   }
 
-  override def put(map: java.util.Map[_, _]): Unit = {
+  override def put(map: java.util.Map[String, AnyRef]): Unit = {
     val map = new java.util.HashMap[String, AnyRef]
     val keys = getKeys()
     if (keys != null) {
@@ -104,6 +118,10 @@ class MemoryDataTreeCacheImp extends DataCache {
     array
   }
 
+  override def size: Int = {
+    // This may include expried elements also
+    cache.size
+  }
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {
     if (!containerName.equals(null) && !"".equals(containerName)) {
       if (!timestamp.equals(null) && !"".equals(timestamp)) {
@@ -192,5 +210,38 @@ class MemoryDataTreeCacheImp extends DataCache {
       }
     }
   }
+
+  override def beginTransaction(): Transaction = {
+    new MemoryDataTreeCacheTxnImp(this)
+  }
 }
 
+class MemoryDataTreeCacheTxnImp(cache: DataCache) extends Transaction(cache) {
+  var tm = cache.asInstanceOf[MemoryDataTreeCacheImp].getCache().asInstanceOf[CacheImpl[String, Any]].getAdvancedCache.getTransactionManager
+  tm.begin()
+
+  private def CheckForValidTxn: Unit = {
+    if (getDataCache == null)
+      throw new Exception("Not found valid DataCache in transaction")
+  }
+
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def commit(): Unit = {
+    CheckForValidTxn
+    tm.commit()
+    resetDataCache
+    tm = null
+  }
+
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def rollback(): Unit = {
+    CheckForValidTxn
+    tm.rollback()
+    resetDataCache
+    tm = null
+  }
+}

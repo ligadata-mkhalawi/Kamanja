@@ -284,6 +284,10 @@ cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $
 ## -------------------- generated cp commands --------------------
 #
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.10/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.10/pythonfactoryofmodelinstancefactory*jar $systemlib
+
 # -------------------- end of generated cp commands --------------------
 
 
@@ -446,6 +450,26 @@ cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script
 cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver210/config
 #HelloWorld
+
+#Marathon
+cd $srcPath/SampleApplication/TestApps/Marathon/data
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/TestApps/Marathon/message
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/TestApps/Marathon/model
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/TestApps/Marathon/config
+cp -rf * $installPath/Kamanja-$ver210/config
+#Marathon
 
 #LoanRisk
 cd $srcPath/SampleApplication/LoanRisk/data
@@ -692,6 +716,9 @@ echo "copy all Kamanja jars and the jars upon which they depend to the $systemli
 # -------------------- generated cp commands --------------------
 
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
 # -------------------- end of generated cp commands --------------------
 
 
@@ -848,6 +875,26 @@ cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
 cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver211/config
 #HelloWorld
+
+#Marathon
+cd $srcPath/SampleApplication/TestApps/Marathon/data
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/TestApps/Marathon/message
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/TestApps/Marathon/model
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/TestApps/Marathon/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/TestApps/Marathon/config
+cp -rf * $installPath/Kamanja-$ver211/config
+#Marathon
 
 #LoanRisk
 cd $srcPath/SampleApplication/LoanRisk/data

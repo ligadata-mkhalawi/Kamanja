@@ -9,7 +9,6 @@ import net.sf.ehcache.event.CacheEventListener
 import net.sf.ehcache.{Element, Cache, CacheManager}
 import collection.JavaConversions._
 
-
 import scala.collection.JavaConverters._
 
 /**
@@ -17,10 +16,15 @@ import scala.collection.JavaConverters._
   */
 
 class MemoryDataCacheImp extends DataCache {
+  private var cm: CacheManager = null
+  private var cache: Cache = null
+  private var cacheConfig: CacheCustomConfig = null
 
-  var cm: CacheManager = null
-  var cache: Cache = null
-  var cacheConfig: CacheCustomConfig = null
+  final def getCache(): Cache = cache
+
+  final def getCacheManager(): CacheManager = cm
+
+  final def getCacheConfig(): CacheCustomConfig = cacheConfig
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
     cacheConfig = new CacheCustomConfig(new Config(jsonString), listenCallback)
@@ -45,34 +49,44 @@ class MemoryDataCacheImp extends DataCache {
 
   override def get(key: String): AnyRef = {
     val ele: Element = cache.get(key)
+    if (ele != null) ele.getObjectValue else ""
+  }
 
-    return ele.getObjectValue
+  override def remove(key: String): Unit = {
+    cache.remove(key)
+  }
+
+  override def clear(): Unit = {
+    cache.removeAll()
   }
 
   override def isKeyInCache(key: String): Boolean = (cache != null && cache.isKeyInCache(key))
 
   override def get(keys: Array[String]): java.util.Map[String, AnyRef] = {
-    val keysColl: java.util.Collection[_] = keys.toSeq
-    var map = new java.util.HashMap[String, AnyRef]
-    cache.getAll(keysColl).foreach(value => map.put(value._1.toString,value._2.getObjectValue))
-
+    val allVals = cache.getAll(keys.toList.asJava)
+    val map = new java.util.HashMap[String, AnyRef]
+    allVals.asScala.foreach(kv => {
+      map.put(kv._2.getObjectKey.asInstanceOf[String], kv._2.getObjectValue)
+    })
     map
   }
 
-  override def put(map: java.util.Map[_, _]): Unit = {
-    val scalaMap = map.asScala
-    val list = scalaMap.map(keyVal => new Element(keyVal._1, keyVal._2))
-    cache.putAll(list.asJavaCollection)
+  override def put(map: java.util.Map[String, AnyRef]): Unit = {
+    val scalaValues = map.asScala.map(keyVal => (new Element(keyVal._1, keyVal._2))).toList
+    cache.putAll(scalaValues.asJava)
   }
 
   override def getAll(): java.util.Map[String, AnyRef] = {
-    var map = new java.util.HashMap[String, AnyRef]
-    cache.getAll(cache.getKeys()).foreach(value => map.put(value._1.toString,value._2.getObjectValue))
-    map
+    get(getKeys())
   }
 
   override def getKeys(): Array[String] = {
     cache.getKeys().asScala.map(k => k.toString).toArray
+  }
+
+  override def size: Int = {
+    // This may include expried elements also
+    cache.getSize
   }
 
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {}
@@ -97,5 +111,30 @@ class MemoryDataCacheImp extends DataCache {
 
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {
     null
+  }
+
+  override def beginTransaction(): Transaction = {
+    new MemoryDataCacheTxnImp(this)
+}
+}
+
+class MemoryDataCacheTxnImp(cache: DataCache) extends Transaction(cache) {
+  private def CheckForValidTxn: Unit = {
+    if (getDataCache == null)
+      throw new Exception("Not found valid DataCache in transaction")
+  }
+
+  override def commit(): Unit = {
+    CheckForValidTxn
+
+    throw new NotImplementedError("commit is not yet implemented")
+  }
+
+  override def rollback(): Unit = {
+    CheckForValidTxn
+
+    throw new NotImplementedError("rollback is not yet implemented")
+
+    resetDataCache
   }
 }

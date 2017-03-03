@@ -36,7 +36,6 @@ object KamanjaKafkaConsumer extends InputAdapterFactory {
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KamanjaKafkaConsumer(inputConfig, execCtxtObj, nodeContext)
 }
 
-
 /**
   * Class that handles reading from Kafka Topics
   *
@@ -211,17 +210,25 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     * @param ignoreFirstMsg Boolean - if true, ignore the first message sending to engine
     * @param partitionIds Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue, Long, PartitionUniqueRecordValue)] - an Array of partition ids
     */
-  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+  //override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
 
-    isQuiese = false
+  override def StartProcessing(threadPartitionIds: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+
     LOG.info("Start processing called on KamanjaKafkaAdapter for topic " + qc.topic)
+    
+     if (threadPartitionIds == null || (threadPartitionIds != null && threadPartitionIds.size == 0)) {
+      LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - number")
+      return
+    }
     // This is the number of executors we will run - Heuristic, but will go with it
     // var numberOfThreads = availableThreads
     var maxPartNumber = -1
     //TODO: The engine should tell us how many thread to use.. for now default to the old behaiviour... 1 Threads per partition
-    var numberOfThreads = partitionIds.size
+    var numberOfThreads = threadPartitionIds.size
     readExecutor = Executors.newFixedThreadPool(numberOfThreads)
 
+    /** Commenting below code for LogicalParitions updates - Start **/
+    /*
     // Get the data about the request and set the instancePartition list.
     val partitionInfo = partitionIds.map(quad => {
       (quad._key.asInstanceOf[KafkaPartitionUniqueRecordKey],
@@ -235,8 +242,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       maxPartNumber = scala.math.max(partitionId, maxPartNumber)
     })
 
-    val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]
-                                 = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]()
+    val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
 
     // Create a Map of all the partiotion Ids.  We use a MOD for all the partition numbers to allocate each partition into
     // a bucket.
@@ -248,8 +254,52 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         partitionGroups(bCount) =  scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )](quad)
       }
       bCount = (bCount + 1 ) % numberOfThreads
+    })*/
+    /** Commenting below code for LogicalParitions updates - End **/
+    LOG.debug("threadPartitionIds.size " + threadPartitionIds.size)
+    for (i <- 0 until threadPartitionIds.length) {
+      LOG.debug("threadPartitionIds 1 " + threadPartitionIds(i).threadId)
+      val tp = threadPartitionIds(i).threadPartitions
+      for (j <- 0 until tp.length) {
+        LOG.debug("threadPartitionIds 2:  " + tp(j)._key.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId)
+      }
+    }
+
+    val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
+    threadPartitionIds.foreach(tp => {
+      var threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
+      
+      if (tp.threadPartitions == null || (tp.threadPartitions != null && tp.threadPartitions.size == 0)) {
+        LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - threadPartitions")
+        return
+      }
+      for (i <- 0 until tp.threadPartitions.size) {
+        val threadPart = (tp.threadPartitions(i)._key.asInstanceOf[KafkaPartitionUniqueRecordKey], tp.threadPartitions(i)._val.asInstanceOf[KafkaPartitionUniqueRecordValue], tp.threadPartitions(i)._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
+        threadPartSet += threadPart
+      }
+      LOG.debug("tp.threadId " + tp.threadId)
+      threadPartSet.foreach(t => {
+        LOG.debug("threadPartSet " + t._1.PartitionId)
+    })
+      partitionGroups(tp.threadId) = threadPartSet
     })
 
+    var instancePartitions = Set[Int]()
+    partitionGroups.foreach(t => {
+      t._2.foreach(tp => { instancePartitions += tp._1.PartitionId })
+    })
+
+    qc.instancePartitions = instancePartitions
+    LOG.debug(" qc.instancePartitions " + qc.instancePartitions)
+
+    partitionGroups.foreach(group => {
+      LOG.debug("group 1 " + group._1)
+      group._2.foreach(g => { LOG.debug("group 2 " + g._1.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId + " " + g._2 + " " + g._3) })
+    })
+
+    qc.instancePartitions.foreach(partitionId => {
+      maxPartNumber = scala.math.max(partitionId, maxPartNumber)
+    })
 
     // So, now that we have our partition buckets, we start a thread for each buckets.  This involves seeking to the desired location for each partition
     // in the bucket, then starting to POLL.
@@ -269,7 +319,6 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         var topicPartitions: Array[org.apache.kafka.common.TopicPartition] = new Array[org.apache.kafka.common.TopicPartition](maxPartNumber + 1)
         var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
         var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
-
 
         var isSeekSuccessful = false
         private def internalGetSleep : Int = {
@@ -313,7 +362,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                   uniqueKey.PartitionId = thisPartitionNumber
 
                   uniqueVals(thisPartitionNumber) = uniqueKey
-                  execContexts(thisPartitionNumber) = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                execContexts(thisPartitionNumber) = execCtxtObj.CreateExecContext(input, nodeContext)
                   topicPartitions(thisPartitionNumber) = thisTopicPartition
                   initialOffsets(thisPartitionNumber) = partitionInfo._2.asInstanceOf[KafkaPartitionUniqueRecordValue].Offset.toLong
                 }
@@ -336,8 +385,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                 localReadOffsets(thisPid) = initialOffsets(thisPid)
                 ignoreUntilOffsets(thisPid) =  if (ignoreFirstMsg) initialOffsets(thisPid) else initialOffsets(thisPid) - 1
                 kafkaConsumer.seek(topicPartitions(thisPid), initialOffsets(thisPid))
-              }
-              else {
+              } else {
                 localReadOffsets(thisPid) = 0
                 ignoreUntilOffsets(thisPid) =  if (ignoreFirstMsg) initialOffsets(thisPid) else initialOffsets(thisPid) - 1
                 // kafka 0.9 api requires collections.. will optimize in a future release
@@ -435,7 +483,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                       }
 
                       if (sendThisMsg) {
-                      execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs)
+                      execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs, null)
                       localReadOffsets(record.partition) = (record.offset)
                       }
                       resetSleepTimer
@@ -693,7 +741,6 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     isShutdown = true
     StopProcessing
   }
-
 
   /**
     *

@@ -58,6 +58,11 @@ object KamanjaMdCfg {
       throw new KamanjaException("Cluster not found for Node %d  & ClusterId : %s".format(KamanjaConfiguration.nodeId, nd.ClusterId), null)
     }
 
+    val clusterInfo = mdMgr.Clusters.getOrElse(nd.ClusterId, null)
+    if (clusterInfo != null) {
+      KamanjaConfiguration.totalPartitionCount = if (clusterInfo.LogicalPartitions > 0) clusterInfo.LogicalPartitions else 1
+    }
+
     val dataStore = cluster.cfgMap.getOrElse("SystemCatalog", null)
     if (dataStore == null) {
       LOG.error("DataStore not found for Node %d  & ClusterId : %s".format(KamanjaConfiguration.nodeId, nd.ClusterId))
@@ -69,18 +74,6 @@ object KamanjaMdCfg {
       LOG.error("ZooKeeperInfo not found for Node %d  & ClusterId : %s".format(KamanjaConfiguration.nodeId, nd.ClusterId))
       throw new KamanjaException("ZooKeeperInfo not found for Node %d  & ClusterId : %s".format(KamanjaConfiguration.nodeId, nd.ClusterId), null)
     }
-
-    //    val adapterCommitTime = mdMgr.GetUserProperty(nd.ClusterId, "AdapterCommitTime")
-    //    if (adapterCommitTime != null && adapterCommitTime.trim.size > 0) {
-    //      try {
-    //        val tm = adapterCommitTime.trim().toInt
-    //        if (tm > 0)
-    //          KamanjaConfiguration.adapterInfoCommitTime = tm
-    //        LOG.debug("AdapterCommitTime: " + KamanjaConfiguration.adapterInfoCommitTime)
-    //      } catch {
-    //        case e: Exception => { LOG.warn("", e) }
-    //      }
-    //    }
 
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     if (jarPaths.size == 0) {

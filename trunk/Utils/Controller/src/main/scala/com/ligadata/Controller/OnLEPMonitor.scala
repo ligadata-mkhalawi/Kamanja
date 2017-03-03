@@ -36,13 +36,13 @@ object KamanjaMonitorConfig {
 }
 
 object ExecContextFactoryImpl extends ExecContextFactory {
-  def CreateExecContext(input: InputAdapter, curPartitionKey: PartitionUniqueRecordKey, nodeContext: NodeContext): ExecContext = {
-    new ExecContextImpl(input, curPartitionKey, nodeContext)
+  def CreateExecContext(input: InputAdapter, nodeContext: NodeContext): ExecContext = {
+    new ExecContextImpl(input, nodeContext)
   }
 }
 
 // There are no locks at this moment. Make sure we don't call this with multiple threads for same object
-class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
+class ExecContextImpl(val input: InputAdapter, val nodeContext: NodeContext) extends ExecContext {
   val agg = SampleAggregator.getNewSampleAggregator
   initializeModelsToMonitor(KamanjaMonitorConfig.modelsData, agg)
   agg.setIsLookingForSeed(true)
@@ -64,7 +64,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
 
   }
 
-  protected override def executeMessage(txnCtxt: TransactionContext): Unit = {
+  protected override def executeMessage(txnCtxt: TransactionContext, callback: CallbackInterface): Unit = {
 //    if (format.equalsIgnoreCase("json")) {
 //      //if (data.charAt(0).toString.equals("{")) {
 //      agg.processJsonMessage(parse(new String(data)).values.asInstanceOf[Map[String, Any]])
@@ -112,7 +112,8 @@ class KamanjaMonitor {
    * @param receivedString String
    */
   private def ActionOnActionChange(receivedString: String): Unit = {
-    if (receivedString.size == 1 && receivedString.toInt == 1) {
+    throw new Exception("Not implemented v8- during Logical Partitions")
+   /* if (receivedString.size == 1 && receivedString.toInt == 1) {
       LOG.debug("Monitoring turned ON")
       if (isStarted) {
         return
@@ -191,7 +192,7 @@ class KamanjaMonitor {
       }
 
       SampleAggregator.reset
-    }
+    }*/
   }
 
   /**

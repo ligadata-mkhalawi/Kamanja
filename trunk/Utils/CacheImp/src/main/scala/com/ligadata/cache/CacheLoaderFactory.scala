@@ -28,7 +28,7 @@ class CacheLoaderFactory(cache: Ehcache) extends CacheLoader {
   }
 
   override def load(key: scala.Any): AnyRef = {
-    System.out.println("///////////////////////////loadkey")
+   // System.out.println("///////////////////////////loadkey")
     null
   }
 

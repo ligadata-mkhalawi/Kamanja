@@ -87,7 +87,7 @@ object ConfigUtils {
   // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
-
+  val LOGICAL_PARTITION_LIMIT : Int = 16000
   //lazy val serializer = SerializerManager.GetSerializer(serializerType)
   /**
    *
@@ -126,11 +126,11 @@ object ConfigUtils {
               jarPaths: List[String], scala_home: String,
               java_home: String, classpath: String,
               clusterId: String, power: Int,
-              roles: Array[String], description: String): String = {
+              roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int, akkaPort: Int): String = {
     try {
       // save in memory
       val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
       MdMgr.GetMdMgr.AddNode(ni)
       // save in database
       val key = "NodeInfo." + nodeId
@@ -168,10 +168,10 @@ object ConfigUtils {
                  jarPaths: List[String], scala_home: String,
                  java_home: String, classpath: String,
                  clusterId: String, power: Int,
-                 roles: Array[String], description: String): String = {
+                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int, akkaPort: Int): String = {
     AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description)
+      clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
   }
 
   /**
@@ -325,10 +325,10 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def AddCluster(clusterId: String, description: String, privileges: String): String = {
+  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int, globalAkkPort: Int): String = {
     try {
       // save in memory
-      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges)
+      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort, globalAkkPort)
       MdMgr.GetMdMgr.AddCluster(ci)
       // save in database
       val key = "ClusterInfo." + clusterId
@@ -354,8 +354,8 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def UpdateCluster(clusterId: String, description: String, privileges: String): String = {
-    AddCluster(clusterId, description, privileges)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int, globalAkkaPort: Int): String = {
+    AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort, globalAkkaPort)
   }
 
   /**
@@ -678,7 +678,6 @@ object ConfigUtils {
     if (v == null) return ""
 
     if (v.isInstanceOf[String]) return v.asInstanceOf[String]
-
     implicit val jsonFormats: Formats = DefaultFormats
     val lst = List(v)
     val str = Serialization.write(lst)
@@ -739,14 +738,48 @@ object ConfigUtils {
               val apiResult = new ApiResult(ErrorCodeConstants.Failure, "UploadConfig", cfgStr, "Error : ClusterId Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
+            val GlobalReaderThreads = cluster.getOrElse("GlobalReaderThreads", "0").toString.trim.toInt
+            if (GlobalReaderThreads == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalReaderThreads", cfgStr, "Error : GlobalReaderThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val GlobalProcessThreads = cluster.getOrElse("GlobalProcessThreads", "0").toString.trim.toInt
+            if (GlobalProcessThreads == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalProcessThreads", cfgStr, "Error : GlobalProcessThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val LogicalPartitions = cluster.getOrElse("LogicalPartitions", "0").toString.trim.toInt
+            if (LogicalPartitions == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "LogicalPartitions", cfgStr, "Error : LogicalPartitions Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            if (LogicalPartitions > LOGICAL_PARTITION_LIMIT) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "LogicalPartitions", cfgStr, "Error : LogicalPartitions should not be greater that 16000 to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val GlobalLogicalPartitionCachePort = cluster.getOrElse("GlobalLogicalPartitionCachePort", "0").toString.trim.toInt
+            if (GlobalLogicalPartitionCachePort == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalLogicalPartitionCachePort", cfgStr, "Error : GlobalLogicalPartitionCachePort Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val GlobalAkkaPort = cluster.getOrElse("GlobalAkkaPort", "0").toString.trim.toInt
+            if (GlobalAkkaPort == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalAkkaPort", cfgStr, "Error : GlobalAkkaPort Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
             logger.debug("Processing the cluster => " + ClusterId)
             // save in memory
-            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "")
+            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", GlobalReaderThreads, GlobalProcessThreads, LogicalPartitions, GlobalLogicalPartitionCachePort, GlobalAkkaPort)
             val addCluserReuslt = MdMgr.GetMdMgr.AddCluster(ci)
 
             if (addCluserReuslt != None) {
               var clusterDef: ClusterConfigDef = new ClusterConfigDef
               clusterDef.clusterId = ci.clusterId
+              clusterDef.globalReaderThreads = ci.globalReaderThreads
+              clusterDef.globalProcessThreads = ci.globalProcessThreads
+              clusterDef.logicalPartitions = ci.logicalPartitions
+              clusterDef.globalLogicalPartitionCachePort = ci.globalLogicalPartitionCachePort
+              clusterDef.globalAkkaPort = ci.GlobalAkkaPort
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
               clusterDef.name = ci.clusterId
@@ -852,6 +885,10 @@ object ConfigUtils {
                 val classpath = node.getOrElse("Classpath", "").toString.trim
                 val jarPaths = if (node.contains("JarPaths")) node.get("JarPaths").get.asInstanceOf[List[String]] else List[String]()
                 val roles = if (node.contains("Roles")) node.get("Roles").get.asInstanceOf[List[String]] else List[String]()
+                var readerThreads: Int = node.getOrElse("ReaderThreads", "0").toString.trim.toInt
+                var processThreads = node.getOrElse("ProcessThreads", "0").toString.trim.toInt
+                var logicalPartitionCachePort = node.getOrElse("LogicalPartitionCachePort", "0").toString.trim.toInt
+                var akkaPort = node.getOrElse("AkkaPort", "0").toString.trim.toInt
 
                 val validRoles = NodeRole.ValidRoles.map(r => r.toLowerCase).toSet
                 val givenRoles = roles
@@ -870,7 +907,7 @@ object ConfigUtils {
                 }
 
                 val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths,
-                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "")
+                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
 
                 val addNodeResult = MdMgr.GetMdMgr.AddNode(ni)
                 if (addNodeResult != None) {
@@ -1007,7 +1044,7 @@ object ConfigUtils {
             if (userDefinedProps.size > 0) {
               val upProps: UserPropertiesInfo = MdMgr.GetMdMgr.MakeUPProps(ClusterId)
               userDefinedProps.keys.foreach(key => {
-                upProps.Props(key) = userDefinedProps(key).toString
+                upProps.Props(key) = getStringFromJsonNode(userDefinedProps(key))
               })
 
               val upAddResults = MdMgr.GetMdMgr.AddUserProperty(upProps)
