@@ -20,3 +20,85 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
   (successful, rejected, or threw an exception).
   This functionality is not currently implemented.
 
+- The :ref:`simplekafkaproducer-command-ref` command
+  may throw spurious errors that reference
+  :ref:`Velocity Metrics<velocity-metrics-term>`
+  whether or not Velocity Metrics is configured.
+  This does not prevent messages from being
+  pushed and processed.
+  (`1515 <https://github.com/LigaData/Kamanja/issues/1515>`_)
+
+- The FileProcessor may throw spurious WARN messages
+  into the logs; this does not impact processing.
+  (`1507 <https://github.com/LigaData/Kamanja/issues/1507>`_)
+
+- Issuing the :ref:`kamanja-command-ref` command with the
+  **start webservice** option fails with the following message:
+
+  ::
+
+   Error: Could not find or load main class
+      com.ligadata.metadataapiservice.APIService
+
+  The APIService does exist but is apparently not included
+  in the generated jar file.
+  (`1498 <https://github.com/LigaData/Kamanja/issues/1498>`_)
+
+- When configuring :ref:`adapters<adapter-def-config-ref>`,
+  adding jars to the dependency jars list under "adapters"
+  has no effect on the adapter.
+  If the existing jars are removed from the configuration,
+  the adapters run exactly the same way;
+  if a jar is added that is not already in the Kamanja classpath,
+  it is not included when the adapter is created.
+
+  An individual class loader must be used for each adapter
+  based on the jar dependencies in the configuration
+  so that the required jars can be included at run time
+  without fear of having version compatibility issues with other adapters.
+  (`1493 <https://github.com/LigaData/Kamanja/issues/1493>`_)
+
+- The :ref:`kamanja-command-ref` command run with the **add model** option
+  to add a model that imports classes from a specified jar may fail.
+  Even though the **upload jar my.jar** command
+  ran successfully and the uploaded jar is persisted in the metadata storage,
+  the model fails to compile because the classes are not visible to the model
+  at compile time.
+  We are investigating this issue;
+  it may be that my.jar is not being downloaded automatically
+  although it should be.
+  (`1492 <https://github.com/LigaData/Kamanja/issues/1492>`_)
+
+- The Delete function for the :ref:`elastic-output-adapter-ref`
+  does not work.  (`1490 <https://github.com/LigaData/Kamanja/issues/1490>`_)
+
+- The Kamanja •readme* file incorrectly shows that the JPMML evaluator
+  is licensed under BSD.
+  LigaData has negotiated a special arrangement with Villu (owner of JPMML),
+  so we can embed JPMML in Kamanja and release the combination
+  under the Apache license. The readme file should be corrected.
+  (`1482 <https://github.com/LigaData/Kamanja/issues/1482>`_)
+
+- OutputUtils require JDK 1.8
+  (`1479 <https://github.com/LigaData/Kamanja/issues/1479>`_)
+
+- No error message is generated for the error queue
+  nor is an error attached to the :ref:`kamanjamessageevent-msg-ref`
+  when Kamanja fails to produce an output message
+  because the message could not be serialized;
+  this can happen, for example, if you use a mismatched Scala version.
+  Information about the error can be found by digging through the logs.
+  (`1476 <https://github.com/LigaData/Kamanja/issues/1476>`_)
+
+- Non-versioned messages and containers
+  may show versioned child containers.
+  (`1479 <https://github.com/LigaData/Kamanja/issues/1479>`_)
+
+- If you upload an :ref:`adapter binding<adapter-binding-config-ref>`
+  that has already been added successfully,
+  an "Unexpected action!" error is returned rather than
+  'Already found adapter bindings for this message on this adapter'.
+  (`1468 <https://github.com/LigaData/Kamanja/issues/1468>`_)
+
+
+

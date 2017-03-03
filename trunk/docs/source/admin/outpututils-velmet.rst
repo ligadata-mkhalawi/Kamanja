@@ -39,7 +39,7 @@ To implement Velocity Metrics for the JDBC OutputUtil:
           $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:
           $KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:
           $l/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar
-      com.ligadata.adapters.KafkaAdapter config/copsjdbc.properties
+          com.ligadata.adapters.KafkaAdapter config/copsjdbc.properties
 
 Sample properties file for JDBC
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

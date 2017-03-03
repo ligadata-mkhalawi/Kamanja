@@ -7,7 +7,8 @@ Monitor the Kamanja cluster
 Tools are provided for monitoring the Kamanja cluster:
 
 .. list-table::
-   ::widths:: 25 75
+   :class: ld-wrap-fixed-table
+   :widths: 25 75
    :header-rows: 1
 
    * - Command
