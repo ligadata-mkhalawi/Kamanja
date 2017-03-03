@@ -39,7 +39,7 @@ import com.ligadata.transactions._
 import scala.actors.threadpool.{ExecutorService}
 
 // There are no locks at this moment. Make sure we don't call this with multiple threads for same object
-class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
+class ExecContextImpl(val input: InputAdapter, val nodeContext: NodeContext) extends ExecContext {
   private val LOG = LogManager.getLogger(getClass);
   private var eventsCntr: Long = 0
   private var lastTimeCommitOffsets: Long = System.currentTimeMillis
@@ -71,7 +71,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
   }
 
   def CommitPartitionOffsetIfNeeded(forceTime: Boolean): Unit = {
-    if (lastEventOrigin != null && lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && nodeContext != null && nodeContext.getEnvCtxt() != null && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && (forceTime || ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis))) {
+    if (false && lastEventOrigin != null && lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && nodeContext != null && nodeContext.getEnvCtxt() != null && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && (forceTime || ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis))) {
       WriteLock(execCtxt_reent_lock)
       try {
         if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && (forceTime || ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis))) {
@@ -359,8 +359,8 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
 }
 
 object ExecContextFactoryImpl extends ExecContextFactory {
-  def CreateExecContext(input: InputAdapter, curPartitionKey: PartitionUniqueRecordKey, nodeContext: NodeContext): ExecContext = {
-    new ExecContextImpl(input, curPartitionKey, nodeContext)
+  def CreateExecContext(input: InputAdapter, nodeContext: NodeContext): ExecContext = {
+    new ExecContextImpl(input, nodeContext)
   }
 }
 
@@ -425,7 +425,9 @@ object PostMessageExecutionQueue {
 
     def StopProcessing: Unit = {}
 
-    def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {}
+    //def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {}
+    
+    def StartProcessing(partitionInfo: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = {}
 
     def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey] = Array[PartitionUniqueRecordKey]()
 
@@ -450,8 +452,9 @@ object PostMessageExecutionQueue {
     ac.Name = "PostMessageExecutionQueue"
     ac.tenantId = "System"
     val input: InputAdapter = new PostMsgIA(nodeCtxt, ac)
-    val curPartitionKey: PartitionUniqueRecordKey = new PostMsgUniqRecKey
-    execCtxt = ExecContextFactoryImpl.CreateExecContext(input, curPartitionKey, nodeCtxt)
+    // val curPartitionKey: PartitionUniqueRecordKey = new PostMsgUniqRecKey
+    // execCtxt = ExecContextFactoryImpl.CreateExecContext(input, curPartitionKey, nodeCtxt)
+    execCtxt = ExecContextFactoryImpl.CreateExecContext(input, nodeCtxt)
     nodeContext = nodeCtxt
     processMsgs = scala.actors.threadpool.Executors.newFixedThreadPool(1)
     isShutdown = false
