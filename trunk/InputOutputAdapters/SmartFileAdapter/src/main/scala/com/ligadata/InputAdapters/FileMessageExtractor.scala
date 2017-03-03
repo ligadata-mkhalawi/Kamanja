@@ -4,6 +4,8 @@ import java.io.IOException
 import com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration
 import org.apache.logging.log4j.LogManager
 import scala.util.control.Breaks._
+import java.util.concurrent.atomic.AtomicInteger
+import com.ligadata.InputOutputAdapterInfo.{CallbackInterface, CompletionCallback}
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 
@@ -23,7 +25,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
                            fileHandler: SmartFileHandler,
                            startOffset : Long,
                            consumerContext : SmartFileConsumerContext,
-                           messageFoundCallback : (SmartFileMessage, SmartFileConsumerContext) => Unit,
+                           messageFoundCallback: (SmartFileMessage, SmartFileConsumerContext, CallbackInterface) => Unit,
                            finishCallback : (SmartFileHandler, SmartFileConsumerContext, Int) => Unit ) {
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
@@ -48,6 +50,8 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
   private var processingInterrupted = false
 
   private var fileProcessingStartTm : Long = 0L
+
+  private var counter = new AtomicInteger(0)
 
   def extractMessages() : Unit = {
 
@@ -265,7 +269,8 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
           currentMsgNum += 1
           val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
           val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
-          messageFoundCallback(smartFileMessage, consumerContext)
+          val callback = new CompletionCallback(counter)
+          messageFoundCallback(smartFileMessage, consumerContext, callback)
         }
       }
 
@@ -364,7 +369,8 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
             //if(globalOffset >= startOffset) {//send messages that are only after startOffset
             val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
             val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
-            messageFoundCallback(smartFileMessage, consumerContext)
+            val callback = new CompletionCallback(counter)
+            messageFoundCallback(smartFileMessage, consumerContext, callback)
 
             //}
             prevIndx = indx + 1

@@ -1526,7 +1526,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   private def sendSmartFileMessageToEngin(smartMessage: SmartFileMessage,
-                                          smartFileConsumerContext: SmartFileConsumerContext): Unit = {
+                                          smartFileConsumerContext: SmartFileConsumerContext, callback: CallbackInterface): Unit = {
 
     //in case the msg extracotr still had some msgs to send but some parts of the engine were already shutdown, just ignore
     if (isShutdown)
@@ -1571,7 +1571,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}",
       smartFileConsumerContext.nodeId, smartFileConsumerContext.partitionId.toString, new String(message), fileName, offset.toString)
     msgCount += 1
-    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
+    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs, callback)
 
   }
 

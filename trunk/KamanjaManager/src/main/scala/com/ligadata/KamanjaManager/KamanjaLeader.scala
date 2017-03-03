@@ -92,19 +92,19 @@ object KamanjaLeader {
   //  private[this] var zkDataChangeNodeListener: ZooKeeperListener = _
   private[this] var zkcForSetData: CuratorFramework = null
   private[this] val setDataLockObj = new Object()
-  private[this] var distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]()
   // Nodeid & Unique Keys (adapter unique name & unique key)
+  private[this] var distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]()
   private[this] var clusterDistributionMap: ClusterDistributionMap = null
   //  private[this] var foundKeysInValidation: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = _
-  private[this] var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
   // Adapters & Max Partitions
+  private[this] var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
   private[this] var allPartitionsToValidate = scala.collection.mutable.Map[String, Set[String]]()
-  private[this] var nodesStatus = scala.collection.mutable.Set[String]()
   // NodeId
+  private[this] var nodesStatus = scala.collection.mutable.Set[String]()
   private[this] var expectedNodesAction: String = _
   private[this] var nodesActionIssuedTime: Long = 0
-  private[this] var curParticipents = Set[String]()
   // Derived from clusterStatus.participants
+  private[this] var curParticipents = Set[String]()
   private[this] var canRedistribute = false
   private[this] var inputAdapters: ArrayBuffer[InputAdapter] = _
   private[this] var outputAdapters: ArrayBuffer[OutputAdapter] = _

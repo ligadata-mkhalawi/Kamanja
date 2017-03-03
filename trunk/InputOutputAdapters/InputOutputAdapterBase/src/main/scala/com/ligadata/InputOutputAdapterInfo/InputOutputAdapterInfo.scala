@@ -21,6 +21,7 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.HeartBeat._
 import com.ligadata.kamanja.metadata.MdMgr
 import com.ligadata.transactions.{ NodeLevelTransService, SimpleTransService }
+import java.util.concurrent.atomic.AtomicInteger
 
 //import org.json4s._
 //import org.json4s.JsonDSL._
@@ -242,7 +243,7 @@ trait ExecContext {
     }
   }
 
-  final def execute(msg: ContainerInterface, data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long): Unit = {
+  final def execute(msg: ContainerInterface, data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long, callback: CallbackInterface): Unit = {
     if (msg == null) {
       SendFailedEvent(data, "", "", uniqueKey, uniqueVal, null, msg)
       return
@@ -286,7 +287,7 @@ trait ExecContext {
       txnCtxt = new TransactionContext(transId, nodeContext, data, EventOriginInfo(uk, uv), readTmMilliSecs, msgEvent)
       txnCtxt.setInitialMessage("", msg)
       ThreadLocalStorage.txnContextInfo.set(txnCtxt)
-      executeMessage(txnCtxt)
+      executeMessage(txnCtxt, callback)
     } catch {
       case e: Throwable => {
         LOG.error("Failed to execute message : " + msg.getFullTypeName, e)
@@ -308,7 +309,7 @@ trait ExecContext {
   }
 
   // Raw data deserialized and send to another send method which takes msg
-  final def execute(data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long): Unit = {
+  final def execute(data: Array[Byte], uniqueKey: PartitionUniqueRecordKey, uniqueVal: PartitionUniqueRecordValue, readTmMilliSecs: Long, callback: CallbackInterface): Unit = {
     val deserializer = ""
     val failedMsg = ""
     var messageName = ""
@@ -334,7 +335,7 @@ trait ExecContext {
       val deserializer = if (tDeserializerName != null) tDeserializerName else ""
       val failedMsg = if (msgName != null) msgName else ""
       if (tMsg != null) {
-        execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
+        execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs, callback)
       } else {
         if (LOG.isDebugEnabled) {
           LOG.debug("Not able to deserialize data:%s at UK:%s, UV:%s".format((if (data != null) new String(data) else ""), uk, uv))
@@ -350,7 +351,7 @@ trait ExecContext {
     }
   }
 
-  protected def executeMessage(txnCtxt: TransactionContext): Unit
+  protected def executeMessage(txnCtxt: TransactionContext, callback: CallbackInterface): Unit
 
   protected def commitData(txnCtxt: TransactionContext): Unit
 }
@@ -374,6 +375,21 @@ trait PartitionUniqueRecordValue {
 
   // Making String from Value
   def Deserialize(key: String): Unit // Making Value from Serialized String
+}
+
+trait CallbackInterface {
+  def onCompletion(tranId: Long, exception: Exception): Unit
+  def onTranCreation(tranId: Long, exception: Exception): Unit
+}
+
+class CompletionCallback(counter: AtomicInteger) extends CallbackInterface {
+  override def onCompletion(tranId: Long, exception: Exception): Unit = {
+    counter.incrementAndGet()
+  }
+
+  override def onTranCreation(tranId: Long, exception: Exception): Unit = {
+    counter.decrementAndGet()
+  }
 }
 
 

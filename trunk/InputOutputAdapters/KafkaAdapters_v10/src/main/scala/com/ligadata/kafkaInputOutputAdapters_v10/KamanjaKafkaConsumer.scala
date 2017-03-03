@@ -426,7 +426,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
                       msgCount.incrementAndGet()
                       incrementCountForPartition(record.partition)
-                      execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs)
+                      execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs, null)
                       localReadOffsets(record.partition) = (record.offset)
                       resetSleepTimer
                     }
