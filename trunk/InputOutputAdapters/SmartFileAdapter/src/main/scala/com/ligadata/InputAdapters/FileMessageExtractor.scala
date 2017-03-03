@@ -440,7 +440,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       }
 
       val smartFileMessage = new SmartFileMessage(attachmentsJson.toString.getBytes(), 0, fileHandlers(0), 0, 0)
-      messageFoundCallback(smartFileMessage, consumerContext)
+      val callback = new CompletionCallback(counter)
+      messageFoundCallback(smartFileMessage, consumerContext, callback)
       // here we are really finished
       sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
     } catch {

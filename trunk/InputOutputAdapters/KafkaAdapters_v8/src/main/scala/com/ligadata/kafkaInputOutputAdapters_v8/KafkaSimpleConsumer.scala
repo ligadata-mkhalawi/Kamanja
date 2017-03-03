@@ -427,7 +427,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
                     LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
                     break
                   }
-                  execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
+                  execThread.execute(message, uniqueKey, uniqueVal, readTmMs, null)
                   if (isQuiesced) {
                     LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
                     break

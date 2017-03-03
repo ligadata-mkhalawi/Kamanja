@@ -1887,7 +1887,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private def DummyCallback(fileName: String): Unit = {
   }
 
-  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
+  override def StartProcessing(partitionIds: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = {
     if (MonitorUtils.adaptersChannels.contains(adapterConfig.Name)) {
       MonitorUtils.adaptersChannels.clear()
     }
@@ -1965,6 +1965,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val srcDir = MonitorUtils.simpleDirPath(location.srcDir)
       locationsMap.put(srcDir, location)
     })
+
+/*
     partitionIds.foreach(part => {
       val partitionId = part._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId
       // Initialize the monitoring status
@@ -1972,7 +1974,17 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       partitonDepths(partitionId.toString) = 0
       partitionExceptions(partitionId.toString) = new SmartFileExceptionInfo("n/a", "n/a")
     })
-
+*/
+    partitionIds.foreach(part => {
+      part.threadPartitions.foreach { p => {
+        val partitionId = p._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId
+        // Initialize the monitoring status
+        partitonCounts(partitionId.toString) = 0
+        partitonDepths(partitionId.toString) = 0
+        partitionExceptions(partitionId.toString) = new SmartFileExceptionInfo("n/a", "n/a")
+      }
+      }
+    })
     initialFilesHandled = false
 
     initializeNode //register the callbacks
@@ -1990,16 +2002,22 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
     }
 
+    var threadParts = ArrayBuffer[StartProcPartInfo]()
+    partitionIds.foreach(tp => {
+      for (i <- 0 until tp.threadPartitions.size)
+        threadParts += tp.threadPartitions(i)
+    })
+
     // BUGBUG:: For now we are handling only non entire file as one msg
     val myPartitionInfo =
     if (adapterConfig.monitoringConfig.entireFileAsOneMessage) {
       val nullFlName: String = "" // or do we need to take null
-      partitionIds.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
+      threadParts.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
         nullFlName, -1, ignoreFirstMsg)).mkString("~")
     } else {
       // BUGBUG:: For now we are handling single file here. Groups does not handle here
       //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
-      partitionIds.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
+      threadParts.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
         pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].FileName,
         pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].Offset, ignoreFirstMsg)).mkString("~")
     }
@@ -2016,7 +2034,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   private def sendSmartFileMessageToEngin(smartMessage: SmartFileMessage,
-                                          smartFileConsumerContext: SmartFileConsumerContext): Unit = {
+                                          smartFileConsumerContext: SmartFileConsumerContext, callback: CallbackInterface): Unit = {
 
     //in case the msg extracotr still had some msgs to send but some parts of the engine were already shutdown, just ignore
     if (isShutdown)
@@ -2066,7 +2084,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}. uniqueKey={}, uniqueVal={}, smartFileConsumerContext.execThread={},smartFileConsumerContext={}",
       smartFileConsumerContext.nodeId, smartFileConsumerContext.partitionId.toString, new String(message), fileName, offset.toString, uniqueKey, uniqueVal, smartFileConsumerContext.execThread, smartFileConsumerContext)
     msgCount.incrementAndGet()
-    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
+    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs, callback)
 
   }
 

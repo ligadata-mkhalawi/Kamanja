@@ -124,7 +124,7 @@ class ExecContextImpl(val input: InputAdapter, val nodeContext: NodeContext) ext
   private var previousLoader: com.ligadata.Utils.KamanjaClassLoader = null
   private val canPostMessageEvent = IsMsgInPostList("com.ligadata.KamanjaBase.KamanjaMessageEvent")
 
-  protected override def executeMessage(txnCtxt: TransactionContext): Unit = {
+  protected override def executeMessage(txnCtxt: TransactionContext, callback: CallbackInterface): Unit = {
     try {
       val curLoader = txnCtxt.getNodeCtxt().getEnvCtxt().getMetadataLoader.loader // Protecting from changing it between below statements
       if (curLoader != null && previousLoader != curLoader) {
@@ -140,7 +140,7 @@ class ExecContextImpl(val input: InputAdapter, val nodeContext: NodeContext) ext
     }
 
     try {
-      engine.execute(txnCtxt)
+      engine.execute(txnCtxt, callback)
     } catch {
       case e: Throwable => throw e
     }
@@ -466,7 +466,7 @@ object PostMessageExecutionQueue {
         while (!isShutdown && processMsgs != null && processMsgs.isShutdown == false) {
           val msg = deQMsg
           if (msg != null) {
-            execCtxt.execute(msg, emptyStrBytes, null, null, System.currentTimeMillis)
+            execCtxt.execute(msg, emptyStrBytes, null, null, System.currentTimeMillis, null)
           }
           else {
             // If no messages found in the queue, simply sleep for sometime
