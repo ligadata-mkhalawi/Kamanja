@@ -24,7 +24,7 @@ public class MailProcessor {
 	private static SecretKeyFactoryImpl skf;
 	private static String password;
 	private static Mailer mailer;
-	
+
 	private MailProcessor(AdapterConfiguration configs) throws Exception {
 	    try{
 		conf = configs;

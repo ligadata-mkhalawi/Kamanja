@@ -1,14 +1,14 @@
 package com.ligadata.filedataprocessor
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{Executors, TimeUnit}
-import java.util.zip.{ZipException, GZIPInputStream}
-import com.ligadata.Exceptions.{MissingPropertyException, StackTrace}
+import java.util.concurrent.{ Executors, TimeUnit }
+import java.util.zip.{ ZipException, GZIPInputStream }
+import com.ligadata.Exceptions.{ MissingPropertyException, StackTrace }
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MessageDef
 import org.apache.curator.framework.CuratorFramework
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 import org.json4s.DefaultFormats
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -21,7 +21,7 @@ import scala.collection.JavaConverters._
 import util.control.Breaks._
 import java.io._
 import java.nio.file._
-import scala.actors.threadpool.{Executors, ExecutorService}
+import scala.actors.threadpool.{ Executors, ExecutorService }
 import scala.collection.mutable.PriorityQueue
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.Files.copy
@@ -42,6 +42,7 @@ import net.sf.jmimemagic.MagicMatch
 import net.sf.jmimemagic.MagicParseException
 import net.sf.jmimemagic.MagicMatchNotFoundException
 import net.sf.jmimemagic.MagicException
+import com.ligadata.VelocityMetrics._
 
 import com.ligadata.ZooKeeper.ProcessComponentByWeight;
 
@@ -57,11 +58,10 @@ case class FileStatus(status: Int, offset: Long, createDate: Long)
 
 case class OffsetValue(lastGoodOffset: Int, partitionOffsets: Map[Int, Int])
 
-
 /**
-  * This is the global area for the File Processor.  It basically handles File Access and Distribution !!!!!
-  * the Individual File Processors ask here for what files it they should be processed.
-  */
+ * This is the global area for the File Processor.  It basically handles File Access and Distribution !!!!!
+ * the Individual File Processors ask here for what files it they should be processed.
+ */
 object FileProcessor {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -150,6 +150,11 @@ object FileProcessor {
   var isLockAcquired = false;
   var isThisNodeReadyToProcess = false
 
+  var VMFactory: VelocityMetricsFactoryInterface = null;
+  var msgVMInstances: Array[InstanceRuntimeInfo] = null;
+  var fileVMInstances: Array[InstanceRuntimeInfo] = null;
+  var vm: VelocityMetricsInfo = null;
+
   private def testFailure(thisCause: String) = {
     var bigCheck = FileProcessor.testRand.nextInt(100)
     if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception(thisCause + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
@@ -178,8 +183,8 @@ object FileProcessor {
   }
 
   /**
-    *
-    */
+   *
+   */
   def initZookeeper = {
     try {
       zkcConnectString = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
@@ -434,17 +439,16 @@ object FileProcessor {
   }
 
   /**
-    * checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
-    *
-    * @param file
-    * @return
-    */
+   * checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
+   *
+   * @param file
+   * @return
+   */
   def checkIfFileBeingProcessed(file: String): Boolean = {
     fileCacheLock.synchronized {
       if (fileCache.contains(file)) {
         return true
-      }
-      else {
+      } else {
         fileCache(file) = scala.compat.Platform.currentTime + "::" + RandomStringUtils.randomAlphanumeric(10)
         return false
       }
@@ -535,7 +539,6 @@ object FileProcessor {
     }
   }
 
-
   // This only applies to the IN_PROCESS_FAILED
   def setFileOffset(fileName: String, offset: Long): Unit = {
     activeFilesLock.synchronized {
@@ -560,7 +563,6 @@ object FileProcessor {
       return activeFiles(fileName)
     }
   }
-
 
   // Stuff used by the File Priority Queue.
   def OldestFile(file: EnqueuedFile): Long = {
@@ -678,9 +680,9 @@ object FileProcessor {
   }
 
   /**
-    * Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
-    * to process QUEUE.
-    */
+   * Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
+   * to process QUEUE.
+   */
   private def monitorBufferingFiles: Unit = {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
@@ -698,7 +700,6 @@ object FileProcessor {
               var thisFileFailures: Int = fileTuple._2._3
               var thisFileStarttime: Long = fileTuple._2._2
               var thisFileOrigLength: Long = fileTuple._2._1
-
 
               try {
                 val d = executeCallWithElapsed(new File(fileTuple._1), "Check file for buffering " + fileTuple._1)
@@ -931,8 +932,8 @@ object FileProcessor {
   }
 
   /**
-    *
-    */
+   *
+   */
   private def runFileWatcher(): Unit = {
     var fileDirectoryWatchers = scala.actors.threadpool.Executors.newFixedThreadPool(path.size)
     try {
@@ -1002,8 +1003,7 @@ object FileProcessor {
 
                   }
                 }
-            }
-            catch {
+            } catch {
               case e: Exception => {
                 logger.error("SMART FILE CONSUMER (global): Failed to recover file:" + fileToRecover, e)
               }
@@ -1176,7 +1176,6 @@ object FileProcessor {
         }
       }
 
-
       if (isWatchedFileSystemAccesible && isTargetFileSystemAccesible) {
         if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global): File system is accessible, perform cleanup for problem files")
         /*  if (afterErrorConditions) {
@@ -1236,7 +1235,6 @@ object FileProcessor {
       }
     }
   }
-
 
   private def getFailedFiles(fileType: Int): Map[String, FileStatus] = {
     var returnMap: Map[String, FileStatus] = Map[String, FileStatus]()
@@ -1348,7 +1346,6 @@ object FileProcessor {
     }
   }
 
-
   val externalizeStats = new Runnable {
     def run(): Unit = {
       try {
@@ -1421,10 +1418,10 @@ class FileProcessorThread(val flProcessor: FileProcessor) extends Runnable {
 }
 
 /**
-  *
-  * @param path
-  * @param partitionId
-  */
+ *
+ * @param path
+ * @param partitionId
+ */
 class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
   private var kml: KafkaMessageLoader = null
@@ -1469,17 +1466,18 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   private var throttleTime: Int = 0
   private var isRecoveryOps = true
   private var bufferLimit = 1
-
-
+  private var rotationtimeinsecs: Int = _
+  private var emittimeinsecs: Int = _
+  var velocitymetricsInfo: String = _
   def setContentParsableFlag(isParsable: Boolean): Unit = synchronized {
     isContentParsable = isParsable
   }
 
   /**
-    * Called by the Directory Listener to initialize
-    *
-    * @param props
-    */
+   * Called by the Directory Listener to initialize
+   *
+   * @param props
+   */
   def init(props: scala.collection.mutable.Map[String, String]): Unit = {
     try {
       message_separator = props.getOrElse(SmartFileAdapterConstants.MSG_SEPARATOR, "10").toInt.toChar
@@ -1508,7 +1506,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         if (!FileProcessor.contentTypes.contains(cType))
           FileProcessor.contentTypes.put(cType, cType)
       }
-
 
       kafkaTopic = props.getOrElse(SmartFileAdapterConstants.KAFKA_TOPIC, null)
 
@@ -1568,6 +1565,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
           throw e
         }
       }
+
     } catch {
       case e: Exception => {
         logger.error("SMART_FILE_CONSUMER: ERROR", e)
@@ -1625,12 +1623,11 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     }
   }
 
-
   /**
-    * Each worker bee will run this code... looking for work to do.
-    *
-    * @param beeNumber
-    */
+   * Each worker bee will run this code... looking for work to do.
+   *
+   * @param beeNumber
+   */
   private def processBuffers(beeNumber: Int) = {
 
     var msgNum: Int = 0
@@ -1640,7 +1637,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     var isEofBuffer = false
     var messages: scala.collection.mutable.LinkedHashSet[KafkaMessage] = null
     var leftOvers: Array[Char] = new Array[Char](0)
-
 
     // basically, keep running until shutdown.
     while (isConsuming && !LocationWatcher.shutdown) {
@@ -1866,10 +1862,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   }
 
   /**
-    * This will be run under a CONSUMER THREAD.
-    *
-    * @param file
-    */
+   * This will be run under a CONSUMER THREAD.
+   *
+   * @param file
+   */
   private def readBytesChunksFromFile(file: EnqueuedFile): Unit = {
 
     val buffer = new Array[Char](maxlen)
@@ -2072,13 +2068,14 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   }
 
   /**
-    * This is the "FILE CONSUMER"
-    */
+   * This is the "FILE CONSUMER"
+   */
   private def doSomeConsuming(): Unit = {
     while (isConsuming && stillConsuming && !LocationWatcher.shutdown) {
 
       var curTimeStart: Long = 0
       var curTimeEnd: Long = 0
+      val fileVMStances = FileProcessor.fileVMInstances
 
       val fileToProcess = FileProcessor.deQFile
       if (fileToProcess == null) {
@@ -2092,16 +2089,28 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
         curTimeStart = System.currentTimeMillis
 
-
         try {
           readBytesChunksFromFile(fileToProcess)
+          if (fileVMStances != null && fileVMStances.length > 0) {
+            for (i <- 0 until fileVMStances.length) {
+              logger.info("velocity metrics inrement here")
+              FileProcessor.vm.incrementFileVMetrics(fileVMStances(i), fileToProcess.name, true)
+            }
+          }
         } catch {
           case fnfe: Exception => {
             logger.error("Exception Encountered, check the logs.", fnfe)
+            if (fileVMStances != null && fileVMStances.length > 0) {
+              for (i <- 0 until fileVMStances.length) {
+                logger.info("velocity metrics inrement fail")
+                FileProcessor.vm.incrementFileVMetrics(fileVMStances(i), fileToProcess.name, false)
+              }
+            }
           }
-          case e: Throwable => {
-            logger.error("Exception Encountered, check the logs.", e)
-          }
+          case e: Throwable =>
+            {
+              logger.error("Exception Encountered, check the logs.", e)
+            }
         }
         curTimeEnd = System.currentTimeMillis
       }
@@ -2110,8 +2119,8 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   }
 
   /**
-    * This is a "PUSHER" file.
-    */
+   * This is a "PUSHER" file.
+   */
   private def doSomePushing(): Unit = {
     var contunueToWork = true
     while (isProducing && contunueToWork && !LocationWatcher.shutdown) {
@@ -2127,10 +2136,9 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     }
   }
 
-
   /**
-    * The main directory watching thread
-    */
+   * The main directory watching thread
+   */
   def run(): Unit = {
     stillConsuming = true
     isConsuming = true
@@ -2165,13 +2173,14 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         }
       }
     })
+
   }
 
   /**
-    *
-    * @param inputfile
-    * @return
-    */
+   *
+   * @param inputfile
+   * @return
+   */
   private def isCompressed(inputfile: String): Boolean = {
     var is: FileInputStream = null
     try {
@@ -2213,8 +2222,8 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   }
 
   /**
-    *
-    */
+   *
+   */
   def shutdown: Unit = {
     FileProcessor.shutdownInputWatchers
     FileProcessor.scheduledThreadPool.shutdownNow()

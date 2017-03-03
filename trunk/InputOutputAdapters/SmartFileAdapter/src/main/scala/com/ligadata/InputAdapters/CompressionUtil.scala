@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager
 import net.sf.jmimemagic._
 import org.apache.tika.Tika
 import org.apache.tika.detect.DefaultDetector
+import org.apache.commons.compress.compressors.CompressorStreamFactory
 import java.io._
 import java.nio.file._
 
@@ -33,17 +34,27 @@ object CompressionUtil {
   def GZIP_MAGIC = GZIPInputStream.GZIP_MAGIC
 
 
+  lazy val loggerName = this.getClass.getName
+  lazy val logger = LogManager.getLogger(loggerName)
 
   /**
     * gets what type of compression used to compress the file
-    * @param fileHandler
+    * @param genericFileHandler
     * @param detectionType : how to detect the compression type. for now only ByMagicNumbers is supported, it is also default if no value is provided
     * @return
     */
-  def getFileType(fileHandler: SmartFileHandler, detectionType : String) : String = {
+  def getFileType(genericFileHandler: SmartFileHandler, filePath : String, detectionType : String) : String = {
 
     if(detectionType == null || detectionType.length == 0 || detectionType.equalsIgnoreCase("ByMagicNumbers")){
-      detectFileType(fileHandler)
+      val startTm = System.nanoTime
+
+      val typ = detectFileType(genericFileHandler, filePath)
+
+      val endTm = System.nanoTime
+      val elapsedTm = endTm - startTm
+      logger.info("CompressionUtil - finished gettting file type for file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+        format(filePath, elapsedTm/1000000.0,elapsedTm, endTm))
+      typ
     }
     else
       throw new KamanjaException("Unsupported type for detecting files compression: " + detectionType, null)
@@ -94,10 +105,10 @@ object CompressionUtil {
 
   /**
     * checking the compression type using tika and jmimemagic libraries
-    * @param fileHandler
+    * @param genericFileHandler
     * @return CompressionType
     */
-  def detectFileType(fileHandler: SmartFileHandler) : String ={
+  def detectFileType(genericFileHandler: SmartFileHandler, filePath : String) : String ={
     val loggerName = this.getClass.getName
     val logger = LogManager.getLogger(loggerName)
 
@@ -108,7 +119,7 @@ object CompressionUtil {
     var contentType :String = null
 
     try {
-      is = fileHandler.getDefaultInputStream()
+      is = genericFileHandler.getDefaultInputStream(filePath)
       contentType = tika.detect(is)
     }catch{
       case e:IOException =>{
@@ -123,14 +134,14 @@ object CompressionUtil {
         logger.warn("SmartFileConsumer - Tika processing runtime exception - "+e.getMessage)
         throw e
       }
-    } finally {
-      //try{
-        fileHandler.close()
-      //}
-      /*catch{
-        case e : Throwable => logger.warn("SmartFileConsumer - error while closing file" + fileHandler.getFullPath, e)
-      }*/
     }
+    try{
+      if (is != null) is.close()
+    }
+    catch{
+      case e : Throwable => logger.warn("SmartFileConsumer - error while closing file" + filePath, e)
+    }
+
     var checkMagicMatchManually = false
     if(contentType!= null && !contentType.isEmpty() && contentType.equalsIgnoreCase("application/octet-stream")){
       var magicMatcher : MagicMatch =  null;
@@ -138,7 +149,7 @@ object CompressionUtil {
       try{
 
         //read some bytes to pass to getMagicMatch
-        is = fileHandler.getDefaultInputStream()
+        is = genericFileHandler.getDefaultInputStream(filePath)
         val bufferSize = 10
         val bytes = new Array[Byte](bufferSize)
         is.read(bytes, 0, bufferSize)
@@ -169,21 +180,24 @@ object CompressionUtil {
         }
 
       }
-      finally {
-        fileHandler.close()
+      try{
+        if (is != null) is.close()
+      }
+      catch{
+        case e : Throwable => logger.warn("SmartFileConsumer - error while closing file" + filePath, e)
       }
     }
 
-    if(contentType == PLAIN)//lzo could be detected as plain
-      checkMagicMatchManually = true
+    /*if(contentType == PLAIN)
+      checkMagicMatchManually = true*/
 
     if(checkMagicMatchManually){
       //in case jmimemagic lib failed to detect, try manually - this happened when testing some lzop files
       try{
         logger.debug("SmartFileConsumer - checking magic numbers directly")
-        is = fileHandler.getDefaultInputStream()
+        is = genericFileHandler.getDefaultInputStream(filePath)
         val manuallyDetectedType = detectCompressionTypeByMagicNumbers(is)
-        fileHandler.close()
+        is.close()
 
         //if manual detected got unknown, keep the value plain. else get manually detected value
         if(manuallyDetectedType != UNKNOWN)
@@ -229,7 +243,8 @@ object CompressionUtil {
     * @param fileType GZIP, BZIP2, LZO, PLAIN, UNKNOWN
     * @return input stream suitable for the file based on its compression type
     */
-  def getProperInputStream(originalInStream : InputStream, fileType : String) : InputStream = {
+  def getProperInputStream(originalInStream : InputStream, fileType : String,
+                           considerUnknownFileTypesAsIs : Boolean) : InputStream = {
     val loggerName = this.getClass.getName
     val logger = LogManager.getLogger(loggerName)
     try {
@@ -238,20 +253,34 @@ object CompressionUtil {
         case BZIP2 => new BZip2CompressorInputStream(originalInStream)
         case LZO => new LzopInputStream(originalInStream)
         case PLAIN => originalInStream
-        case UNKNOWN => originalInStream //treat unknown as un-compressed
+        case UNKNOWN =>  if(considerUnknownFileTypesAsIs) originalInStream else throw new Exception("Unsupported file type " + fileType)
+        case _ => if(considerUnknownFileTypesAsIs) originalInStream else throw new Exception("Unsupported file type " + fileType)
+
       }
     }
     catch{
       case e : Exception => {
-        logger.error(e)
+        logger.error("SmartFileConsumer - error while getting Proper Input Stream - ", e)
         originalInStream
       }
       case e : Throwable => {
-        logger.error(e)
+        logger.error("SmartFileConsumer - error while getting Proper Input Stream - ", e)
         originalInStream
       }
     }
 
+  }
+
+  /**
+    *
+    * @param srcCompression
+    * @param destCompression
+    * @return true if both src and dest have same compression
+    */
+  def compareSrcDistCompression(srcCompression : String, destCompression : String) :  Boolean = {
+    (srcCompression.equalsIgnoreCase(FileType.GZIP) && destCompression.equalsIgnoreCase(CompressorStreamFactory.GZIP)) ||
+      (srcCompression.equalsIgnoreCase(FileType.BZIP2) && destCompression.equalsIgnoreCase(CompressorStreamFactory.BZIP2)) ||
+      ((srcCompression.equalsIgnoreCase(FileType.PLAIN) || srcCompression.equalsIgnoreCase(FileType.UNKNOWN)) && (destCompression == null || destCompression.length == 0 ))
   }
 
 }

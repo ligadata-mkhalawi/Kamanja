@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 scalaver=2.10
-release=1.6.1
+release=1.6.2
 topicname="testIn_1"
 inputfmt="CSV"
 gzcompressed=false
@@ -41,7 +41,7 @@ fi
 echo "User selected: $INPUTFILE"
 echo "Running kafka client version $kafkaversion"
 
-currentKamanjaVersion=1.6.1
+currentKamanjaVersion=1.6.2
 
 KEYSTORE_CONFIG_OPT=""
 KEYSTORE_PASS_CONFIG_OPT=""
@@ -66,7 +66,7 @@ if [ "$kafkaversion" = "0.8" ]; then
 elif [ "$kafkaversion" = "0.9" ]; then
   java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kamanjakafkaadapters_0_9_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.9.0.1.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.10-$currentKamanjaVersion.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files "$KAMANJA_HOME/input/SampleApplications/data/pairs.txt.gz" --partitionkeyidxs "0" --kafkaversion 9 --format CSV $SECURITY_PROP_OPT
 else
-  java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kamanjakafkaadapters_0_10_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.10.0.1.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.10-$currentKamanjaVersion.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files "$KAMANJA_HOME/input/SampleApplications/data/pairs.txt.gz" --partitionkeyidxs "0" --format CSV $SECURITY_PROP_OPT
+  java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kamanjakafkaadapters_0_10_2.10-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.10.0.0.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.10-$currentKamanjaVersion.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files "$KAMANJA_HOME/input/SampleApplications/data/pairs.txt.gz" --partitionkeyidxs "0" --format CSV $SECURITY_PROP_OPT
 fi
 
 

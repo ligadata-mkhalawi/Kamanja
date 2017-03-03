@@ -90,10 +90,6 @@ public class EncryptionUtil {
      *          :The file containing public key
      * @param privateKeyFile
      *          :The file containing private key
-     * 
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws FileNotFoundException
      */
     public static void generateSampleKeys(String algorithm,String publicKeyFile,String privateKeyFile) {
 	try {
@@ -137,16 +133,6 @@ public class EncryptionUtil {
     /**
      * Generate key which contains a pair of private and public key using 1024
      * bytes. Store the set of keys in Prvate.key and Public.key files.
-     * @param algorithm
-     *          : algorithm used
-     * @param publicKeyFile
-     *          :The file containing public key
-     * @param privateKeyFile
-     *          :The file containing private key
-     * 
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws FileNotFoundException
      */
     public static void generateSampleKeys() {
 	generateSampleKeys(ALGORITHM,PUBLIC_KEY_FILE,PRIVATE_KEY_FILE);
@@ -160,9 +146,7 @@ public class EncryptionUtil {
      * @return String
      * @throws java.lang.Exception
      */
-
-
-    public static String bytesToHex(byte[] bytes) {
+    public static String bytesToHex(byte[] bytes) throws Exception {
 	try{
 	    char[] hexChars = new char[bytes.length * 2];
 	    for ( int j = 0; j < bytes.length; j++ ) {
@@ -210,9 +194,7 @@ public class EncryptionUtil {
      * @return String
      * @throws java.lang.Exception
      */
-
-
-    public static String encode(byte[] bytes) {
+    public static String encode(byte[] bytes) throws Exception {
 	try{
 	    Base64 base64 = new Base64();
 	    String encoded = new String(base64.encode(bytes));
@@ -270,7 +252,7 @@ public class EncryptionUtil {
      *          : algorithm used
      * @param text
      *          : original plain text
-     * @param keyFile
+     * @param publicKeyFile
      *          :The public key file
      * @return Encrypted text
      * @throws java.lang.Exception
@@ -302,7 +284,7 @@ public class EncryptionUtil {
      *          : algorithm used
      * @param text
      *          :encrypted text
-     * @param key
+     * @param privateKeyFile
      *          :The private key
      * @return plain text
      * @throws java.lang.Exception

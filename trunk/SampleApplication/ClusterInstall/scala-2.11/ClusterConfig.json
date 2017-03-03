@@ -48,10 +48,7 @@
       },
       "EnvironmentContext": {
         "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
-        "jarname": "KamanjaInternalDeps_2.11-1.6.1.jar",
         "dependencyjars": [
-          "ExtDependencyLibs_2.11-1.6.1.jar",
-          "ExtDependencyLibs2_2.11-1.6.1.jar"
         ]
       },
       "Cache": {
@@ -76,7 +73,7 @@
             "RestAPI",
             "ProcessingEngine"
           ],
-          "Classpath": ".:{InstallDirectory}/lib/system/ExtDependencyLibs_2.11-1.6.1.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.11-1.6.1.jar:{InstallDirectory}/lib/system/ExtDependencyLibs2_2.11-1.6.1.jar"
+          "Classpath": "."
         }
       ],
       "Adapters": [
@@ -92,11 +89,10 @@
           "Name": "HelloWorldInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -107,11 +103,10 @@
           "Name": "LoanInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -122,11 +117,10 @@
           "Name": "MedicalInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -137,11 +131,10 @@
           "Name": "FinanceInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -152,11 +145,10 @@
           "Name": "TelecomInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -167,11 +159,10 @@
           "Name": "TestIn_1",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -182,11 +173,10 @@
           "Name": "TestOut_1",
           "TypeString": "Output",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -197,11 +187,10 @@
           "Name": "TestFailedEvents_1",
           "TypeString": "Output",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -212,11 +201,10 @@
           "Name": "TestMessageEvents_1",
           "TypeString": "Output",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -227,11 +215,10 @@
           "Name": "TestStatus_1",
           "TypeString": "Output",
           "TenantId": "System",
-          "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.6.1.jar",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.6.1.jar",
-            "ExtDependencyLibs2_2.11-1.6.1.jar"
+            "kafka-clients-0.10.0.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",

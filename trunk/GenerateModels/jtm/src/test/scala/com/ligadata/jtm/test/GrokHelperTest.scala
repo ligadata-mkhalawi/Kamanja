@@ -31,28 +31,31 @@ class GrokHelperTest extends FunSuite with BeforeAndAfter {
 
   test("test1") {
 
-    val actual = GrokHelper.ExtractDictionaryKeys("{EMAIL: email}")
+    val actual = GrokHelper.ExtractDictionaryKeys("%{EMAIL: email}")
     assert(actual == Set("email"))
-
   }
 
   test("test2") {
 
-    val actual = GrokHelper.ExtractDictionaryKeys("{EMAIL: email}{EMAIL: email1}")
+    val actual = GrokHelper.ExtractDictionaryKeys("%{EMAIL: email}%{EMAIL: email1}")
     assert(actual == Set("email", "email1"))
-
   }
 
   test("test3") {
 
-    val actual = GrokHelper.ExtractDictionaryKeys("{ EMAIL : email} {EMAIL: email1}")
+    val actual = GrokHelper.ExtractDictionaryKeys("%{ EMAIL : email} %{EMAIL: email1}")
     assert(actual == Set("email", "email1"))
-
   }
 
   test("test4") {
 
-    val actual = GrokHelper.ConvertToGrokPattern("{ EMAIL : email} {EMAIL: email1}")
+    val actual = GrokHelper.ConvertToGrokPattern("%{EMAIL:email} %{EMAIL:email1}")
     assert(actual == "%{EMAIL:email} %{EMAIL:email1}")
+  }
+
+  test("defect1416") {
+
+    val actual = GrokHelper.ConvertToGrokPattern("{USER:auth} \\[%{HTTPDATE:timestamp}\\]")
+    assert(actual == "{USER:auth} \\[%{HTTPDATE:timestamp}\\]")
   }
 }

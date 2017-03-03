@@ -16,8 +16,8 @@
 
 package com.ligadata.kamanja.metadataload
 
-import scala.collection.mutable.{Set}
-import org.apache.logging.log4j.{Logger, LogManager}
+import scala.collection.mutable.{ Set }
+import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
@@ -33,23 +33,22 @@ import org.joda.time.LocalDate
 import org.joda.time.DateTime
 import org.joda.time.Years
 
-
 trait LogTrait {
   val loggerName = this.getClass.getName()
   val logger = LogManager.getLogger(loggerName)
 }
 
 /**
-  * FIXME: As an intermediate development, we might load the metadata manager with file content before resurrecting
-  * the cache from a kv store... hence the arguments (currently unused)
-  *
-  * For now, we just call some functions in the object MetadataLoad to load the various kinds of metadata.
-  * The functions used to load metadata depend on metadata that the loaded element needs being present
-  * before hand in the metadata store (e.g., a type of a function arg must exist before the function can
-  * be loaded.
-  *
-  *
-  */
+ * FIXME: As an intermediate development, we might load the metadata manager with file content before resurrecting
+ * the cache from a kv store... hence the arguments (currently unused)
+ *
+ * For now, we just call some functions in the object MetadataLoad to load the various kinds of metadata.
+ * The functions used to load metadata depend on metadata that the loaded element needs being present
+ * before hand in the metadata store (e.g., a type of a function arg must exist before the function can
+ * be loaded.
+ *
+ *
+ */
 
 object MetadataLoad {
   val baseTypesOwnerId = "kamanja"
@@ -76,44 +75,65 @@ object MetadataLoad {
           ("system", "isresultproduced", "system", "Boolean", false, null),
           ("system", "producedmessages", "system", "ArrayOfLong", false, null),
           ("system", "error", "system", "String", false, null)),
-        5, "", 5) // Assigned SchemaId as 1000003. Never change this for this message
-      // NOTE NOTE:- Next SchemaId should start from 5
-    )
+          5, "", 5) // Assigned SchemaId as 1000003. Never change this for this message
+          // NOTE NOTE:- Next SchemaId should start from 5
+          )
+  }
+  def ExtContainerInfo: Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)] = {
+    return Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)](
+      ("com.ligadata.KamanjaBase", "MetricsValue", "com.ligadata.KamanjaBase.MetricsValue",
+        List(("system", "metrickey", "system", "string", false, null),
+          ("system", "metricskeyvalue", "system", "long", false, null)),
+          6, "", 6) // Assigned SchemaId as 1000002. Never change this for this message
+          )
+  }
+
+  def ExtContainerInfo1: Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)] = {
+    return Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)](
+      ("com.ligadata.KamanjaBase", "ComponentKeyMetrics", "com.ligadata.KamanjaBase.ComponentKeyMetrics",
+        List(("system", "key", "system", "string", false, null),
+          ("system", "metricstime", "system", "long", false, null),
+          ("system", "roundintervaltimeinsec", "system", "int", false, null),
+          ("system", "firstoccured", "system", "long", false, null),
+          ("system", "lastoccured", "system", "long", false, null),
+          ("system", "metricsvalue", "com.ligadata.KamanjaBase", "ArrayOfMetricsValue", false, null)),
+          7, "", 7) // Assigned SchemaId as 1000002. Never change this for this message
+          )
   }
 
   def BaseMessagesInfo: Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)] = {
     return Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)](
       ("com.ligadata.KamanjaBase", "KamanjaStatusEvent", "com.ligadata.KamanjaBase.KamanjaStatusEvent",
         List(("system", "statustype", "system", "string", false, null),
-             ("system", "nodeid", "system", "string", false, null),
-             ("system", "eventtime", "system", "string", false, null),
-             ("system", "statusstring", "system", "string", false, null)),
-        1000001, "", 1000001), // Assigned SchemaId as 1000001. Never change this for this message
+          ("system", "nodeid", "system", "string", false, null),
+          ("system", "eventtime", "system", "string", false, null),
+          ("system", "statusstring", "system", "string", false, null)),
+          1000001, "", 1000001), // Assigned SchemaId as 1000001. Never change this for this message
 
       ("com.ligadata.KamanjaBase", "KamanjaStatisticsEvent", "com.ligadata.KamanjaBase.KamanjaStatisticsEvent",
         List(("system", "statistics", "system", "string", false, null)),
         1000002, "", 1000002), // Assigned SchemaId as 1000005. Never change this for this message
 
       ("com.ligadata.KamanjaBase", "KamanjaExceptionEvent", "com.ligadata.KamanjaBase.KamanjaExceptionEvent",
-        List(("system", "componentname" , "system", "string", false, null),
-              ("system", "timeoferrorepochms" , "system", "long", false, null),
-              ("system", "errortype" , "system", "string", false, null),
-              ("system", "errorstring" , "system", "string", false, null)),
-        1000003, "", 1000003), // Assigned SchemaId as 1000004. Never change this for this message
+        List(("system", "componentname", "system", "string", false, null),
+          ("system", "timeoferrorepochms", "system", "long", false, null),
+          ("system", "errortype", "system", "string", false, null),
+          ("system", "errorstring", "system", "string", false, null)),
+          1000003, "", 1000003), // Assigned SchemaId as 1000004. Never change this for this message
 
       ("com.ligadata.KamanjaBase", "KamanjaExecutionFailureEvent", "com.ligadata.KamanjaBase.KamanjaExecutionFailureEvent",
-        List(("system", "msgid" , "system", "long", false, null),
-          ("system", "timeoferrorepochms" , "system", "long", false, null),
-          ("system", "msgcontent" , "system", "string", false, null),
-          ("system", "msgadapterkey" , "system", "string", false, null),
-          ("system", "msgadaptervalue" , "system", "string", false, null),
-          ("system", "sourceadapter" , "system", "string", false, null),
-          ("system", "deserializer" , "system", "string", false, null),
-          ("system", "errordetail" , "system", "string", false, null)),
-        1000004, "", 1000004) // Assigned SchemaId as 1000005. Never change this for this message
-
-      // NOTE NOTE:- Next SchemaId should start from 1000007
-    )
+        List(("system", "msgid", "system", "long", false, null),
+          ("system", "timeoferrorepochms", "system", "long", false, null),
+          ("system", "msgcontent", "system", "string", false, null),
+          ("system", "msgadapterkey", "system", "string", false, null),
+          ("system", "msgadaptervalue", "system", "string", false, null),
+          ("system", "sourceadapter", "system", "string", false, null),
+          ("system", "deserializer", "system", "string", false, null),
+          ("system", "errordetail", "system", "string", false, null)),
+          1000004, "", 1000004) // Assigned SchemaId as 1000005. Never change this for this message
+          // Assigned SchemaId as 1000005. Never change this for this message
+          // NOTE NOTE:- Next SchemaId should start from 1000007
+          )
   }
 
   def ExtMessagesInfo: Array[(String, String, String, List[(String, String, String, String, Boolean, String)], Int, String, Long)] = {
@@ -125,8 +145,13 @@ object MetadataLoad {
           ("system", "messagekey", "system", "string", false, null),
           ("system", "messagevalue", "system", "string", false, null),
           ("system", "error", "system", "string", false, null)),
-        1000005, "", 1000005) // Assigned SchemaId as 1000002. Never change this for this message
-    )
+          1000005, "", 1000005), // Assigned SchemaId as 1000002. Never change this for this message
+      ("com.ligadata.KamanjaBase", "KamanjaVelocityMetrics", "com.ligadata.KamanjaBase.KamanjaVelocityMetrics",
+        List(("system", "uuid", "system", "string", false, null),
+          ("system", "componentkey", "system", "string", false, null),
+          ("system", "nodeid", "system", "string", false, null),
+          ("system", "componentkeymetrics", "com.ligadata.KamanjaBase", "ArrayOfComponentKeyMetrics", false, null)),
+          1000006, "", 1000006))
   }
 }
 
@@ -163,70 +188,69 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 
   }
 
-
   private def InitSystemTenantId: Unit = {
     mgr.AddTenantInfo("System" // TenantId
-      , "System TenantId" // Description
-      , null // no primary database
-      , null // no cache config
+    , "System TenantId" // Description
+    , null // no primary database
+    , null // no cache config
     )
   }
 
   /**
-    * **HACK ALERT**
-    *
-    * The serializer/deserializer registration bootstrapped so others can begin activating the adapters.
-    *
-    * Remove once the md api ingestion is complete........
-    */
+   * **HACK ALERT**
+   *
+   * The serializer/deserializer registration bootstrapped so others can begin activating the adapters.
+   *
+   * Remove once the md api ingestion is complete........
+   */
   private def initSerializeDeserializeConfigs: Unit = {
     mgr.AddSerializer("com.ligadata.kamanja.serializer" // namespace
-      , "csvserdeser" //name: String
-      , 1 //version: Long = 1
-      , SerializeDeserializeType.CSV //serializerType: SerializeDeserializeType.SerDeserType
-      , "com.ligadata.kamanja.serializer.CsvSerDeser" //physicalName: String
-      , MetadataLoad.baseTypesOwnerId //ownerId: String
-      , MetadataLoad.baseTypesTenantId //tenantId: String
-      , 1 //uniqueId: Long
-      , 1 //mdElementId: Long
-      , "" //jarNm: String = null. Ex: csvserdeser_2.11-1.0.jar
-      , Array() //depJars: Array[String]
+    , "csvserdeser" //name: String
+    , 1 //version: Long = 1
+    , SerializeDeserializeType.CSV //serializerType: SerializeDeserializeType.SerDeserType
+    , "com.ligadata.kamanja.serializer.CsvSerDeser" //physicalName: String
+    , MetadataLoad.baseTypesOwnerId //ownerId: String
+    , MetadataLoad.baseTypesTenantId //tenantId: String
+    , 1 //uniqueId: Long
+    , 1 //mdElementId: Long
+    , "" //jarNm: String = null. Ex: csvserdeser_2.11-1.0.jar
+    , Array() //depJars: Array[String]
     )
     mgr.AddSerializer("com.ligadata.kamanja.serializer" // namespace
-      , "jsonserdeser" //name: String
-      , 1 //version: Long = 1
-      , SerializeDeserializeType.JSON //serializerType: SerializeDeserializeType.SerDeserType
-      , "com.ligadata.kamanja.serializer.JSONSerDes" //physicalName: String
-      , MetadataLoad.baseTypesOwnerId //ownerId: String
-      , MetadataLoad.baseTypesTenantId //tenantId: String
-      , 2 //uniqueId: Long
-      , 2 //mdElementId: Long
-      , "" //jarNm: String = null. Ex: jsonserdeser_2.11-1.0.jar
-      , Array() //depJars: Array[String] = null)
+    , "jsonserdeser" //name: String
+    , 1 //version: Long = 1
+    , SerializeDeserializeType.JSON //serializerType: SerializeDeserializeType.SerDeserType
+    , "com.ligadata.kamanja.serializer.JSONSerDes" //physicalName: String
+    , MetadataLoad.baseTypesOwnerId //ownerId: String
+    , MetadataLoad.baseTypesTenantId //tenantId: String
+    , 2 //uniqueId: Long
+    , 2 //mdElementId: Long
+    , "" //jarNm: String = null. Ex: jsonserdeser_2.11-1.0.jar
+    , Array() //depJars: Array[String] = null)
     )
     mgr.AddSerializer("com.ligadata.kamanja.serializer" // namespace
-      , "kbinaryserdeser" //name: String
-      , 1 //version: Long = 1
-      , SerializeDeserializeType.KBinary //serializerType: SerializeDeserializeType.SerDeserType
-      , "com.ligadata.kamanja.serializer.KBinarySerDeser" //physicalName: String
-      , MetadataLoad.baseTypesOwnerId //ownerId: String
-      , MetadataLoad.baseTypesTenantId //tenantId: String
-      , 3 //uniqueId: Long
-      , 3 //mdElementId: Long
-      , "" //jarNm: String = null. Ex: kbinaryserdeser_2.11-1.0.jar
-      , Array() //depJars: Array[String] = null)
+    , "kbinaryserdeser" //name: String
+    , 1 //version: Long = 1
+    , SerializeDeserializeType.KBinary //serializerType: SerializeDeserializeType.SerDeserType
+    , "com.ligadata.kamanja.serializer.KBinarySerDeser" //physicalName: String
+    , MetadataLoad.baseTypesOwnerId //ownerId: String
+    , MetadataLoad.baseTypesTenantId //tenantId: String
+    , 3 //uniqueId: Long
+    , 3 //mdElementId: Long
+    , "" //jarNm: String = null. Ex: kbinaryserdeser_2.11-1.0.jar
+    , Array() //depJars: Array[String] = null)
     )
     mgr.AddSerializer("com.ligadata.kamanja.serializer" // namespace
-      , "kvserdeser" //name: String
-      , 1 //version: Long = 1
-      , SerializeDeserializeType.KV //serializerType: SerializeDeserializeType.SerDeserType
-      , "com.ligadata.kamanja.serializer.KVSerDeser" //physicalName: String
-      , MetadataLoad.baseTypesOwnerId //ownerId: String
-      , MetadataLoad.baseTypesTenantId //tenantId: String
-      , 4 //uniqueId: Long
-      , 4 //mdElementId: Long
-      , "" //jarNm: String = null. Ex: kvserdeser_2.11-1.0.jar
-      , Array() //depJars: Array[String] = null)
+    , "kvserdeser" //name: String
+    , 1 //version: Long = 1
+    , SerializeDeserializeType.KV //serializerType: SerializeDeserializeType.SerDeserType
+    , "com.ligadata.kamanja.serializer.KVSerDeser" //physicalName: String
+    , MetadataLoad.baseTypesOwnerId //ownerId: String
+    , MetadataLoad.baseTypesTenantId //tenantId: String
+    , 4 //uniqueId: Long
+    , 4 //mdElementId: Long
+    , "" //jarNm: String = null. Ex: kvserdeser_2.11-1.0.jar
+    , Array() //depJars: Array[String] = null)
     )
   }
 
@@ -238,6 +262,30 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 
     val baseContainerInfo_array = MetadataLoad.ContainerInterfacesInfo
     baseContainerInfo_array.foreach(bc => {
+      logger.debug("MetadataLoad... adding array of " + bc._2)
+      mgr.AddArray(bc._1, "ArrayOf" + bc._2, bc._1, bc._2, 1, MetadataLoad.baseTypesVer, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    })
+
+    val extContainerInfo = MetadataLoad.ExtContainerInfo
+    extContainerInfo.foreach(bc => {
+      logger.debug("MetadataLoad...loading " + bc._2)
+      mgr.AddFixedContainer(bc._1, bc._2, bc._3, bc._4, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, bc._7, bc._5, bc._6)
+    })
+
+    val extContainerInfo_array = MetadataLoad.ExtContainerInfo
+    extContainerInfo_array.foreach(bc => {
+      logger.debug("MetadataLoad... adding array of " + bc._2)
+      mgr.AddArray(bc._1, "ArrayOf" + bc._2, bc._1, bc._2, 1, MetadataLoad.baseTypesVer, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    })
+
+    val extContainerInfo1 = MetadataLoad.ExtContainerInfo1
+    extContainerInfo1.foreach(bc => {
+      logger.debug("MetadataLoad...loading " + bc._2)
+      mgr.AddFixedContainer(bc._1, bc._2, bc._3, bc._4, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, bc._7, bc._5, bc._6)
+    })
+
+    val extContainerInfo1_array = MetadataLoad.ExtContainerInfo1
+    extContainerInfo1_array.foreach(bc => {
       logger.debug("MetadataLoad... adding array of " + bc._2)
       mgr.AddArray(bc._1, "ArrayOf" + bc._2, bc._1, bc._2, 1, MetadataLoad.baseTypesVer, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     })
@@ -276,8 +324,10 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     })
   }
 
-  /** Define any types that may be used in the container, message, fcn, and model metadata.  These are broken into smaller functions that
-    * will prevent compilation failures due to large function size. */
+  /**
+   * Define any types that may be used in the container, message, fcn, and model metadata.  These are broken into smaller functions that
+   * will prevent compilation failures due to large function size.
+   */
   def InitTypeDefs = {
     InitTypeDefs1
     InitTypeDefs2
@@ -315,9 +365,10 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddMap(MdMgr.sysNS, "MapOfBoolean", MdMgr.sysNS, "Boolean", MetadataLoad.baseTypesVer, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
   }
 
-  /** Initialize the function decls for the core pmml udfs.  These are broken into a set of smaller functions so that
-    * the maximum function size limit is not exceeded during compilation
-    */
+  /**
+   * Initialize the function decls for the core pmml udfs.  These are broken into a set of smaller functions so that
+   * the maximum function size limit is not exceeded during compilation
+   */
 
   def init_com_ligadata_pmml_udfs_Udfs {
 
@@ -331,9 +382,8 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     init_com_ligadata_pmml_udfs_Udfs7
   }
 
-
   private def init_com_ligadata_pmml_udfs_Udfs0 {
-   // mgr.AddArray(MdMgr.sysNS, "ArrayOfContainerInterface", MdMgr.sysNS, "ContainerInterface", 1, MetadataLoad.baseTypesVer, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    // mgr.AddArray(MdMgr.sysNS, "ArrayOfContainerInterface", MdMgr.sysNS, "ContainerInterface", 1, MetadataLoad.baseTypesVer, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "idGen", "com.ligadata.pmml.udfs.Udfs.idGen", ("System", "String"), List(), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "concat", "com.ligadata.pmml.udfs.Udfs.concat", ("System", "String"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "replace", "com.ligadata.pmml.udfs.Udfs.replace", ("System", "String"), List(("replacewithin", "System", "Any"), ("inWord", "System", "Any"), ("replacewith", "System", "Any")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -342,7 +392,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "formatNumber", "com.ligadata.pmml.udfs.Udfs.formatNumber", ("System", "String"), List(("num", "System", "Any"), ("formatting", "System", "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "logMsg", "com.ligadata.pmml.udfs.Udfs.logMsg", ("System", "Boolean"), List(("severity", "System", "String"), ("contextMsg", "System", "String"), ("eventMsg", "System", "String"), ("bool", "System", "Boolean")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-
     mgr.AddFunc("Pmml", "CompoundStatementBoolean", "com.ligadata.pmml.udfs.Udfs.CompoundStatementBoolean", ("System", "Boolean"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "CompoundStatementString", "com.ligadata.pmml.udfs.Udfs.CompoundStatementString", ("System", "String"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "CompoundStatementInt", "com.ligadata.pmml.udfs.Udfs.CompoundStatementInt", ("System", "Int"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -350,7 +399,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "CompoundStatementFloat", "com.ligadata.pmml.udfs.Udfs.CompoundStatementFloat", ("System", "Float"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "CompoundStatementDouble", "com.ligadata.pmml.udfs.Udfs.CompoundStatementDouble", ("System", "Double"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "CompoundStatement", "com.ligadata.pmml.udfs.Udfs.CompoundStatement", ("System", "Any"), List(("args", "System", "Any")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
-
 
     mgr.AddFunc("Pmml", "length", "com.ligadata.pmml.udfs.Udfs.length", ("System", "String"), List(("str", "System", "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "trimBlanks", "com.ligadata.pmml.udfs.Udfs.trimBlanks", ("System", "String"), List(("str", "System", "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -398,9 +446,7 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "Sum", "com.ligadata.pmml.udfs.Udfs.Sum", ("System", "Int"), List(("exprs", "System", "ArrayOfInt")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
   }
 
-
   private def init_com_ligadata_pmml_udfs_Udfs1 {
-
 
     mgr.AddFunc("Pmml", "Max", "com.ligadata.pmml.udfs.Udfs.Max", ("System", "Float"), List(("exprs", "System", "ArrayOfFloat")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "Max", "com.ligadata.pmml.udfs.Udfs.Max", ("System", "Double"), List(("exprs", "System", "ArrayOfDouble")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -479,7 +525,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "Multiply", "com.ligadata.pmml.udfs.Udfs.Multiply", ("System", "Double"), List(("expr1", "System", "Double"), ("expr2", "System", "Int")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "Multiply", "com.ligadata.pmml.udfs.Udfs.Multiply", ("System", "Int"), List(("expr1", "System", "Int"), ("expr2", "System", "Int")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
   }
-
 
   private def init_com_ligadata_pmml_udfs_Udfs2 {
     mgr.AddFunc("Pmml", "Minus", "com.ligadata.pmml.udfs.Udfs.Minus", ("System", "Float"), List(("exprs", "System", "ArrayOfFloat")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -622,7 +667,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "GreaterThan", "com.ligadata.pmml.udfs.Udfs.GreaterThan", ("System", "Boolean"), List(("expr1", "System", "String"), ("expr2", "System", "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
   }
 
-
   private def init_com_ligadata_pmml_udfs_Udfs3 {
     mgr.AddFunc("Pmml", "Between", "com.ligadata.pmml.udfs.Udfs.Between", ("System", "Boolean"), List(("thisOne", "System", "Float"), ("leftMargin", "System", "Float"), ("rightMargin", "System", "Float"), ("inclusive", "System", "Boolean")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "Between", "com.ligadata.pmml.udfs.Udfs.Between", ("System", "Boolean"), List(("thisOne", "System", "Int"), ("leftMargin", "System", "Int"), ("rightMargin", "System", "Float"), ("inclusive", "System", "Boolean")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -661,7 +705,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "IsIn", "com.ligadata.pmml.udfs.Udfs.IsIn", ("System", "Boolean"), List(("fldRefExpr", "System", "String"), ("setExprs", "System", "ArrayOfString")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
   }
 
-
   private def init_com_ligadata_pmml_udfs_Udfs4 {
     mgr.AddFunc("Pmml", "IntAnd", "com.ligadata.pmml.udfs.Udfs.IntAnd", ("System", "Boolean"), List(("boolexpr", "System", "Boolean")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "And", "com.ligadata.pmml.udfs.Udfs.And", ("System", "Boolean"), List(("boolexpr", "System", "Boolean")), scala.collection.mutable.Set[FcnMacroAttr.Feature](FcnMacroAttr.HAS_INDEFINITE_ARITY), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -671,7 +714,7 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 
     mgr.AddFunc("Pmml", "GetArray", "com.ligadata.pmml.udfs.Udfs.GetArray", ("System", "ArrayOfContainerInterface"), List(("xId", "System", "Long"), ("gCtx", "System", "EnvContext"), ("containerId", "System", "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "GetArray", "com.ligadata.pmml.udfs.Udfs.GetArray", ("System", "ArrayOfContainerInterface"), List(("ctx", "System", "Context"), ("containerId", "System", "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
-    
+
     mgr.AddFunc("Pmml", "Put", "com.ligadata.pmml.udfs.Udfs.Put", (MdMgr.sysNS, "Boolean"), List(("ctx", "System", "Context"), ("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "String")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "Put", "com.ligadata.pmml.udfs.Udfs.Put", (MdMgr.sysNS, "Boolean"), List(("ctx", "System", "Context"), ("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfString")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
@@ -694,7 +737,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "Put", "com.ligadata.pmml.udfs.Udfs.Put", (MdMgr.sysNS, "Boolean"), List(("ctx", "System", "Context"), ("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfAny")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
   }
-
 
   private def init_com_ligadata_pmml_udfs_Udfs5 {
     //		mgr.AddFunc("Pmml", "CollectionLength", "com.ligadata.pmml.udfs.Udfs.CollectionLength", ("System", "Int"), List(("coll", "System", "ArrayOfAny")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -722,7 +764,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     // 		mgr.AddFunc("Pmml", "MapKeys", "com.ligadata.pmml.udfs.Udfs.MapKeys", ("System", "ArrayOfInt"), List(("receiver", "System", "MapOfIntAny")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     // 		mgr.AddFunc("Pmml", "MapKeys", "com.ligadata.pmml.udfs.Udfs.MapKeys", ("System", "ArrayOfAny"), List(("receiver", "System", "MapOfAnyAny")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     // 		mgr.AddFunc("Pmml", "MapValues", "com.ligadata.pmml.udfs.Udfs.MapValues", ("System", "ArrayOfAny"), List(("receiver", "System", "MapOfAnyAny")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
-
 
     /** time/date functions */
     mgr.AddFunc("Pmml", "AgeCalc", "com.ligadata.pmml.udfs.Udfs.AgeCalc", ("System", "Int"), List(("yyyymmdd", "System", "Int")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
@@ -771,7 +812,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     mgr.AddFunc("Pmml", "monthsBetween", "com.ligadata.pmml.udfs.Udfs.monthsBetween", ("System", "Long"), List(("time1", "System", "Long"), ("time2", "System", "Long"), ("inclusive", "System", "Boolean")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "yearsBetween", "com.ligadata.pmml.udfs.Udfs.yearsBetween", ("System", "Long"), List(("time1", "System", "Long"), ("time2", "System", "Long"), ("inclusive", "System", "Boolean")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-
     mgr.AddFunc("Pmml", "Version", "com.ligadata.pmml.udfs.Udfs.Version", ("System", "String"), List(("msg", "System", "MessageInterface")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
     mgr.AddFunc("Pmml", "Version", "com.ligadata.pmml.udfs.Udfs.Version", ("System", "String"), List(("msg", "System", "ContainerInterface")), null, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
@@ -781,61 +821,47 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 
   def InitFcns = {
     /**
-      * NOTE: These functions are variable in nature, more like macros than
-      * actual functions.  They actually deploy two
-      * functions (in most cases): the outer container function (e.g., Map or Filter) and the inner
-      * function that will operate on the members of the container in some way.
-
-      * Since we only know the outer function that will be used, only it is
-      * described.  The inner function is specified in the pmml and the arguments
-      * and function lookup are separately done for it. The inner functions will be one of the
-      * be one of the other udfs that are defined in the core udf lib
-      * (e.g., Between(somefield, low, hi, inclusive)
-
-      * Note too that only the "Any" version of these container types are defined.
-      * The code generation will utilize the real item type of the container
-      * to cast the object "down" to the right type.
-
-      * Note that they all have the "isIterable" boolean set to true.
-
-      * nameSpace: String
-      * , name: String
-      * , physicalName: String
-      * , retTypeNsName: (String, String)
-      * , args: List[(String, String, String)]
-      * , fmfeatures : Set[FcnMacroAttr.Feature]
-
-      */
+     * NOTE: These functions are variable in nature, more like macros than
+     * actual functions.  They actually deploy two
+     * functions (in most cases): the outer container function (e.g., Map or Filter) and the inner
+     * function that will operate on the members of the container in some way.
+     *
+     * Since we only know the outer function that will be used, only it is
+     * described.  The inner function is specified in the pmml and the arguments
+     * and function lookup are separately done for it. The inner functions will be one of the
+     * be one of the other udfs that are defined in the core udf lib
+     * (e.g., Between(somefield, low, hi, inclusive)
+     *
+     * Note too that only the "Any" version of these container types are defined.
+     * The code generation will utilize the real item type of the container
+     * to cast the object "down" to the right type.
+     *
+     * Note that they all have the "isIterable" boolean set to true.
+     *
+     * nameSpace: String
+     * , name: String
+     * , physicalName: String
+     * , retTypeNsName: (String, String)
+     * , args: List[(String, String, String)]
+     * , fmfeatures : Set[FcnMacroAttr.Feature]
+     *
+     */
     var fcnMacrofeatures: Set[FcnMacroAttr.Feature] = Set[FcnMacroAttr.Feature]()
     fcnMacrofeatures += FcnMacroAttr.ITERABLE
     logger.debug("MetadataLoad...loading container filter functions")
-    mgr.AddFunc(MdMgr.sysNS
-      , "ContainerFilter"
-      , "com.ligadata.pmml.udfs.Udfs.ContainerFilter"
-      , (MdMgr.sysNS, "ArrayOfAny")
-      , List(("containerId", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddFunc(MdMgr.sysNS, "ContainerFilter", "com.ligadata.pmml.udfs.Udfs.ContainerFilter", (MdMgr.sysNS, "ArrayOfAny"), List(("containerId", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     logger.debug("MetadataLoad...loading container map functions")
-    mgr.AddFunc(MdMgr.sysNS
-      , "ContainerMap"
-      , "com.ligadata.pmml.udfs.Udfs.ContainerMap"
-      , (MdMgr.sysNS, "ArrayOfAny")
-      , List(("containerId", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddFunc(MdMgr.sysNS, "ContainerMap", "com.ligadata.pmml.udfs.Udfs.ContainerMap", (MdMgr.sysNS, "ArrayOfAny"), List(("containerId", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     logger.debug("MetadataLoad...loading container groupBy functions")
-    mgr.AddFunc(MdMgr.sysNS
-      , "GroupBy"
-      , "com.ligadata.pmml.udfs.Udfs.GroupBy"
-      , (MdMgr.sysNS, "ArrayOfAny")
-      , List(("containerId", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddFunc(MdMgr.sysNS, "GroupBy", "com.ligadata.pmml.udfs.Udfs.GroupBy", (MdMgr.sysNS, "ArrayOfAny"), List(("containerId", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
   }
 
-  /** Initialize the macro definitions used by the pmml compiler.  The private functions called are utilized to
-    * prevent excessively large functions that will flummox the compiler.
-    */
+  /**
+   * Initialize the macro definitions used by the pmml compiler.  The private functions called are utilized to
+   * prevent excessively large functions that will flummox the compiler.
+   */
   def initMacroDefs {
     logger.debug("MetadataLoad...loading Macro functions")
     initMacroDefs1
@@ -845,38 +871,40 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 
   private def initMacroDefs1 {
 
+    /**
+     * ************************************************************
+     *
+     * NOTE: For the Builds portion of the Builds/Does macros that
+     * do the class update contexts... make sure the class name is
+     * unique.  Do this by qualifying the name with all of the arguments
+     * s.t. there is no confusion between 3 and 4 argument macros that
+     * have the same class base name.
+     *
+     * *************************************************************
+     */
 
-    /** ************************************************************
-      *
-      * NOTE: For the Builds portion of the Builds/Does macros that
-      * do the class update contexts... make sure the class name is
-      * unique.  Do this by qualifying the name with all of the arguments
-      * s.t. there is no confusion between 3 and 4 argument macros that
-      * have the same class base name.
-      *
-      * **************************************************************/
-
-    /** catalog the CLASSUPDATE oriented macros:
-
-      */
+    /**
+     * catalog the CLASSUPDATE oriented macros:
+     *
+     */
 
     var fcnMacrofeatures: Set[FcnMacroAttr.Feature] = Set[FcnMacroAttr.Feature]()
     fcnMacrofeatures += FcnMacroAttr.CLASSUPDATE
 
-
-    /** Macros Associated with this macro template:
-      * "incrementBy(Any,Int,Int)"
-      * "incrementBy(Any,Double,Double)"
-      * "incrementBy(Any,Long,Long)"
-
-      * Something like the following code would cause the macro to be used were
-      * the AlertsToday a FixedField container...
-      * <Apply function="incrementBy">
-      * <FieldRef field="AlertsToday.Sent"/>
-      * <Constant dataType="integer">1</Constant>
-      * </Apply>
-
-      */
+    /**
+     * Macros Associated with this macro template:
+     * "incrementBy(Any,Int,Int)"
+     * "incrementBy(Any,Double,Double)"
+     * "incrementBy(Any,Long,Long)"
+     *
+     * Something like the following code would cause the macro to be used were
+     * the AlertsToday a FixedField container...
+     * <Apply function="incrementBy">
+     * <FieldRef field="AlertsToday.Sent"/>
+     * <Constant dataType="integer">1</Constant>
+     * </Apply>
+     *
+     */
     val SetFieldMacroStringFixed: String =
       """
 	class %1%_%2%_%3%_setField(val ctx : Context, var %1% : %1_type%, val %3% : %3_type%)
@@ -891,153 +919,47 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 	  	def setField  : Boolean = { %1%.set("%2%", %3%.asInstanceOf[%2_type%]); true }
 	} """
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("value", MdMgr.sysNS, "Int"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("value", MdMgr.sysNS, "Int")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfInt"), ("value", MdMgr.sysNS, "ArrayOfInt"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfInt"), ("value", MdMgr.sysNS, "ArrayOfInt")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("value", MdMgr.sysNS, "Double"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("value", MdMgr.sysNS, "Double")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfDouble"), ("value", MdMgr.sysNS, "ArrayOfDouble"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfDouble"), ("value", MdMgr.sysNS, "ArrayOfDouble")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("value", MdMgr.sysNS, "Long"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("value", MdMgr.sysNS, "Long")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfLong"), ("value", MdMgr.sysNS, "ArrayOfLong"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfLong"), ("value", MdMgr.sysNS, "ArrayOfLong")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Boolean"), ("value", MdMgr.sysNS, "Boolean"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Boolean"), ("value", MdMgr.sysNS, "Boolean")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfBoolean"), ("value", MdMgr.sysNS, "ArrayOfBoolean"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfBoolean"), ("value", MdMgr.sysNS, "ArrayOfBoolean")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "String"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "String")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfString"), ("value", MdMgr.sysNS, "ArrayOfString"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfString"), ("value", MdMgr.sysNS, "ArrayOfString")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfInt"), ("value", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfInt"), ("value", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfDouble"), ("value", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfDouble"), ("value", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfLong"), ("value", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfLong"), ("value", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Boolean"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Boolean"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfBoolean"), ("value", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfBoolean"), ("value", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfString"), ("value", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "ArrayOfString"), ("value", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
-
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldMacroStringFixed, SetFieldMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     val SetFieldNullMacroStringFixed: String =
       """
@@ -1053,13 +975,7 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 	  	def setFieldNull  : Boolean = { %1%.set("%2%", null.asInstanceOf[%2_type%]); true }
 	} """
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setFieldNull"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (SetFieldNullMacroStringFixed, SetFieldNullMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
-
+    mgr.AddMacro(MdMgr.sysNS, "setFieldNull", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Any")), fcnMacrofeatures, (SetFieldNullMacroStringFixed, SetFieldNullMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     val SetFieldMacroContainerStringFixed: String =
       """
@@ -1075,54 +991,30 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 	  	def setField  : Boolean = { %1%.set("%2%", %3%.get("%4%").asInstanceOf[%4_type%]); true }
 	} """
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Int"))
-      , fcnMacrofeatures
-      , (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Int")), fcnMacrofeatures, (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Double"))
-      , fcnMacrofeatures
-      , (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Double")), fcnMacrofeatures, (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Long"))
-      , fcnMacrofeatures
-      , (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Long")), fcnMacrofeatures, (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Boolean"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Boolean"))
-      , fcnMacrofeatures
-      , (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Boolean"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "Boolean")), fcnMacrofeatures, (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "setField"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "String"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "String"))
-      , fcnMacrofeatures
-      , (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "setField", (MdMgr.sysNS, "Boolean"), List(("toContainer", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "String"), ("fromContainer", MdMgr.sysNS, "Any"), ("value", MdMgr.sysNS, "String")), fcnMacrofeatures, (SetFieldMacroContainerStringFixed, SetFieldMacroContainerStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    /** Macros Associated with this macro template:
-      * "incrementBy(Any,Int,Int)"
-      * "incrementBy(Any,Double,Double)"
-      * "incrementBy(Any,Long,Long)"
-
-      * Something like the following code would cause the macro to be used were
-      * the AlertsToday a FixedField container...
-      * <Apply function="incrementBy">
-      * <FieldRef field="AlertsToday.Sent"/>
-      * <Constant dataType="integer">1</Constant>
-      * </Apply>
-
-      */
+    /**
+     * Macros Associated with this macro template:
+     * "incrementBy(Any,Int,Int)"
+     * "incrementBy(Any,Double,Double)"
+     * "incrementBy(Any,Long,Long)"
+     *
+     * Something like the following code would cause the macro to be used were
+     * the AlertsToday a FixedField container...
+     * <Apply function="incrementBy">
+     * <FieldRef field="AlertsToday.Sent"/>
+     * <Constant dataType="integer">1</Constant>
+     * </Apply>
+     *
+     */
     val incrementByMacroStringFixed: String =
       """
 	class %1%_%2%_%3%_incrementBy(val ctx : Context, var %1% : %1_type%, val %3% : %3_type%)
@@ -1137,26 +1029,11 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 	  	def incrementBy  : Boolean = { %1%.set("%2%", (%1%.get("%2%").asInstanceOf[%2_type%] + %3%)); true }
 	} """
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "incrementBy"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("value", MdMgr.sysNS, "Int"))
-      , fcnMacrofeatures
-      , (incrementByMacroStringFixed, incrementByMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "incrementBy", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Int"), ("value", MdMgr.sysNS, "Int")), fcnMacrofeatures, (incrementByMacroStringFixed, incrementByMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "incrementBy"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("value", MdMgr.sysNS, "Double"))
-      , fcnMacrofeatures
-      , (incrementByMacroStringFixed, incrementByMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "incrementBy", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Double"), ("value", MdMgr.sysNS, "Double")), fcnMacrofeatures, (incrementByMacroStringFixed, incrementByMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "incrementBy"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("value", MdMgr.sysNS, "Long"))
-      , fcnMacrofeatures
-      , (incrementByMacroStringFixed, incrementByMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "incrementBy", (MdMgr.sysNS, "Boolean"), List(("container", MdMgr.sysNS, "Any"), ("containerField", MdMgr.sysNS, "Long"), ("value", MdMgr.sysNS, "Long")), fcnMacrofeatures, (incrementByMacroStringFixed, incrementByMacroStringMapped), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
   }
 
@@ -1180,263 +1057,157 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
 	  	def Put  : Boolean = { %1%.setObject(ctx.xId, %2%, %3%, %4%); true }
 	} """
 
-    /** EnvContext write access methods:
-      * def setObject(transId: Long, containerName: String, key: String, value: ContainerInterface): Unit
-      * def setObject(transId: Long, containerName: String, key: Any, value: ContainerInterface): Unit
-
-      * mgr.AddMacro(MdMgr.sysNS
-      * , "Put"
-      * , (MdMgr.sysNS, "Boolean")
-      * , List(("gCtx", MdMgr.sysNS, "EnvContext")
-      * , ("containerName", MdMgr.sysNS, "String")
-      * , ("key", MdMgr.sysNS, "ListOfString")
-      * , ("value", MdMgr.sysNS, "ContainerInterface"))
-      * , fcnMacrofeatures
-      * , (putGlobalContainerFixedMacroTemplate,putGlobalContainerMappedMacroTemplate))
-      */
+    /**
+     * EnvContext write access methods:
+     * def setObject(transId: Long, containerName: String, key: String, value: ContainerInterface): Unit
+     * def setObject(transId: Long, containerName: String, key: Any, value: ContainerInterface): Unit
+     *
+     * mgr.AddMacro(MdMgr.sysNS
+     * , "Put"
+     * , (MdMgr.sysNS, "Boolean")
+     * , List(("gCtx", MdMgr.sysNS, "EnvContext")
+     * , ("containerName", MdMgr.sysNS, "String")
+     * , ("key", MdMgr.sysNS, "ListOfString")
+     * , ("value", MdMgr.sysNS, "ContainerInterface"))
+     * , fcnMacrofeatures
+     * , (putGlobalContainerFixedMacroTemplate,putGlobalContainerMappedMacroTemplate))
+     */
 
     /**
-      * val putLongVariableMacroPmmlDict : String =    """
-      * class %1%_%2%_PutLong(val ctx : Context, var %1% : %1_type%, val %2% : %2_type%)
-      * {
-      * //resort to setting the Long value to local variable to insure scala compiler recognizes the appropriate coercion...
-      * // 	with a constant as the value present, it will match to Int and fail for large values
-      * def Put  : Boolean = { val l : %2_type% = %2%; Put(ctx, %1%, l); true }
-      * } """
-
-      * mgr.AddMacro(MdMgr.sysNS
-      * , "Put"
-      * , (MdMgr.sysNS, "Boolean")
-      * , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Long"))
-      * , fcnMacrofeatures
-      * , (putLongVariableMacroPmmlDict,putLongVariableMacroPmmlDict))
-      */
+     * val putLongVariableMacroPmmlDict : String =    """
+     * class %1%_%2%_PutLong(val ctx : Context, var %1% : %1_type%, val %2% : %2_type%)
+     * {
+     * //resort to setting the Long value to local variable to insure scala compiler recognizes the appropriate coercion...
+     * // 	with a constant as the value present, it will match to Int and fail for large values
+     * def Put  : Boolean = { val l : %2_type% = %2%; Put(ctx, %1%, l); true }
+     * } """
+     *
+     * mgr.AddMacro(MdMgr.sysNS
+     * , "Put"
+     * , (MdMgr.sysNS, "Boolean")
+     * , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Long"))
+     * , fcnMacrofeatures
+     * , (putLongVariableMacroPmmlDict,putLongVariableMacroPmmlDict))
+     */
 
     /** **************************************************************************************************************/
 
-    /** ***********************************************************************
-      * Catalog the ITERABLE only macros (no class generation needed for these
-      * *************************************************************************/
+    /**
+     * ***********************************************************************
+     * Catalog the ITERABLE only macros (no class generation needed for these
+     * ************************************************************************
+     */
     fcnMacrofeatures.clear
     fcnMacrofeatures += FcnMacroAttr.ITERABLE
 
     /**
-      * Macros associated with the 'putVariableMacroPmmlDict' macro template:
-      * "Put(String,String)"
-      * "Put(String,Int)"
-      * "Put(String,Long)"
-      * "Put(String,Double)"
-      * "Put(String,Boolean)"
-      * "Put(String,Any)"
-
-      * Notes:
-      * 1) No "mapped" version of the template needed for this case.
-      * 2) These functions can ONLY be used inside objects that have access to the model's ctx
-      * (e.g., inside the 'execute(ctx : Context)' function of a derived field)
-      */
+     * Macros associated with the 'putVariableMacroPmmlDict' macro template:
+     * "Put(String,String)"
+     * "Put(String,Int)"
+     * "Put(String,Long)"
+     * "Put(String,Double)"
+     * "Put(String,Boolean)"
+     * "Put(String,Any)"
+     *
+     * Notes:
+     * 1) No "mapped" version of the template needed for this case.
+     * 2) These functions can ONLY be used inside objects that have access to the model's ctx
+     * (e.g., inside the 'execute(ctx : Context)' function of a derived field)
+     */
 
     val putVariableMacroPmmlDict: String =
       """Put(ctx, %1%, %2%)"""
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "String"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "String")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfString"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfString")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Int"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Int")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfInt"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfInt")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Long"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Long")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfLong"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfLong")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Double"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Double")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfDouble"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfDouble")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Float"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Float")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfFloat"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfFloat")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Boolean"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Boolean")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfBoolean"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfBoolean")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "Any")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "Put"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfAny"))
-      , fcnMacrofeatures
-      , (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "Put", (MdMgr.sysNS, "Boolean"), List(("variableName", MdMgr.sysNS, "String"), ("value", MdMgr.sysNS, "ArrayOfAny")), fcnMacrofeatures, (putVariableMacroPmmlDict, putVariableMacroPmmlDict), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /**
-      * isMissing and isNotMissing macros
-      * no special macro needed for mapped ...
-      */
+     * isMissing and isNotMissing macros
+     * no special macro needed for mapped ...
+     */
     val isMissingMacro: String =
       """IsMissing(ctx, %1%)"""
     val isNotMissingMacro: String = """IsNotMissing(ctx, %1%)"""
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "isMissing"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("fieldRefName", MdMgr.sysNS, "String"))
-      , fcnMacrofeatures
-      , (isMissingMacro, isMissingMacro), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "isMissing", (MdMgr.sysNS, "Boolean"), List(("fieldRefName", MdMgr.sysNS, "String")), fcnMacrofeatures, (isMissingMacro, isMissingMacro), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "isNotMissing"
-      , (MdMgr.sysNS, "Boolean")
-      , List(("fieldRefName", MdMgr.sysNS, "String"))
-      , fcnMacrofeatures
-      , (isNotMissingMacro, isNotMissingMacro), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "isNotMissing", (MdMgr.sysNS, "Boolean"), List(("fieldRefName", MdMgr.sysNS, "String")), fcnMacrofeatures, (isNotMissingMacro, isNotMissingMacro), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /**
-      * Transaction id access
-      * no special macro needed for mapped ...
-      */
+     * Transaction id access
+     * no special macro needed for mapped ...
+     */
     val getXidMacro: String =
       """ctx.xId"""
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "GetXid"
-      , (MdMgr.sysNS, "Long")
-      , List()
-      , fcnMacrofeatures
-      , (getXidMacro, getXidMacro), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "GetXid", (MdMgr.sysNS, "Long"), List(), fcnMacrofeatures, (getXidMacro, getXidMacro), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     /**
-      * DowncastArrayMbr Macro used to cast arrays of ContainerInterface to arrays of some specified type
-      */
+     * DowncastArrayMbr Macro used to cast arrays of ContainerInterface to arrays of some specified type
+     */
     val DowncastArrayMbrTemplate: String =
       """%1%.map(itm => itm.asInstanceOf[%2%])"""
 
-    mgr.AddMacro(MdMgr.sysNS
-      , "DownCastArrayMembers"
-      , (MdMgr.sysNS, "ArrayOfAny")
-      , List(("arrayExpr", MdMgr.sysNS, "ArrayOfAny"), ("mbrType", MdMgr.sysNS, "Any"))
-      , fcnMacrofeatures
-      , (DowncastArrayMbrTemplate, DowncastArrayMbrTemplate), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
-
+    mgr.AddMacro(MdMgr.sysNS, "DownCastArrayMembers", (MdMgr.sysNS, "ArrayOfAny"), List(("arrayExpr", MdMgr.sysNS, "ArrayOfAny"), ("mbrType", MdMgr.sysNS, "Any")), fcnMacrofeatures, (DowncastArrayMbrTemplate, DowncastArrayMbrTemplate), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId)
 
     /**
-      * Catalog EnvContext read access macros.  Inject the transaction id as the first arg
-
-      * def getAllObjects(transId: Long, containerName: String): Array[ContainerInterface]
-      * def getObject(transId: Long, containerName: String, key: String): ContainerInterface
-
-      * def contains(transId: Long, containerName: String, key: String): Boolean
-      * def containsAny(transId: Long, containerName: String, keys: Array[String]): Boolean
-      * def containsAll(transId: Long, containerName: String, keys: Array[String]): Boolean
-      */
+     * Catalog EnvContext read access macros.  Inject the transaction id as the first arg
+     *
+     * def getAllObjects(transId: Long, containerName: String): Array[ContainerInterface]
+     * def getObject(transId: Long, containerName: String, key: String): ContainerInterface
+     *
+     * def contains(transId: Long, containerName: String, key: String): Boolean
+     * def containsAny(transId: Long, containerName: String, keys: Array[String]): Boolean
+     * def containsAll(transId: Long, containerName: String, keys: Array[String]): Boolean
+     */
 
     val getAllObjectsMacroTemplate: String =
       """GetArray(ctx.xId, %1%, %2%)"""
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-    mgr.AddMacro(MdMgr.sysNS
-      , "GetArray"
-      , (MdMgr.sysNS, "ArrayOfContainerInterface")
-      , List(("gCtx", MdMgr.sysNS, "EnvContext")
-        , ("containerName", MdMgr.sysNS, "String"))
-      , fcnMacrofeatures
-      , (getAllObjectsMacroTemplate, getAllObjectsMacroTemplate), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId
-      , -1)
+    mgr.AddMacro(MdMgr.sysNS, "GetArray", (MdMgr.sysNS, "ArrayOfContainerInterface"), List(("gCtx", MdMgr.sysNS, "EnvContext"), ("containerName", MdMgr.sysNS, "String")), fcnMacrofeatures, (getAllObjectsMacroTemplate, getAllObjectsMacroTemplate), MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, -1)
 
     val getHistoryMacroTemplate: String = """GetHistory(ctx.xId, %1%, %2%, %3%, %4%)"""
 
@@ -1445,7 +1216,6 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
     val getObjectMacroTemplate: String = """Get(ctx.xId, %1%, %2%, %3%, %4%)"""
 
     /** @deprecated ("Use <Constant dataType="context">ctx</Constant> as the first arg and match function directly", "2015-Jun-08") */
-
 
     val getObjectElseNewMacroTemplate: String = """GetMsgContainerElseNew(ctx.xId, %1%, %2%, %3%, %4%, %5%)"""
 

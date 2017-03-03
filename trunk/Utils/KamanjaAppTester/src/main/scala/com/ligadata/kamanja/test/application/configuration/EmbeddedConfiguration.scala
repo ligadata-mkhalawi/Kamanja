@@ -112,10 +112,7 @@ object EmbeddedConfiguration {
       |      "EnvironmentContext": {
       |        "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$$",
       |        "jarname": "KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |        "dependencyjars": [
-      |          "ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |          "ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
-      |        ]
+      |        "dependencyjars": [ ]
       |      },
       |      "Cache": {
       |        "CacheStartPort": $clusterCacheStartPort,
@@ -139,7 +136,7 @@ object EmbeddedConfiguration {
       |            "RestAPI",
       |            "ProcessingEngine"
       |          ],
-      |          "Classpath": ".:$kamanjaInstallDir/lib/system/ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar:$kamanjaInstallDir/lib/system/KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar:$kamanjaInstallDir/lib/system/ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      |          "Classpath": "."
       |        }
       |      ],
       |      "Adapters": [
@@ -150,10 +147,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar",
-      |            "KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      |            "kafka-clients-0.10.0.0.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -167,10 +161,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar",
-      |            "KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      |            "kafka-clients-0.10.0.0.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -184,10 +175,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar",
-      |            "KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      |            "kafka-clients-0.10.0.0.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -201,10 +189,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar",
-      |            "KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      |            "kafka-clients-0.10.0.0.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -218,10 +203,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar",
-      |            "KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      |            "ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      |            "kafka-clients-0.10.0.0.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",

@@ -1,19 +1,20 @@
 package com.ligadata.filedataprocessor
 
-import java.io.{File, IOException, PrintWriter}
-import java.nio.file.{FileSystems, Path}
-import java.util.{Observable, Observer}
+import java.io.{ File, IOException, PrintWriter }
+import java.nio.file.{ FileSystems, Path }
+import java.util.{ Observable, Observer }
 
-import com.ligadata.Exceptions.{InternalErrorException, MissingArgumentException}
-import org.apache.logging.log4j.{LogManager, Logger}
+import com.ligadata.Exceptions.{ InternalErrorException, MissingArgumentException }
+import org.apache.logging.log4j.{ LogManager, Logger }
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.threadpool.ExecutorService
+import com.ligadata.VelocityMetrics._
 
 /**
-  * Created by danielkozin on 9/24/15.
-  */
+ * Created by danielkozin on 9/24/15.
+ */
 class DirectoryListener {
 
 }
@@ -56,6 +57,8 @@ object LocationWatcher extends Observer {
       return
     }
 
+    //Read the velocity metrics config
+
     // Read the config and figure out how many consumers to start
     var config = args(0)
     var properties = scala.collection.mutable.Map[String, String]()
@@ -82,7 +85,39 @@ object LocationWatcher extends Observer {
         }
       }
     })
+    //Velocity Metrics Properties
+    // var rotationtimeinsecs = 30
+    var rotationtimeinsecs = properties.getOrElse(SmartFileAdapterConstants.VM_ROTATIONTIMEINSECS, "30")
+    var emittimeinsecs = properties.getOrElse(SmartFileAdapterConstants.VM_EMITTIMEINSECS, "15")
+    var velocitymetricsInfo = properties.getOrElse(SmartFileAdapterConstants.VELOCITYMETRICSINFO, null)
+    var nodeId = properties.getOrElse(SmartFileAdapterConstants.NODE_ID_PREFIX, null)
+    var vmCategory = properties.getOrElse(SmartFileAdapterConstants.VM_CATEGORY, null)
+    var vmComponentName = properties.getOrElse(SmartFileAdapterConstants.VM_COMPONENTNAME, null)
+    logger.info("rotationtimeinsecs " + rotationtimeinsecs)
+    logger.info("emittimeinsecs " + emittimeinsecs)
+    logger.info("velocitymetricsInfo " + velocitymetricsInfo)
+    logger.info("nodeId " + nodeId)
+    logger.info("vmCategory " + vmCategory)
+    logger.info("vmComponentName " + vmComponentName)
 
+    var VMFactory: VelocityMetricsFactoryInterface = null
+    if (velocitymetricsInfo != null && velocitymetricsInfo.trim.length() > 0) {
+
+      // create factory here
+      var vm = new VelocityMetricsInfo();
+      FileProcessor.vm = vm
+      VMFactory = VelocityMetricsInfo.getVMFactory(rotationtimeinsecs.toInt, emittimeinsecs.toInt)
+      FileProcessor.VMFactory = VMFactory
+      val msgVMInstances = vm.getMsgVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
+      logger.warn("msgVMInstances length" + msgVMInstances.length)
+      FileProcessor.msgVMInstances = msgVMInstances
+      val fileVMInstances = vm.getFileVelocityInstances(VMFactory, vmCategory, vmComponentName, velocitymetricsInfo, nodeId)
+      FileProcessor.fileVMInstances = fileVMInstances
+      logger.warn("fileVMInstances length" + fileVMInstances.length)
+      var kafkaVelocityMetrics = new KafkaVelocityMetrics(properties)
+
+      VMFactory.addEmitListener(kafkaVelocityMetrics)
+    }
     // FileConsumer is a special case we need to default to 1, but also have it present in the properties since
     // it is used later for memory managemnt
     var numberOfProcessorsRaw = properties.getOrElse(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS, null)
@@ -207,8 +242,7 @@ object LocationWatcher extends Observer {
             }
           }
         }
-      }
-      else {
+      } else {
         FileProcessor.isThisNodeReadyToProcess = false
         if (FileProcessor.prevIsThisNodeToProcess) {
           watchThreads.shutdown()
@@ -231,11 +265,14 @@ object LocationWatcher extends Observer {
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
         }
       }
+
+      logger.info("End in Directory Listener");
       try {
         Thread.sleep(1000)
       } catch {
         case e: Throwable => {}
       }
+
     }
 
     // Release lock in case if it is holding
@@ -248,7 +285,6 @@ object LocationWatcher extends Observer {
     FileProcessor.pcbw = null
     if (pcbw != null)
       pcbw.Shutdown
-
 
     for (i <- 0 until numberOfProcessors) {
       try {
@@ -269,5 +305,6 @@ object LocationWatcher extends Observer {
     } catch {
       case e: Throwable => {}
     }
+    VMFactory.shutdown()
   }
 }

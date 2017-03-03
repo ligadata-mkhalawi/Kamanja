@@ -2,7 +2,7 @@
 
 KAMANJA_HOME={InstallDirectory}
 
-currentKamanjaVersion=1.6.1
+currentKamanjaVersion=1.6.2
 scalaVersion=2.10
 
 while [[ $# -gt 1 ]]

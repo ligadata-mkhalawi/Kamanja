@@ -46,8 +46,8 @@
         "oo": {
           "where": "context.CurrentErrors()==0",
           "mapping":{
-            "origMsg": "$m1", /* will this work? */
-            "reasons": "context.Errors(true)"
+            "origmsg": "${m1}.toString()",
+            "reasons": "$context.Errors(true)"
           }
         }
       }

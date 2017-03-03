@@ -13,52 +13,56 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import com.ligadata.VelocityMetrics.VelocityMetricsInfo;
+
 public class MessageConsumer implements Runnable {
-    // Implement Kafka heart beat to get around session timeout that causes rebalance
+    // Implement Kafka heart beat to get around session timeout that causes
+    // rebalance
     // see issue: https://issues.apache.org/jira/browse/KAFKA-2985
     class SimpleKafkaPoll implements Runnable {
-        private AtomicInteger _breaker;
-        private KafkaConsumer<String, String> _consumer;
+	private AtomicInteger _breaker;
+	private KafkaConsumer<String, String> _consumer;
 
-        public SimpleKafkaPoll(KafkaConsumer<String, String> consumer, AtomicInteger breaker) {
-            _consumer = consumer;
-            _breaker = breaker;
-        }
+	public SimpleKafkaPoll(KafkaConsumer<String, String> consumer,
+		AtomicInteger breaker) {
+	    _consumer = consumer;
+	    _breaker = breaker;
+	}
 
-        public void run() {
-            TopicPartition[] partitions = null;
-            try {
-                partitions = _consumer.assignment().toArray(new TopicPartition[0]);
-                _consumer.pause(partitions);
-                try {
-                    while (_breaker.get() == 0) {
-                        try {
-                            Thread.sleep(50);
-                        } catch (Exception e) {
-                            //
-                        } catch (Throwable t) {
-                            //
-                        }
-                        _consumer.poll(0);
-                    }
-                } catch (Exception e) {
-                    //
-                } catch (Throwable t) {
-                    //
-                }
-            } catch (Exception e) {
-                //
-            } catch (Throwable t) {
-                //
-            } finally {
-                if (partitions != null)
-                    _consumer.resume(partitions);
-            }
-        }
+	public void run() {
+	    TopicPartition[] partitions = null;
+	    try {
+		partitions = _consumer.assignment().toArray(
+			new TopicPartition[0]);
+		_consumer.pause(partitions);
+		try {
+		    while (_breaker.get() == 0) {
+			try {
+			    Thread.sleep(50);
+			} catch (Exception e) {
+			    //
+			} catch (Throwable t) {
+			    //
+			}
+			_consumer.poll(0);
+		    }
+		} catch (Exception e) {
+		    //
+		} catch (Throwable t) {
+		    //
+		}
+	    } catch (Exception e) {
+		//
+	    } catch (Throwable t) {
+		//
+	    } finally {
+		if (partitions != null)
+		    _consumer.resume(partitions);
+	    }
+	}
     }
 
     static Logger logger = LogManager.getLogger(MessageConsumer.class);
@@ -72,260 +76,330 @@ public class MessageConsumer implements Runnable {
     private AtomicInteger shutdownTriggerCounter;
     private StatusCollectable stats;
 
-    public MessageConsumer(AdapterConfiguration config, AtomicInteger shutdownTriggerCounter) throws Exception {
-        this.configuration = config;
-        this.shutdownTriggerCounter = shutdownTriggerCounter;
-        String classname = configuration.getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
-        stats = createStatusRecorder(config, classname);
-        if (classname == null || "".equals(classname) || "null".equalsIgnoreCase(classname)) {
-            logger.info("Message prcessor not specified for processing messages.");
-            processor = new NullProcessor();
-        } else {
-            logger.info("Loading class " + classname + " for processing messages.");
-            processor = (BufferedMessageProcessor) Class.forName(classname).newInstance();
-        }
+    public MessageConsumer(AdapterConfiguration config,
+	    AtomicInteger shutdownTriggerCounter) throws Exception {
+	this.configuration = config;
+	this.shutdownTriggerCounter = shutdownTriggerCounter;
+	String classname = configuration
+		.getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
+	stats = createStatusRecorder(config, classname);
+	// create the kafka velocity metrics object here, call init,
+
+	if (classname == null || "".equals(classname)
+		|| "null".equalsIgnoreCase(classname)) {
+	    logger.info("Message prcessor not specified for processing messages.");
+	    processor = new NullProcessor();
+	} else {
+	    logger.info("Loading class " + classname
+		    + " for processing messages.");
+	    processor = (BufferedMessageProcessor) Class.forName(classname)
+		    .newInstance();
+	}
     }
 
     public void stopBeforeShutdown() {
-        stop = true;
+	stop = true;
     }
 
     public synchronized void shutdown(boolean triggerShutdownCntr) {
-        if (triggerShutdownCntr)
-            shutdownTriggerCounter.incrementAndGet();
-        stop = true;
+	if (triggerShutdownCntr)
+	    shutdownTriggerCounter.incrementAndGet();
+	stop = true;
 
-        if (stats != null)
-            stats.close();
-        if (processor != null)
-            processor.close();
-        processor = null;
-        if (consumer != null)
-            consumer.wakeup();
+	if (stats != null)
+	    stats.close();
+	if (processor != null)
+	    processor.close();
+	processor = null;
+	if (consumer != null)
+	    consumer.wakeup();
 
-        if (thisThread != null && thisThread.getState() == Thread.State.TIMED_WAITING)
-            thisThread.interrupt();
+	if (thisThread != null
+		&& thisThread.getState() == Thread.State.TIMED_WAITING)
+	    thisThread.interrupt();
     }
 
     public synchronized void close() {
-        shutdownTriggerCounter.incrementAndGet();
-        if (consumer != null)
-            consumer.close();
-        if (processor != null)
-            processor.close();
-//        processor = null;
+	shutdownTriggerCounter.incrementAndGet();
+	if (consumer != null)
+	    consumer.close();
+	if (processor != null)
+	    processor.close();
+	// processor = null;
     }
 
-    private StatusCollectable createStatusRecorder(AdapterConfiguration config, String componentName) {
-        // What impl do they want to use
-        String implName = config.getProperty(AdapterConfiguration.STATUS_IMPL, "");
-        if (implName.length() > 0) {
-            // Set up Kafka stuff
-            logger.info("Initializing Kafka Status Recorder");
-            try {
-                StatusCollectable sc = (StatusCollectable) Class.forName(implName).newInstance();
-                sc.init(config.getProperty(AdapterConfiguration.STATUS_IMPL_INIT_PARMS, ""), componentName);
-                return sc;
-            } catch (Exception e) {
-                logger.warn("Error creating Status Recorder, unable to create status recorder due to ", e);
-                // Unknown value for Impl.. just return null and
-                return null;
-            }
-        }
+    private StatusCollectable createStatusRecorder(AdapterConfiguration config,
+	    String componentName) {
+	// What impl do they want to use
+	String implName = config.getProperty(AdapterConfiguration.STATUS_IMPL,
+		"");
+	if (implName.length() > 0) {
+	    // Set up Kafka stuff
+	    logger.info("Initializing Kafka Status Recorder");
+	    try {
+		StatusCollectable sc = (StatusCollectable) Class.forName(
+			implName).newInstance();
+		sc.init(config.getProperty(
+			AdapterConfiguration.STATUS_IMPL_INIT_PARMS, ""),
+			componentName);
+		return sc;
+	    } catch (Exception e) {
+		logger.warn(
+			"Error creating Status Recorder, unable to create status recorder due to ",
+			e);
+		// Unknown value for Impl.. just return null and
+		return null;
+	    }
+	}
 
-        logger.info("Unkown Status Recorder, desired implementation was not provided, using the dafault log4j");
-        // Unknown value for Impl.. just return null and
-        return null;
+	logger.info("Unkown Status Recorder, desired implementation was not provided, using the dafault log4j");
+	// Unknown value for Impl.. just return null and
+	return null;
     }
 
     private void createKafkaConsumer() {
-        Properties props = new Properties();
+	Properties props = new Properties();
 
-        props.put("bootstrap.servers", configuration.getProperty(AdapterConfiguration.BOOTSTRAP_SERVERS));
-        props.put("group.id", configuration.getProperty(AdapterConfiguration.KAFKA_GROUP_ID));
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+	props.put("bootstrap.servers", configuration
+		.getProperty(AdapterConfiguration.BOOTSTRAP_SERVERS));
+	props.put("group.id",
+		configuration.getProperty(AdapterConfiguration.KAFKA_GROUP_ID));
+	props.put("key.deserializer",
+		"org.apache.kafka.common.serialization.StringDeserializer");
+	props.put("value.deserializer",
+		"org.apache.kafka.common.serialization.StringDeserializer");
 
-        // Add any additional properties specified for Kafka
-        for (String key : configuration.getProperties().stringPropertyNames()) {
-            if (key.startsWith(AdapterConfiguration.KAFKA_PROPERTY_PREFIX)) {
-                logger.debug("Adding kafka configuration: " + key + "=" + configuration.getProperty(key));
-                props.put(key.substring(AdapterConfiguration.KAFKA_PROPERTY_PREFIX.length()), configuration.getProperty(key));
-            }
-        }
+	// Add any additional properties specified for Kafka
+	for (String key : configuration.getProperties().stringPropertyNames()) {
+	    if (key.startsWith(AdapterConfiguration.KAFKA_PROPERTY_PREFIX)) {
+		logger.debug("Adding kafka configuration: " + key + "="
+			+ configuration.getProperty(key));
+		props.put(key
+			.substring(AdapterConfiguration.KAFKA_PROPERTY_PREFIX
+				.length()), configuration.getProperty(key));
+	    }
+	}
 
-        props.put("enable.auto.commit", "false");
+	props.put("enable.auto.commit", "false");
 
-        consumer = new KafkaConsumer<String, String>(props);
+	consumer = new KafkaConsumer<String, String>(props);
 
-        String topic = configuration.getProperty(AdapterConfiguration.KAFKA_TOPIC);
-        logger.info("Connecting to kafka topic " + topic);
-        consumer.subscribe(Arrays.asList(topic));
+	String topic = configuration
+		.getProperty(AdapterConfiguration.KAFKA_TOPIC);
+	logger.info("Connecting to kafka topic " + topic);
+
+	consumer.subscribe(Arrays.asList(topic));
     }
 
     private void createKafkaConsumerRetry() {
-        long retry = 0;
-        long retryInterval = 5000;
-        while (!stop) {
-            try {
-                createKafkaConsumer();
-                if (retry > 0)
-                    logger.info("Successfully connected after " + retry + " retries.");
-                return;
-            } catch (Exception e) {
-                retry++;
-                logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
-                try {
-                    long tmpMaxRetry = retry;
-                    if (tmpMaxRetry > 10000)
-                        tmpMaxRetry = 10000;
-                    long waitInterval = retryInterval * tmpMaxRetry;
-                    if (waitInterval > 60000)
-                        waitInterval = 60000;
-                    Thread.sleep(waitInterval);
-                } catch (InterruptedException e1) {
-                }
-            }
-        }
+	long retry = 0;
+	long retryInterval = 5000;
+	while (!stop) {
+	    try {
+		createKafkaConsumer();
+		if (retry > 0)
+		    logger.info("Successfully connected after " + retry
+			    + " retries.");
+		return;
+	    } catch (Exception e) {
+		retry++;
+		logger.error(
+			"Error after " + retry + " retries : " + e.getMessage(),
+			e);
+		try {
+		    long tmpMaxRetry = retry;
+		    if (tmpMaxRetry > 10000)
+			tmpMaxRetry = 10000;
+		    long waitInterval = retryInterval * tmpMaxRetry;
+		    if (waitInterval > 60000)
+			waitInterval = 60000;
+		    Thread.sleep(waitInterval);
+		} catch (InterruptedException e1) {
+		}
+	    }
+	}
 
-        //return null;
+	// return null;
     }
 
     private void processWithRetry(long batchId) {
-        long retry = 0;
-        long retryInterval = 5000;
-        while (!stop) {
-            try {
-                processor.processAll(batchId, retry);
-                if (retry > 0)
-                    logger.info("Successfully processed messages after " + retry + " retries.");
-                return;
-            } catch (Exception e) {
-                retry++;
-                logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
-                try {
-                    long tmpMaxRetry = retry;
-                    if (tmpMaxRetry > 10000)
-                        tmpMaxRetry = 10000;
-                    long waitInterval = retryInterval * tmpMaxRetry;
-                    if (waitInterval > 60000)
-                        waitInterval = 60000;
-                    Thread.sleep(waitInterval);
-                } catch (InterruptedException e1) {
-                }
-            }
-        }
+	long retry = 0;
+	long retryInterval = 5000;
+	while (!stop) {
+	    try {
+		processor.processAll(batchId, retry);
+		if (retry > 0)
+		    logger.info("Successfully processed messages after "
+			    + retry + " retries.");
+		return;
+	    } catch (Exception e) {
+		retry++;
+		logger.error(
+			"Error after " + retry + " retries : " + e.getMessage(),
+			e);
+		try {
+		    long tmpMaxRetry = retry;
+		    if (tmpMaxRetry > 10000)
+			tmpMaxRetry = 10000;
+		    long waitInterval = retryInterval * tmpMaxRetry;
+		    if (waitInterval > 60000)
+			waitInterval = 60000;
+		    Thread.sleep(waitInterval);
+		} catch (InterruptedException e1) {
+		}
+	    }
+	}
     }
 
     @Override
     public void run() {
-        logger.info("Kafka consumer started processing.");
-        thisThread = Thread.currentThread();
-        java.util.concurrent.atomic.AtomicLong batchid = new java.util.concurrent.atomic.AtomicLong(1);
+	logger.info("Kafka consumer started processing.");
+	thisThread = Thread.currentThread();
+	java.util.concurrent.atomic.AtomicLong batchid = new java.util.concurrent.atomic.AtomicLong(
+		1);
+	VelocityMetricsInfo vm = new VelocityMetricsInfo();
+	long totalMessageCount = 0;
+	long errorMessageCount = 0;
+	try {
+	    logger.info("Using " + processor.getClass().getName()
+		    + " for processing messages.");
+	    processor.init(configuration, stats);
 
-        long totalMessageCount = 0;
-        long errorMessageCount = 0;
-        try {
-            logger.info("Using " + processor.getClass().getName() + " for processing messages.");
-            processor.init(configuration, stats);
+	} catch (Exception e) {
+	    logger.error("Error initializing processor: " + e.getMessage(), e);
+	    throw new RuntimeException(e);
+	}
 
-        } catch (Exception e) {
-            logger.error("Error initializing processor: " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
+	createKafkaConsumerRetry();
 
-        createKafkaConsumerRetry();
+	long syncMessageCount = Long.parseLong(configuration.getProperty(
+		AdapterConfiguration.SYNC_MESSAGE_COUNT, "10000"));
+	long syncInterval = Long.parseLong(configuration.getProperty(
+		AdapterConfiguration.SYNC_INTERVAL_SECONDS, "120")) * 1000;
+	long pollInterval = Long.parseLong(configuration.getProperty(
+		AdapterConfiguration.KAFKA_POLL_INTERVAL, "100"));
 
-        long syncMessageCount = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_MESSAGE_COUNT, "10000"));
-        long syncInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_INTERVAL_SECONDS, "120")) * 1000;
-        long pollInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.KAFKA_POLL_INTERVAL, "100"));
+	long messageCount = 0;
+	long nextSyncTime = System.currentTimeMillis() + syncInterval;
+	long start = System.currentTimeMillis();
+	
+	while (!stop) {
+	    try {
+		try {
+		    ConsumerRecords<String, String> records = consumer
+			    .poll(pollInterval);
+		    logger.info("records count: " + records.count());
+		    for (ConsumerRecord<String, String> record : records) {
+			Long lastOffset = partitionOffsets.get(record
+				.partition());
+			if (logger.isDebugEnabled())
+			    logger.debug("lastOffset => " + lastOffset
+				    + ",partition => " + record.partition());
+			if (lastOffset == null || record.offset() > lastOffset) {
+			    logger.debug("Message from partition Id :"
+				    + record.partition() + " Message: "
+				    + record.value());
+			    if (processor.addMessage(record.value())) {
+				messageCount++;
+				logger.info("messageCount : " + messageCount);
+			    } else {
+				errorMessageCount++;
+			    }
 
-        long messageCount = 0;
-        long nextSyncTime = System.currentTimeMillis() + syncInterval;
-        long start = System.currentTimeMillis();
+			    partitionOffsets.put(record.partition(),
+				    record.offset());
+			}
+		    }
+		} catch (WakeupException e) {
+		    logger.debug("Came out of kafka queue polling...");
+		} catch (Exception e) {
+		    logger.error("Error reading from kafka: " + e.getMessage(),
+			    e);
+		    createKafkaConsumerRetry();
+		}
 
-        while (!stop) {
-            try {
-                try {
-                    ConsumerRecords<String, String> records = consumer.poll(pollInterval);
-                    for (ConsumerRecord<String, String> record : records) {
-                        Long lastOffset = partitionOffsets.get(record.partition());
-                        if (logger.isDebugEnabled()) logger.debug("lastOffset => " + lastOffset + ",partition => " + record.partition());
-                        if (lastOffset == null || record.offset() > lastOffset) {
-                            logger.debug("Message from partition Id :" + record.partition() + " Message: " + record.value());
-                            if (processor.addMessage(record.value()))
-                                messageCount++;
-                            else
-                                errorMessageCount++;
+		if (!stop
+			&& messageCount > 0
+			&& (messageCount >= syncMessageCount || System
+				.currentTimeMillis() >= nextSyncTime)) {
+		    ExecutorService executor = null;
+		    try {
+			long endRead = System.currentTimeMillis();
+			logger.info("Saving " + messageCount
+				+ " messages. Read time " + (endRead - start)
+				+ " msecs.");
 
-                            partitionOffsets.put(record.partition(), record.offset());
-                        }
-                    }
-                } catch (WakeupException e) {
-                    logger.debug("Came out of kafka queue polling...");
-                } catch (Exception e) {
-                    logger.error("Error reading from kafka: " + e.getMessage(), e);
-                    createKafkaConsumerRetry();
-                }
+			AtomicInteger breaker = new AtomicInteger(0);
+			executor = Executors.newFixedThreadPool(1);
 
-                if (!stop && messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
-                    ExecutorService executor = null;
-                    try {
-                        long endRead = System.currentTimeMillis();
-                        logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
+			executor.execute(new SimpleKafkaPoll(consumer, breaker));
 
-                        AtomicInteger breaker = new AtomicInteger(0);
-                        executor = Executors.newFixedThreadPool(1);
+			// Save data here
+			processWithRetry(batchid.getAndIncrement());
 
-                        executor.execute(new SimpleKafkaPoll(consumer, breaker));
+			breaker.incrementAndGet();
+			executor.shutdown();
+			try {
+			    executor.awaitTermination(86400, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
 
-                        // Save data here
-                        processWithRetry(batchid.getAndIncrement());
+			}
+			executor = null;
 
-                        breaker.incrementAndGet();
-                        executor.shutdown();
-                        try {
-                            executor.awaitTermination(86400, TimeUnit.SECONDS);
-                        } catch (InterruptedException e) {
-                        }
-                        executor = null;
+			if (processor != null)
+			    processor.clearAll();
+			long endWrite = System.currentTimeMillis();
+			if (consumer != null)
+			    consumer.commitSync();
+			totalMessageCount += messageCount;
+			logger.info("Saved " + messageCount
+				+ " messages (Total:" + totalMessageCount
+				+ "). Write time " + (endWrite - endRead)
+				+ " msecs.");
 
-                        if (processor != null)
-                            processor.clearAll();
-                        long endWrite = System.currentTimeMillis();
-                        if (consumer != null)
-                            consumer.commitSync();
-                        totalMessageCount += messageCount;
-                        logger.info("Saved " + messageCount + " messages (Total:" + totalMessageCount + "). Write time " + (endWrite - endRead) + " msecs.");
+			messageCount = 0;
+			nextSyncTime = System.currentTimeMillis()
+				+ syncInterval;
+			start = System.currentTimeMillis();
+		    } catch (Exception e) {
+			if (configuration.VMInstances != null
+				&& configuration.VMInstances.length > 0) {
+			   logger.info("increment "
+				    + configuration.VMInstances.length);
+			    for (int i = 0; i < configuration.VMInstances.length; i++) {
+				if (configuration.VMInstances[i].typId() == 4) {
+				    logger.info("increment "
+					    + configuration.VMInstances.length);
+				    vm.incrementOutputUtilsVMetricsByKey(
+					    configuration.VMInstances[i], null,
+					    configuration.VMInstances[i]
+						    .KeyStrings(), false);
+				}
+			    }
+			}
+			if (executor != null)
+			    executor.shutdownNow();
+			executor = null;
+			logger.error("Failed with: " + e.getMessage(), e);
+			shutdownTriggerCounter.incrementAndGet();
+			stop = true;
+		    } catch (Throwable t) {
 
-                        messageCount = 0;
-                        nextSyncTime = System.currentTimeMillis() + syncInterval;
-                        start = System.currentTimeMillis();
-                    } catch (Exception e) {
-                        if (executor != null)
-                            executor.shutdownNow();
-                        executor = null;
-                        logger.error("Failed with: " + e.getMessage(), e);
-                        shutdownTriggerCounter.incrementAndGet();
-                        stop = true;
-                    } catch (Throwable t) {
-                        if (executor != null)
-                            executor.shutdownNow();
-                        executor = null;
-                        logger.error("Failed with: " + t.getMessage(), t);
-                        shutdownTriggerCounter.incrementAndGet();
-                        stop = true;
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Unexpected Exception: " + e.getMessage(), e);
-                throw new RuntimeException(e);
-            }
-        }
-        close();
-        logger.info("Shutting down after processing " + totalMessageCount +
-                " messages with " + errorMessageCount + " error messages.");
+			if (executor != null)
+			    executor.shutdownNow();
+			executor = null;
+			logger.error("Failed with: " + t.getMessage(), t);
+			shutdownTriggerCounter.incrementAndGet();
+			stop = true;
+		    }
+		}
+	    } catch (Exception e) {
+		logger.error("Unexpected Exception: " + e.getMessage(), e);
+		throw new RuntimeException(e);
+	    }
+	}
+	close();
+	logger.info("Shutting down after processing " + totalMessageCount
+		+ " messages with " + errorMessageCount + " error messages.");
     }
 }
-
-

@@ -3,30 +3,35 @@ package com.ligadata.KamanjaManager
 
 import com.ligadata.HeartBeat.MonitoringContext
 import com.ligadata.KamanjaBase._
-import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
+import com.ligadata.InputOutputAdapterInfo.{ ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue }
 import com.ligadata.StorageBase.{ DataStore }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata.{ ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo }
 import org.json4s.jackson.JsonMethods._
 
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{ universe => ru }
 import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
-import collection.mutable.{MultiMap, Set}
-import java.io.{PrintWriter, File, PrintStream, BufferedReader, InputStreamReader}
+import collection.mutable.{ MultiMap, Set }
+import java.io.{ PrintWriter, File, PrintStream, BufferedReader, InputStreamReader }
 import scala.util.Random
 import scala.Array.canBuildFrom
-import java.util.{Properties, Observer, Observable}
+import java.util.{ Properties, Observer, Observable }
 import java.sql.Connection
 import scala.collection.mutable.TreeSet
-import java.net.{Socket, ServerSocket}
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
-import org.apache.logging.log4j.{Logger, LogManager}
-import com.ligadata.Exceptions.{FatalAdapterException}
-import scala.actors.threadpool.{ExecutorService}
+import java.net.{ Socket, ServerSocket }
+import java.util.concurrent.{ Executors, ScheduledExecutorService, TimeUnit }
+import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
+import org.apache.logging.log4j.{ Logger, LogManager }
+import com.ligadata.Exceptions.{ FatalAdapterException }
+import scala.actors.threadpool.{ ExecutorService }
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.VelocityMetrics.VelocityMetricsInfo
+import com.ligadata.VelocityMetrics.VelocityMetricsFactoryInterface
+import com.ligadata.VelocityMetrics.VelocityMetricsCallback
+import com.ligadata.VelocityMetrics.VelocityMetricsInstanceInterface
+import com.ligadata.VelocityMetrics.Metrics
 
 import scala.collection.JavaConversions._
 
@@ -387,34 +392,39 @@ class KamanjaManager extends Observer {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
-          while (! tp.isShutdown) {
-            try {
-              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
-            } catch {
-              case e: Throwable => {}
+          while (!KamanjaConfiguration.shutdown && ! tp.isShutdown && ! tp.isTerminated) {
+            // Sleeping upto 1000ms more than given interval
+            val tmMs = commitOffsetsTimeInterval + 1000
+            val nSecs = tmMs / 1000
+            var itr = 0
+            while (!KamanjaConfiguration.shutdown && itr < nSecs) {
+              itr += 1
+              try {
+                Thread.sleep(1000)
+              } catch {
+                case e: InterruptedException => {}
+                case e: Throwable => {}
+              }
             }
-            if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+            if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
               val envCtxts = GetEnvCtxts
               if (LOG.isDebugEnabled()) LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
-              var idx = 0
-              while (idx < envCtxts.length && ! tp.isShutdown) {
+              envCtxts.map(ctxt => {
                 try {
-                  envCtxts(idx).CommitPartitionOffsetIfNeeded
+                  if (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated && ctxt != null)
+                    ctxt.CommitPartitionOffsetIfNeeded(false)
                 } catch {
                   case e: Throwable => {
                     LOG.error("Failed to commit partitions offsets", e)
                   }
                 }
-                idx += 1
-              }
+              })
             }
           }
         }
       })
     }
   }
-
-
 
   private def PrintUsage(): Unit = {
     LOG.warn("Available commands:")
@@ -431,11 +441,30 @@ class KamanjaManager extends Observer {
 */
     if (execCtxtsCommitPartitionOffsetPool != null)
       execCtxtsCommitPartitionOffsetPool.shutdownNow()
+
+    val envCtxts = GetEnvCtxts
+
     ClearExecContext
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
     ShutdownAdapters
+    KamanjaMetadata.ShutdownMetadata
     PostMessageExecutionQueue.shutdown
+
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+      LOG.warn("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
+      envCtxts.map(ctxt => {
+        try {
+          if (ctxt != null)
+            ctxt.CommitPartitionOffsetIfNeeded(true)
+        } catch {
+          case e: Throwable => {
+            LOG.error("Failed to commit partitions offsets", e)
+          }
+        }
+      })
+    }
+    
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.Shutdown
     if (serviceObj != null)
@@ -668,7 +697,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt").replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -683,7 +712,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -695,11 +724,10 @@ class KamanjaManager extends Observer {
         }
       }
 
-
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval").replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -714,7 +742,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -828,8 +856,7 @@ class KamanjaManager extends Observer {
           return true
         if (trmln.compareToIgnoreCase("forceAdapterRebalance") == 0) {
           KamanjaLeader.forceAdapterRebalance
-        }
-        else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
+        } else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
           KamanjaLeader.forceAdapterRebalanceAndSetEndOffsets
         }
       }
@@ -982,6 +1009,10 @@ class KamanjaManager extends Observer {
         }
       }
     }
+    var velocityMetricsOutput = new VelocityMetricsOutput
+
+    val vmFactory = VelocityMetricsInfo.getVMFactory(KamanjaMetadata.gNodeContext)
+    vmFactory.addEmitListener(velocityMetricsOutput)
 
     val scheduledThreadPool = Executors.newScheduledThreadPool(3);
 
@@ -1093,7 +1124,7 @@ class KamanjaManager extends Observer {
         isTimerStarted = true
       }
     }
-
+    vmFactory.shutdown()
     scheduledThreadPool.shutdownNow()
     sh = null
     return Shutdown(0)
@@ -1184,7 +1215,6 @@ class KamanjaManager extends Observer {
     if (isLogDebugEnabled)
       LOG.debug("KamanjaManager " + KamanjaConfiguration.nodeId.toString + " externalized metrics for UID: " + thisEngineInfo.uniqueId)
   }
-
 
   private def processConfigChange(objType: String, action: String, objectName: String, adapter: Any): Boolean = {
     // For now we are only handling adapters.
@@ -1280,6 +1310,107 @@ class KamanjaManager extends Observer {
     }
   }
 
+}
+
+class VelocityMetricsOutput extends VelocityMetricsCallback {
+  private val LOG = LogManager.getLogger(getClass);
+  @throws[Exception]
+  def call(metrics: Metrics): Unit = {
+
+    LOG.info("Start Velocity Metrics")
+    val velocityMetricsArrBuf: ArrayBuffer[com.ligadata.KamanjaBase.KamanjaVelocityMetrics] = new ArrayBuffer[com.ligadata.KamanjaBase.KamanjaVelocityMetrics]
+
+    val metricsArrBuf: ArrayBuffer[com.ligadata.KamanjaBase.MetricsValue] = new ArrayBuffer[com.ligadata.KamanjaBase.MetricsValue]
+    val componentKeyMetricsBuf: ArrayBuffer[com.ligadata.KamanjaBase.ComponentKeyMetrics] = new ArrayBuffer[com.ligadata.KamanjaBase.ComponentKeyMetrics]
+
+    val componentMetrics = metrics.compMetrics
+    if (componentMetrics != null && componentMetrics.length > 0) {
+      for (i <- 0 until componentMetrics.length) {
+        //get uuid, get componentKey, get nodeid
+        val compKeyMetrics = componentMetrics(i).keyMetrics
+
+        if (compKeyMetrics != null && compKeyMetrics.length > 0) {
+          for (j <- 0 until compKeyMetrics.length) {
+            val metricsValues = compKeyMetrics(j).metricValues
+
+            if (metricsValues != null && metricsValues.length > 0) {
+              for (k <- 0 until metricsValues.length) {
+                val MetricsInst = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.MetricsValue")
+
+                if (MetricsInst == null) {
+                  LOG.warn("Not able to get com.ligadata.KamanjaBase.MetricsValue")
+                } else {
+                  val MetricsVal = MetricsInst.asInstanceOf[MetricsValue]
+
+                  MetricsVal.metrickey = metricsValues(k).Key()
+                  MetricsVal.metricskeyvalue = metricsValues(k).Value()
+                  metricsArrBuf += MetricsVal
+                }
+              }
+            }
+            val ComponentInst = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.ComponentKeyMetrics")
+            if (ComponentInst == null) {
+              LOG.warn("Not able to get com.ligadata.KamanjaBase.ComponentKeyMetrics")
+            } else {
+              val Component = ComponentInst.asInstanceOf[ComponentKeyMetrics]
+              Component.key = compKeyMetrics(j).key
+              Component.metricstime = compKeyMetrics(j).metricsTime
+              Component.roundintervaltimeinsec = compKeyMetrics(j).roundIntervalTimeInSec
+              Component.firstoccured = compKeyMetrics(j).firstOccured
+              Component.lastoccured = compKeyMetrics(j).lastOccured
+              Component.metricsvalue = metricsArrBuf.toArray
+              componentKeyMetricsBuf += Component
+              metricsArrBuf.clear()
+            }
+          }
+        }
+        val VelocityMetricsInst = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaVelocityMetrics")
+        if (VelocityMetricsInst == null) {
+          LOG.warn("Not able to get com.ligadata.KamanjaBase.VelocityMetrics")
+        } else {
+          val VelocityMetrics = VelocityMetricsInst.asInstanceOf[KamanjaVelocityMetrics]
+          VelocityMetrics.uuid = metrics.uuid
+          VelocityMetrics.componentkey = componentMetrics(i).componentKey
+          VelocityMetrics.nodeid = componentMetrics(i).nodeId
+          VelocityMetrics.componentkeymetrics = componentKeyMetricsBuf.toArray
+          velocityMetricsArrBuf += VelocityMetrics
+          componentKeyMetricsBuf.clear()
+        }
+      }
+    }
+    val isLogDebugEnabled = LOG.isDebugEnabled
+    if (isLogDebugEnabled) {
+      val vmArray = velocityMetricsArrBuf.toArray
+      if (vmArray != null && vmArray.length > 0)
+        for (i <- 0 until vmArray.length) {
+          LOG.info("vmArray  " + vmArray(i).uuid)
+          LOG.info("vmArray componentkey " + vmArray(i).componentkey)
+          LOG.info("vmArray  nodeId " + vmArray(i).nodeid)
+          val componentkey = vmArray(i).componentkeymetrics
+          if (componentkey != null && componentkey.length > 0)
+            for (j <- 0 until componentkey.length) {
+
+              LOG.info("componentkey key " + componentkey(j).key)
+              LOG.info("componentkey metricstime " + componentkey(j).metricstime)
+              LOG.info("componentkey roundintervaltimeinsec " + componentkey(j).roundintervaltimeinsec)
+              LOG.info("componentkey firstoccured " + componentkey(j).firstoccured)
+              LOG.info("componentkey lastoccured " + componentkey(j).lastoccured)
+              val metricsValue = componentkey(i).metricsvalue
+              if (metricsValue != null && metricsValue.length > 0)
+                for (k <- 0 until metricsValue.length) {
+                  LOG.info("metricsValue key " + metricsValue(k).metrickey)
+                  LOG.info("metricsValue metricstime " + metricsValue(k).metricskeyvalue)
+                }
+            }
+        }
+    }
+
+    LOG.info("End Velocity Metrics")
+
+    val vmstats = velocityMetricsArrBuf.toArray.asInstanceOf[Array[ContainerInterface]]
+    KamanjaMetadata.envCtxt.postMessages(vmstats)
+
+  }
 }
 
 class MainInfo {

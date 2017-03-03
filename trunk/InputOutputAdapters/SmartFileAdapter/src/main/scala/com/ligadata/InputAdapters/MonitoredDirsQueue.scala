@@ -26,7 +26,7 @@ class MonitoredDirsQueue {
       if(dirsQueue.isEmpty)
         null
       else{
-        val currentTimeMs = System.nanoTime() / 1000
+        val currentTimeMs = System.nanoTime() / 1000000
         val dir = dirsQueue.head
         if(currentTimeMs - dir._2 < dirWaitingTime)
           null
@@ -41,7 +41,7 @@ class MonitoredDirsQueue {
   def reEnqueue(dirInfo : (LocationInfo, Long, Boolean)) : Unit = {
     qLock.synchronized {
       try {
-        val newDirInfo = (dirInfo._1, System.nanoTime() / 1000, false)
+        val newDirInfo = (dirInfo._1, System.nanoTime() / 1000000, false)
         dirsQueue.enqueue(newDirInfo)
 
         logger.debug("dirsQueue reEnqueue calling getNextDir = {}", dirsQueue)

@@ -618,12 +618,18 @@ trait AdaptersSerializeDeserializers {
   }
 
   // Returns deserialized msg, deserialized msg data & deserializer name applied.
-  def deserialize(data: Array[Byte], deserializerName: String, schemaId: Int): (ContainerInterface, String) = {
-    val msgName = getTypeForSchemaId(schemaId)
+  def deserialize(data: Array[Byte], deserializerName: String, schemaId: Int, defaultMsgName: String): (ContainerInterface, String) = {
+    var msgName = getTypeForSchemaId(schemaId)
     if (msgName == null) {
-      val msg = s"Did not find container/message for schemaid:${schemaId}"
-      logger.error(msg)
-      throw new KamanjaException(msg, null)
+      if (defaultMsgName == null) {
+        val msg = s"Did not find container/message for schemaid:${schemaId} and also does not have default container/message name"
+        logger.error(msg)
+        throw new KamanjaException(msg, null)
+      } else {
+        val msg = s"Did not find container/message for schemaid:${schemaId}. But found default container/message name as ${defaultMsgName}. There may be issues while deserializing into default name."
+        logger.error(msg)
+        msgName = defaultMsgName
+      }
     }
 
     val tmpSer = getMessageBinding(msgName)

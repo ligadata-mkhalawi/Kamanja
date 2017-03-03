@@ -27,6 +27,15 @@
     "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
     "Options": {
     }
+  },
+  {
+    "AdapterName": "VelocityMetrics",
+    "MessageNames": [
+      "com.ligadata.KamanjaBase.kamanjavelocitymetrics"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
+    "Options": {
+    }
   }
 ]
 

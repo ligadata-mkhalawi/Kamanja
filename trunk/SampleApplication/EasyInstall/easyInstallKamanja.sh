@@ -18,7 +18,7 @@ srcPath=$2
 ivyPath=$3
 KafkaRootDir=$4
 
-currentKamanjaVersion=1.6.1
+currentKamanjaVersion=1.6.2
 
 ver210=${currentKamanjaVersion}_2.10
 ver211=${currentKamanjaVersion}_2.11
@@ -223,6 +223,12 @@ cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 cp Utils/EncryptUtils/target/scala-2.10/encryptutils* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
+cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
+cp $ivyPath/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
+
+cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.10/elasticsearchinputoutputadapters_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Storage/Elasticsearch/target/scala-2.10/elasticsearch_2.10-${currentKamanjaVersion}.jar $systemlib
+
 # copy fat jars to KamanjaInstall
 cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
 
@@ -234,7 +240,7 @@ cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKaman
 # Copy jars needed for Kafka
 cp $ivyPath/cache/org.apache.kafka/kafka_2.10/jars/kafka_2.10-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
-cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.1.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
@@ -359,6 +365,18 @@ cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $in
 
 # Copying files for kamanja app tester compiled under scala 2.10
 prepare_kamanja_app_tester 2.10 $currentKamanjaVersion
+
+# *******************************
+# copy guava-19.0.jar into system
+# *******************************
+# Download only once and copy
+guava_19_0_all_path="~/.ivy2/cache/com.google.guava/guava/jars1"
+guava_19_0_all="$guava_19_0_all_path/guava-19.0.jar"
+if [ ! -f "$guava_19_0_all" ]; then
+ mkdir -p $guava_19_0_all_path
+ wget -O $guava_19_0_all --no-cookies --no-check-certificate "http://central.maven.org/maven2/com/google/guava/guava/19.0/guava-19.0.jar"
+fi
+cp $guava_19_0_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -610,6 +628,12 @@ cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
 cp Utils/EncryptUtils/target/scala-2.11/encryptutils* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
+cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
+cp $ivyPath/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
+
+cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.11/elasticsearchinputoutputadapters_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Storage/Elasticsearch/target/scala-2.11/elasticsearch_2.11-${currentKamanjaVersion}.jar $systemlib
+
 # copy jars used to reduce package size
 cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
 cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar $systemlib
@@ -618,7 +642,7 @@ cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKaman
 cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
-cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.1.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
 cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
 
@@ -736,6 +760,18 @@ cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $in
 
 # Copying files for kamanja app tester compiled under scala 2.11
 prepare_kamanja_app_tester 2.11 $currentKamanjaVersion
+
+# *******************************
+# copy guava-19.0.jar into system
+# *******************************
+# Download only once and copy
+guava_19_0_all_path="~/.ivy2/cache/com.google.guava/guava/jars1"
+guava_19_0_all="$guava_19_0_all_path/guava-19.0.jar"
+if [ ! -f "$guava_19_0_all" ]; then
+ mkdir -p $guava_19_0_all_path
+ wget -O $guava_19_0_all --no-cookies --no-check-certificate "http://central.maven.org/maven2/com/google/guava/guava/19.0/guava-19.0.jar"
+fi
+cp $guava_19_0_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep

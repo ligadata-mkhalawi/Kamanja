@@ -90,10 +90,6 @@ public class EncryptionUtil {
      *          :The file containing public key
      * @param privateKeyFile
      *          :The file containing private key
-     * 
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws FileNotFoundException
      */
     public static void generateSampleKeys(String algorithm,String publicKeyFile,String privateKeyFile) {
 	try {
@@ -137,16 +133,6 @@ public class EncryptionUtil {
     /**
      * Generate key which contains a pair of private and public key using 1024
      * bytes. Store the set of keys in Prvate.key and Public.key files.
-     * @param algorithm
-     *          : algorithm used
-     * @param publicKeyFile
-     *          :The file containing public key
-     * @param privateKeyFile
-     *          :The file containing private key
-     * 
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws FileNotFoundException
      */
     public static void generateSampleKeys() {
 	generateSampleKeys(ALGORITHM,PUBLIC_KEY_FILE,PRIVATE_KEY_FILE);
@@ -158,11 +144,9 @@ public class EncryptionUtil {
      * @param bytes
      *          : an array of bytes
      * @return String
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception an exception is thrown when failing to convert a hex string to a byte array
      */
-
-
-    public static String bytesToHex(byte[] bytes) {
+    public static String bytesToHex(byte[] bytes) throws Exception {
 	try{
 	    char[] hexChars = new char[bytes.length * 2];
 	    for ( int j = 0; j < bytes.length; j++ ) {
@@ -183,7 +167,7 @@ public class EncryptionUtil {
      * @param s
      *          : a string containing hex characters
      * @return byte array
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception an exception is thrown
      */
 
     public static byte[] hexStringToByteArray(String s) throws Exception{
@@ -208,11 +192,11 @@ public class EncryptionUtil {
      * @param bytes
      *          : an array of bytes corresponding to string being encoded
      * @return String
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
 
 
-    public static String encode(byte[] bytes) {
+    public static String encode(byte[] bytes) throws Exception {
 	try{
 	    Base64 base64 = new Base64();
 	    String encoded = new String(base64.encode(bytes));
@@ -229,7 +213,7 @@ public class EncryptionUtil {
      * @param s
      *          : an encoded string 
      * @return byte array
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
 
     public static byte[] decode(String s) throws Exception{
@@ -249,7 +233,7 @@ public class EncryptionUtil {
      * @param bytes
      *          : the encoded value as array of bytes 
      * @return decoded value as a String
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception an exception is thrown
      */
 
     public static String decode(byte[] bytes) throws Exception{
@@ -270,10 +254,10 @@ public class EncryptionUtil {
      *          : algorithm used
      * @param text
      *          : original plain text
-     * @param keyFile
+     * @param publicKeyFile
      *          :The public key file
      * @return Encrypted text
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
     public static byte[] encrypt(String algorithm,String text, String publicKeyFile) throws Exception {
 	byte[] cipherText = null;
@@ -302,10 +286,10 @@ public class EncryptionUtil {
      *          : algorithm used
      * @param text
      *          :encrypted text
-     * @param key
+     * @param privateKeyFile
      *          :The private key
      * @return plain text
-     * @throws java.lang.Exception
+     * @throws java.lang.Exception and exception is thrown
      */
     public static String decrypt(String algorithm,byte[] text, String privateKeyFile) throws Exception {
 	byte[] dectyptedText = null;

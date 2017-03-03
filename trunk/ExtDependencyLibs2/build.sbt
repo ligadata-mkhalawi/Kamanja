@@ -48,7 +48,7 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "StaticMarkerBinder.class" => MergeStrategy.first
   case x if x contains "package-info.class" => MergeStrategy.first
   case x if x contains "HTMLDOMImplementation.class" => MergeStrategy.first
-  ////  
+  ////
   case x if x contains "io/netty" => MergeStrategy.first
   case x if x contains "org/apache/commons/logging" => MergeStrategy.first
   case x if x contains "io.netty.versions.properties" => MergeStrategy.first
@@ -72,7 +72,7 @@ assemblyMergeStrategy in assembly := {
 excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "log4j-over-slf4j-1.7.7.jar")
+  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "log4j-over-slf4j-1.7.7.jar", "elasticsearch-2.3.5.jar", "shield-2.3.5.jar")
   cp filter { jar => excludes(jar.data.getName) }
 }
 
@@ -139,7 +139,7 @@ libraryDependencies ++= Seq(
   "uk.co.bigbeeconsultants" %% "bee-client" % "0.28.0",
   "org.apache.httpcomponents" % "httpclient" % "4.1.2"
 )
-resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk/repo"
+resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk"
 
 ////////////////////// H2DB / StorageH2DB
 // http://mvnrepository.com/artifact/com.h2database/h2
@@ -187,11 +187,13 @@ libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
 //libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.6.5"
 libraryDependencies += "net.sf.ehcache" % "ehcache-jgroupsreplication" % "1.7"
-
-libraryDependencies += "org.jgroups" % "jgroups" % "3.6.7.Final"
+libraryDependencies += "org.jgroups" % "jgroups" % "3.6.11.Final"
 // libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 // libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.12"
 libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.12"
 libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.12"
 // libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0"
+
+// org.apache.commons // commons-csv
+libraryDependencies += "org.apache.commons" % "commons-csv" % "1.4"

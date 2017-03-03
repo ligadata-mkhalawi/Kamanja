@@ -60,7 +60,7 @@ public class SimpleMailBean {
 	STGroup stGroup;
 	
 	private static HashMap<String, String> map;
-	
+
 	public void populateData(){
 		if(templateDirectory != null && !templateDirectory.isEmpty()){
 			Path templateDir = FileSystems.getDefault().getPath(templateDirectory);

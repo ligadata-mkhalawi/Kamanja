@@ -10,7 +10,7 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.5.1"
+val kamanjaVersion = "1.6.2"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
@@ -19,9 +19,9 @@ assemblyJarName in assembly := {
 
 name := "KamanjaKafkaAdapters_0_10"
 
-version := "1.6.1"
+version := "1.6.2"
 
-libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.10.0.1"
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.10.0.0"
 
 //libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value
 
