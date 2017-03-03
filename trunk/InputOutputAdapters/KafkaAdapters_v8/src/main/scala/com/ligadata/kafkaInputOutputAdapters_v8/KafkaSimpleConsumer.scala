@@ -181,9 +181,9 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
    * spawned threads.
    *
    * @param ignoreFirstMsg Boolean - if true, ignore the first message sending to engine
-   * @param partitionIds Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue, Long, PartitionUniqueRecordValue)] - an Array of partition ids
+   * @param threadPartitionIds Array - an Array of ThreadPartitions
    */
-  def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+  def StartProcessing(threadPartitionIds: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
 
     var lastHb: Long = 0
     startHeartBeat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
@@ -196,19 +196,39 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
     startTime = System.nanoTime
     LOG.debug("KAFKA-ADAPTER: Starting to read Kafka queues for topic: " + qc.topic)
 
-    if (partitionIds == null || partitionIds.size == 0) {
-      LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - number")
+    if (threadPartitionIds == null || (threadPartitionIds != null && threadPartitionIds.size == 0)) {
+      LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - threadPartitionIds")
       return
     }
-
+/*
     // Get the data about the request and set the instancePartition list.
     val partitionInfo = partitionIds.map(quad => {
       (quad._key.asInstanceOf[KafkaPartitionUniqueRecordKey],
         quad._val.asInstanceOf[KafkaPartitionUniqueRecordValue],
         quad._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
     })
+*/
+    val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
+    threadPartitionIds.foreach(tp => {
+      var threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
+      if (tp.threadPartitions == null || (tp.threadPartitions != null && tp.threadPartitions.size == 0)) {
+        LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - threadPartitions")
+        return
+      }
+      for (i <- 0 until tp.threadPartitions.size) {
 
-    qc.instancePartitions = partitionInfo.map(partQuad => { partQuad._1.PartitionId }).toSet
+        val threadPart = (tp.threadPartitions(i)._key.asInstanceOf[KafkaPartitionUniqueRecordKey], tp.threadPartitions(i)._val.asInstanceOf[KafkaPartitionUniqueRecordValue], tp.threadPartitions(i)._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
+        threadPartSet += threadPart
+      }
+      partitionGroups(tp.threadId) = threadPartSet
+    })
+
+    var instancePartitions = Set[Int]()
+    partitionGroups.foreach(t => {
+      t._2.foreach(tp => { instancePartitions += tp._1.PartitionId })
+    })
+
+    qc.instancePartitions = instancePartitions
 
     // Make sure the data passed was valid.
     if (qc.instancePartitions == null) {
@@ -217,6 +237,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
     }
 
     // Figure out the size of the thread pool to use and create that pool
+/*
     var threads = 0
     if (threads == 0) {
       if (qc.instancePartitions.size == 0)
@@ -224,13 +245,29 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
       else
         threads = qc.instancePartitions.size
     }
+*/
+    var threads = 0
+    if (threads == 0) {
+      if (threadPartitionIds.size == 0)
+        threads = 1
+      else
+        threads = threadPartitionIds.size
+    }
 
     readExecutor = Executors.newFixedThreadPool(threads)
 
     // Create a Map of all the partiotion Ids.
+/*
     kvs.clear
     partitionInfo.foreach(quad => {
       kvs(quad._1.PartitionId) = quad
+    })
+*/
+    kvs.clear
+    partitionGroups.foreach(group => {
+      group._2.foreach(quad => {
+        kvs(quad._1.PartitionId) = quad
+      })
     })
 
     // Enable the adapter to process
