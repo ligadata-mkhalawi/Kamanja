@@ -52,7 +52,8 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
   (`1493 <https://github.com/LigaData/Kamanja/issues/1493>`_)
 
 - The :ref:`kamanja-command-ref` **add model** command
-  to add a model that imports classes from a specified jar may fail.
+  may fail when adding a model that imports classes
+  from a specified jar.
   Even though the **upload jar my.jar** command
   ran successfully and the uploaded jar is persisted in the metadata storage,
   the model fails to compile because the classes are not visible to the model

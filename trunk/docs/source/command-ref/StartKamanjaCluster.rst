@@ -7,6 +7,11 @@ StartKamanjaCluster.sh
 
 Start the specified cluster using the specified 
 Metadata API file.
+To issue this command,
+**ssh** to any node in the cluster then issue the command.
+The cluster should start on all nodes
+that are defined in the *ClusterConfig.json* file for that cluster.
+
 
 Syntax
 ------
@@ -35,7 +40,7 @@ Usage
 -----
 
 This script reads the cluster metadata,
-contacts each of the nodes described by it,
+contacts each of the nodes that are defined for that cluster,
 and starts the Kamanja engine at that location.
 A Process Identifier (PID) is recorded
 and written to the installation directory's *run* directory

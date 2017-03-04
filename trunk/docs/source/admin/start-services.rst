@@ -1,34 +1,46 @@
 
 
-.. _start-multi-cluster:
+.. _start-stop-cluster:
 
-Starting and stopping the multi-node cluster
-============================================
+Start and stop a cluster or node
+================================
 
-To start the cluster,
-**ssh** to any of the nodes then navigate to the *KAMANJA_HOME/bin* folder
-and run the following command:
-
-::
-
-  ./StartKamanjaCluster.sh --ClusterId ligadata1
-    --MetadataAPIConfig ../config/MetadataAPIConfig.properties
+Use the following commands to start or stop
+a cluster or node;
+see the reference pages for detailed information.
 
 
-The cluster should start on all nodes
-that are defined in the *ClusterConfig.json* file.
-In this case, four nodes are configured.
+.. list-table::
+   :class: ld-wrap-fixed-table
+   :widths: 30 50
+   :header-rows: 1
+
+   * - Start a cluster
+     - :ref:`startkamanjacluster-command-ref`
+   * - Stop a cluster
+     - :ref:`stopkamanjacluster-command-ref`
+   * - Start a single node in a cluster
+     - :ref:`kamanja-command-ref` start
+   * - Stop a single node in a cluster
+     - :ref:`kamanja-command-ref` stop
 
 
-- The structure of the installed software is described in
-  :ref:`dir-struct-install`.
-- If you installed this cluster to study and explore Kamanja,
-  a good next step is to run and study the
-  :ref:`sample applications<run-samples-install>`
-  that are provided.
-- You can also create your own application
-  by creating and configuring your own messages, models, and so forth.
-  See :ref:`models-top`.
+
+You can start your single-node installation
+with the following steps:
+
+- Run :ref:`SetPaths.sh<setpaths-command-ref>`
+  to perform string replacement on items in the template files
+  and create new configuration files.
+
+- Run :ref:`zkServer.sh`<zkserver-command-ref>`
+  to start :ref:`Zookeeper<zookeeper-term>`.
+
+- Run :ref:`kafka-server-start.sh<kafka-server-start-command-ref>`
+  to start :ref:`Kafka<kafka-term>`.
+
+
+
 
 
 

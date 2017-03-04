@@ -34,11 +34,23 @@ This is a list of the steps required to install Kamanja:
    * - --
      - :ref:`config-edit-install`
    * - :ref:`setpath-install`
-     - :ref:`start-multi-cluster`
-   * - --
      - :ref:`clusterinstallerdriver-install`
+   * - :ref:`start-stop-cluster`
+     - :ref:`start-stop-cluster`
    * - :ref:`develop-install-top`
      - :ref:`develop-install-top`
+
+
+
+- The structure of the installed software is described in
+  :ref:`dir-struct-install`.
+- If you installed this cluster to study and explore Kamanja,
+  a good next step is to run and study the
+  :ref:`sample applications<run-samples-install>`
+  that are provided.
+- You can also create your own application
+  by creating and configuring your own messages, models, and so forth.
+  See :ref:`models-top`.
 
 
 

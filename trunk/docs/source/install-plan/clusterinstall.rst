@@ -47,5 +47,7 @@ on all nodes on the target destination you defined
 in *ClusterConfig.json* and *ClusterCfgMetadataAPIConfig.properties*;
 under the $KAMANJA_HOME directory.
 
+You can now start your cluster
+following the instructions in :ref:`start-stop-cluster`.
 
 
