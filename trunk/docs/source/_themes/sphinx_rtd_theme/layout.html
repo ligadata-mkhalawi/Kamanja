@@ -157,7 +157,7 @@
              {%- if show_source and has_source and sourcename %}
              <div id="ld-top-icons">
                 <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow"><span class="fa fa-file-code-o"></span> View Page Source </a>
-                <a class="ld-nodecoration" href="{{  sourcename.split('.')[0] + '.pdf'}}" rel="nofollow"><span class="fa fa-file-pdf-o"></span> Download PDF </a>
+                <a class="ld-nodecoration" href="{{ '././' + sourcename.split('.')[0] + '.pdf'}}" rel="nofollow"><span class="fa fa-file-pdf-o"></span> Download PDF </a>
                 <a class="ld-nodecoration" href="https://github.com/LigaData/Kamanja" rel="nofollow"><span class="fa fa-exclamation-circle"></span> Report a Bug </a>
                 <a class="ld-nodecoration" href="http://kamanja.org/forums/forum/kamanja-forums/" rel="nofollow"><span class="fa fa-question-circle"></span> Ask a Question </a>
              </div>
