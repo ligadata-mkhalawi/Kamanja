@@ -5,55 +5,60 @@ Creating custom storage adapters
 ================================
 
 A storage adapter is an internal interface to the data store for Kamanja.
-Examples are HBase, Cassandra, and the Microsoft SQL server (JDBC). 
+Examples are :ref:`HBase<hbase-term>`, :ref:`Cassandra<cassandra-term>`,
+and the Microsoft :ref:`SQL<sql-term>` server (JDBC). 
 
 It is also possible to add a storage adapter to Kamanja
-where it can save information such as messages, containers,
-model results, and some information saved from models.
+where it can save information such as :ref:`messages<message-term>`,
+:ref:`containers<containers-term>`,
+:ref:`model<model-term>` results, and some information saved from models.
 Multiple storage adapters means the same information
 can be saved to different databases.
-Here is a sample ClusterConfig.json with multiple storage adapters:
+Here is a sample :ref`clusterconfig-config-ref>
+with differet storage adapters,
+to support HBase, Cassandra,
+and Microsoft SQL Server.
 
 ::
 
   {
   "Clusters": [
-  {
-  "ClusterId": "ligadata1",
+      {
+      "ClusterId": "ligadata1",
   "Adapters": [
-  {
-  "Name": "Storage_1",
-  "TypeString": "Storage",
-  "TenantId": "tenant1",
-  "StoreType": "hashmap",
-  "SchemaName": "testdata1",
-  "Location": "{InstallDirectory}/storage/tenant1_storage_1"
-  },
-  {
-  "Name": "Storage_2",
-  "TypeString": "Storage",
-  "TenantId": "tenant1",
-  "StoreType": "hbase",
-  "SchemaName": "testdata2",
-  "Location": "localhost"
-  },
-  {
-  "Name": "Storage_3",
-  "TypeString": "Storage",
-  "TenantId": "tenant1",
-  "StoreType": "hbase",
-  "SchemaName": "testdata3",
-  "Location": "localhost"
-  },
-  {
-  "Name": "Storage_4",
-  "TypeString": "Storage",
-  "TenantId": "tenant1",
-  "StoreType": "cassandra",
-  "SchemaName": "testdata4",
-  "Location": "localhost"
-  }
-  ]
+      {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "tenant1",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata1",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+      },
+      {
+      "Name": "Storage_2",
+      "TypeString": "Storage",
+      "TenantId": "tenant1",
+      "StoreType": "hbase",
+      "SchemaName": "testdata2",
+      "Location": "localhost"
+      },
+      {
+      "Name": "Storage_3",
+      "TypeString": "Storage",
+      "TenantId": "tenant1",
+      "StoreType": "hbase",
+      "SchemaName": "testdata3",
+      "Location": "localhost"
+      },
+      {
+      "Name": "Storage_4",
+      "TypeString": "Storage",
+      "TenantId": "tenant1",
+      "StoreType": "cassandra",
+      "SchemaName": "testdata4",
+      "Location": "localhost"
+      }
+      ]
   }
   ]
   }
@@ -328,7 +333,8 @@ Delete Operations
 
 ::
 
-  def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit
+  def del(containerName: String, time: TimeRange,
+     keys: Array[Array[String]]): Unit
 
 - **del** – for the specified multiple bucket key strings and a TimeRange,
   delete the rows.
@@ -341,14 +347,16 @@ on each record they fetch from the database.
 
 ::
 
-  def get(containerName: String, callbackFunction: (Key, Value) =&gt; Unit): Unit
+  def get(containerName: String, callbackFunction:
+     (Key, Value) =&gt; Unit): Unit
 
 - **get** – fetch all the records from a given container.
   A container translates to a table in most databases.
 
 ::
 
-  def get(containerName: String, keys: Array[Key], callbackFunction: (Key, Value) =&gt; Unit): Unit
+  def get(containerName: String, keys: Array[Key],
+     callbackFunction: (Key, Value) =&gt; Unit): Unit
 
 - **get** – fetch all the records from a given container and a list of keys.
 
@@ -433,6 +441,8 @@ The following steps are required
 to enable Kamanja to store metadata and/or other container output data
 in the Microsoft SqlServer.
 
+.. _metadata-sql:
+
 Changes to MetadataAPIConfig.properties
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -468,18 +478,27 @@ Example: (without specifying instance name and port)
 
 ::
 
-  MetadataDataStore={"StoreType": "sqlserver","hostname": "192.168.56.1","database": "bank","user":"bank","password":"bankuser","jarpaths":"/media/home2/java_examples/sqljdbc_4.0/enu","jdbcJar":"sqljdbc4.jar"}
+  MetadataDataStore={"StoreType": "sqlserver","hostname": "192.168.56.1",
+    "database": "bank","user":"bank","password":"bankuser",
+    "jarpaths":"/media/home2/java_examples/sqljdbc_4.0/enu",
+    "jdbcJar":"sqljdbc4.jar"}
 
 Example: (specifying instance name and port)
 
 ::
-  MetadataDataStore={"StoreType": "sqlserver","hostname": "192.168.56.1","instancename":"kamanja","portnumber":"1433","database": "bank","user":"bank","password":"bankuser","jarpaths":"/media/home2/java_examples/sqljdbc_4.0/enu","jdbcJar":"sqljdbc4.jar"}
+  MetadataDataStore={"StoreType": "sqlserver","hostname": "192.168.56.1",
+    "instancename":"kamanja","portnumber":"1433","database": "bank",
+    "user":"bank","password":"bankuser",
+    "jarpaths":"/media/home2/java_examples/sqljdbc_4.0/enu","jdbcJar":"sqljdbc4.jar"}
 
 Example: (specifying connection pooling properties as well)
 
 ::
 
-  MetadataDataStore={"StoreType": "sqlserver","hostname": "192.168.56.1","instancename":"kamanja","portnumber":"1433","database": "bank","user":"bank","password":"bankuser","jarpaths":"/media/home2/java_examples/sqljdbc_4.0/enu","jdbcJar":"sqljdbc4.jar","maxActiveConnections":"20","maxIdleConnections":"10","initialSize":"10"}
+  MetadataDataStore={"StoreType": "sqlserver","hostname": "192.168.56.1",
+    "instancename":"kamanja","portnumber":"1433","database": "bank","user":"bank",
+    "password":"bankuser",
+    "jarpaths":"/media/home2/java_examples/sqljdbc_4.0/enu","jdbcJar":"sqljdbc4.jar","maxActiveConnections":"20","maxIdleConnections":"10","initialSize":"10"}
 
 SQL Server JDBC Driver Download Link
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

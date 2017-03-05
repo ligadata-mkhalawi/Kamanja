@@ -32,7 +32,7 @@ Configuration File Reference Pages
    * - :ref:`message-def-config-ref`
      - Define a message
    * - :ref:`metadataapiconfig-config-ref`
-     - 
+     - Configure :ref:`metadata-term` objects
    * - :ref:`migrateconfig-template-config-ref`
      - Generated file used to upgrade from an earlier release
    * - :ref:`modelcfg-config-ref`

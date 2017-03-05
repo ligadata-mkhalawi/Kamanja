@@ -5,7 +5,7 @@ Cluster analysis
 ----------------
 
 When discussing data mining algorithms,
-a cluster analysis is a type of
+cluster analysis is a type of
 :ref:`unsupervised learning<unsupervised-learning-term>`
 that groups records with similar attributes or fields.
 A cluster center is the average over the records for that cluster,

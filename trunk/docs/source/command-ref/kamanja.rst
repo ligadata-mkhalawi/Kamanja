@@ -46,7 +46,7 @@ General operations
 ::
 
   kamanja --version
-  bash kamanja stop
+  kamanja stop
   kamanja watch input queue
   kamanja watch output queue
   kamanja watch failed events queue
