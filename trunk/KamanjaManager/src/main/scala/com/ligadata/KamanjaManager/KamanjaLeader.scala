@@ -197,7 +197,7 @@ object KamanjaLeader {
     try {
       val evntPthData = if (eventPathData != null) (new String(eventPathData)) else "{}"
       val extractedNode = ZKPaths.getNodeFromPath(eventPath)
-      LOG.info("UpdatePartitionsNodeData => eventType: %s, eventPath: %s, eventPathData: %s, Extracted Node:%s".format(eventType, eventPath, evntPthData, extractedNode))
+      LOG.warn("UpdatePartitionsNodeData => eventType: %s, eventPath: %s, eventPathData: %s, Extracted Node:%s".format(eventType, eventPath, evntPthData, extractedNode))
 
       if (eventType.compareToIgnoreCase("CHILD_UPDATED") == 0) {
         if (curParticipents(extractedNode)) { // If this node is one of the participent, then work on this, otherwise ignore
@@ -827,7 +827,7 @@ object KamanjaLeader {
             // Distribution Map 
             if (actionOnAdaptersMap.distributionmap != None && actionOnAdaptersMap.distributionmap != null) {
               val adapMaxPartsMap = GetAdaptersMaxPartitioinsMap(actionOnAdaptersMap.adaptermaxpartitions)
-              val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+              val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, envCtxt.getNodeIdAndUUID())
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
 
@@ -1371,20 +1371,34 @@ object KamanjaLeader {
                     if (nodes == null) {
                       LOG.warn("Got Redistribution request and not able to get nodes from metadata manager for cluster %s. Not going to check whether all nodes came up or not in participents {%s}.".format(KamanjaConfiguration.clusterId, cs.participantsNodeIds.mkString(",")))
                     } else {
-                      val participents = cs.participantsNodeIds.toSet
+                      val participentNodeIds = cs.participantsNodeIds.map(nd => {
+                        var ndId = ""
+                        val json = parse(nd)
+                        if (json != null && json.values != null) {
+                          val values = json.values.asInstanceOf[Map[String, Any]]
+                          ndId = values.getOrElse("NodeId", "").toString.trim
+                        }
+                        ndId
+                      }).filter(nd => nd.size > 0).toSet
                       // Check for nodes in participents now
                       allNodesUp = true
                       var i = 0
                       while (i < nodes.size && allNodesUp) {
-                        if (participents.contains(nodes(i).nodeId) == false)
+                        if (participentNodeIds.contains(nodes(i).nodeId) == false)
                           allNodesUp = false
                         i += 1
+                      }
+
+                      val dupNodes = participentNodeIds.groupBy(x => x).filter(kv => (kv._2.size > 1)).map(kv => kv._1)
+                      if (dupNodes.size > 0) {
+                        LOG.warn("Found duplicate %s in %s.".format(dupNodes.mkString(","), cs.participantsNodeIds.mkString(" ~ ")))
                       }
 
                       if (allNodesUp) {
                         // Check for duplicates if we have any in participents
                         // Just do group by and do get duplicates if we have any. If we have duplicates just make allNodesUp as false, so it will wait long time and by that time the duplicate node may go down.
-                        allNodesUp = (cs.participantsNodeIds.groupBy(x => x).mapValues(lst => lst.size).filter(kv => kv._2 > 1).size == 0)
+                        // allNodesUp = (cs.participantsNodeIds.groupBy(x => x).mapValues(lst => lst.size).filter(kv => kv._2 > 1).size == 0)
+                        allNodesUp = (dupNodes.size == 0)
                       }
                     }
                   }
