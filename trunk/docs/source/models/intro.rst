@@ -45,6 +45,6 @@ that are applied to each new data event that enters the decision layer:
           and performs feature engineering.
 
           Kamanja uses the term "model" to refer to any programatic code
-          used in the pipeline
+          used in the pipeline.
 
 

@@ -3,8 +3,9 @@
 
 Introduction to PMML
 ====================
+
 PMML (Predictive Model Markup Language) is a language written in XML
-that describes the rules that a company wants to give the engine.
+that describes the rules that to be given to the engine.
 
 LigaData chooses an augmented version of the PMML standard
 from the Data Mining Consortium for writing LigaData models.

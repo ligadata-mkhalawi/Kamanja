@@ -9,8 +9,8 @@ Examples are :ref:`HBase<hbase-term>`, :ref:`Cassandra<cassandra-term>`,
 and the Microsoft :ref:`SQL<sql-term>` server (JDBC). 
 
 It is also possible to add a storage adapter to Kamanja
-where it can save information such as :ref:`messages<message-term>`,
-:ref:`containers<containers-term>`,
+where it can save information such as :ref:`messages<messages-term>`,
+:ref:`containers<container-term>`,
 :ref:`model<model-term>` results, and some information saved from models.
 Multiple storage adapters means the same information
 can be saved to different databases.

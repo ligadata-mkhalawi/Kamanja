@@ -80,9 +80,7 @@ Kamanja can instead use Scala 2.10_4, which can be downloaded from
 
 Note that the Scala version must be specified
 when you issue the **ClusterInstallerDriver** command
-
-Note that the Scala version must be specified
-when you issue the **ClusterInstallerDriver** command.
+and most JAR files are specific to the version of Scala that you are using.
 
 .. _zookeeper-install:
 

@@ -55,13 +55,15 @@ as a series of relatively simple messages, containers, and models.
 :ref:`Adapter message bindings<message-bindings-term>`
 control the flow of messages and models.  For example:
 
-- The output message binding defines how messages are passed
-  from model to model; see :ref:`adapters-output-guide`.
-- The output message definition is written to the metadata API;
-  see http://kamanja.org/wiki/output-messages/
+- The :ref:`adapter binding<adapter-binding-config-ref>`
+  defines how messages are passed from model to model;
+  see :ref:`adapters-output-guide`.
+- The :ref:`message definitions<message-def-config-ref>`
+  is written to the metadata
+  using the :ref:`kamanja-command-ref` command.
 - Results can be persisted to HDFS, Cassandra, ElasticSearch,
   or to a local file system;
-  see :ref:`smart-file-adapter`.
+  see :ref:`adapters-storage-guide`.
 
 Implementing a Kamanja application
 ----------------------------------

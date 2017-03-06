@@ -38,7 +38,7 @@ The steps are:
 - Check and possibly modify your applications
   for the new release;  see :ref:`check-apps-upgrade`.
 - Start the cluster,
-  following the instructions in :ref:`start-multi-cluster`.
+  following the instructions in :ref:`start-stop-cluster`.
 - If you need to rollback the cluster to the previous release,
   follow the instructions in :ref:`rollback-guide`.
 
@@ -56,6 +56,10 @@ to the *$KAMANJA_INSTALL/config* directory,
 giving it a name like *myClusterConfig.json*.
 Edit this file to be appropriate for the new release
 by referencing the *ClusterConfig.json* file that is located there.
+
+.. note:: You can instead make a copy of the *ClusterConfig.json* file
+   that is in the *$KAMANJA_INSTALL/config* directory
+   and modify that with information about your cluster.
 
 See the reference pages for details about the contents of this file.
 Specifically, set the following:
@@ -78,10 +82,6 @@ Specifically, set the following:
   such as Velocity Metrics in your cluster,
   copy and populate those sections from the
   *$KAMANJA_HOME/config/ClusterConfig.json* file.
-
-.. note:: You can instead make a copy of the *ClusterConfig.json* file
-   that is in the *$KAMANJA_INSTALL/config* directory
-   and modify that with information about your cluster.
 
 
 .. _upgrade-metadata-config:
@@ -111,6 +111,8 @@ Specifically, set the following:
 - Set the **ROOT_DIR** parameter to indicate the parent
   directory (such as */opt/kamanja*)
   being used for your current Kamanja software.
+  The new release will be installed into a new subdirectory,
+  in parallel to the software for the earlier release.
 - Set the **SERVICE_HOST** and **SERVICE_PORT** parameters
   with the IP address and port number used for the
   Kamanja metadata API REST service,
@@ -128,7 +130,7 @@ Run the ClusterInstallerDriver.sh command
 
 Run the :ref:`clusterinstallerdriver-command-ref` command
 with the **-upgrade** flag.
-See the reference page for the specific syntax.
+See the reference page for the complete syntax.
 
 **ClusterInstallerDriver.sh** uses the information
 in the configuration files you edited

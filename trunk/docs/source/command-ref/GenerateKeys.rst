@@ -113,7 +113,9 @@ An example command to generate an encrypted password is:
 
   # GenerateKeys.sh --algorithm RSA --publicKeyFile public.key --password db_password
 
-  Encrypted Password => BjlM8PVF3rt39r/QLSZzeVEE0zf3v1DDj2qiVOkwuZsVhyQOPtpxw8PTzkNf0UDBaCvavVd7VB9s39wUhPyyaG5OMkEunfMsQyBSHuwkrLnhx1SztK3pUqqx8FpD/LRMDn3dBOj78A+qAl1M81Ysm8NsF6vILYxSXW21LT0ttfo=
+  Encrypted Password => BjlM8PVF3rt39r/QLSZzeVEE0zf3v1DDj2qiVOkwuZsVhyQOPtpxw8PTzkNf0UDBaCvav
+     Vd7VB9s39wUhPyyaG5OMkEunfMsQyBSHuwkrLnhx1SztK3pUqqx8FpD/LRMDn3dBOj78A+qAl1M81Ysm8NsF6vIL
+     YxSXW21LT0ttfo=
 
 An example command to generate a pair of public/key keys is:
 

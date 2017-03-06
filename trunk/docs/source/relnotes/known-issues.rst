@@ -25,6 +25,9 @@ can be viewed at the `https://github.com/LigaData/Kamanja/issues` web site.
   because it can cause data to be lost,
   especially when using Elasticsearch.
 
+- The PDF files produced for the documentation
+  display the file name rather than the document title.
+
 - The :ref:`simplekafkaproducer-command-ref` command
   may throw spurious errors that reference
   :ref:`Velocity Metrics<velocity-metrics-term>`

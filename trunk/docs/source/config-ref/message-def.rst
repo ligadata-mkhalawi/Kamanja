@@ -133,6 +133,52 @@ are handled as follows:
 Examples
 --------
 
+This is a sample message definition with time partitioning:
+
+::
+
+  {
+    "Message": {
+      "NameSpace": "com.ligadata.messages",
+      "Name": "TimePartitionMsgDef",
+      "Version": "00.01.00",
+      "Description": "Time Partition Message Definition",
+      "Fixed": "true",
+      "Persist": "false",
+      "Fields": [
+        {
+          "Name": "field0",
+          "Type": "System.String"
+        },
+        {
+          "Name": "field2",
+          "Type": "System.String"
+        },
+        {
+          "Name": "field3",
+          "Type": "System.String"
+        },
+        {
+          "Name": "field4",
+          "Type": "System.String"
+        },
+        {
+          "Name": "field5",
+          "Type": "System.String"
+        },
+        {
+          "Name": "DateTime",
+          "Type": "System.String"
+        }
+      ],
+      "TimePartitionInfo": {
+        "Key": "DateTime",
+        "Format": "epochTime",
+        "Type": "Daily"
+      }
+    }
+  }
+
 
 See also
 --------

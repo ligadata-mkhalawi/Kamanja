@@ -14,6 +14,7 @@ and reconstructing a semantically equivalent clone of the original structure.
 Kamanja currently provides three built-in serializers:
 
 .. list-table::
+   :class: ld-wrap-fixed-table
    :widths: 15 50 35
    :header-rows: 1
 
