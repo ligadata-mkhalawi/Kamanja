@@ -805,7 +805,7 @@ object KamanjaLeader {
 //              envCtxt.clearIntermediateResults
 
               // Set STOPPED action in adaptersStatusPath + "/" + nodeId path
-              val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
+              val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
               val act = ("action" -> "stopped")
               val sendJson = compact(render(act))
               LOG.warn("New Action Stopped set to " + adaptrStatusPathForNode)
@@ -847,7 +847,7 @@ object KamanjaLeader {
             }
           }
 
-          val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
+          val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
           var sentDistributed = false
           if (distributed) {
             try {
@@ -1302,7 +1302,7 @@ object KamanjaLeader {
 
     if (zkConnectString != null && zkConnectString.isEmpty() == false && engineLeaderZkNodePath != null && engineLeaderZkNodePath.isEmpty() == false && engineDistributionZkNodePath != null && engineDistributionZkNodePath.isEmpty() == false && dataChangeZkNodePath != null && dataChangeZkNodePath.isEmpty() == false) {
       try {
-        val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
+        val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
         LOG.info("ZK Connecting. adaptrStatusPathForNode:%s, zkConnectString:%s, engineLeaderZkNodePath:%s, engineDistributionZkNodePath:%s, dataChangeZkNodePath:%s".format(adaptrStatusPathForNode, zkConnectString, engineLeaderZkNodePath, engineDistributionZkNodePath, dataChangeZkNodePath))
         CreateClient.CreateNodeIfNotExists(zkConnectString, engineDistributionZkNodePath) // Creating 
         CreateClient.CreateNodeIfNotExists(zkConnectString, adaptrStatusPathForNode) // Creating path for Adapter Statues
@@ -1436,25 +1436,6 @@ object KamanjaLeader {
                     } else {
                       updatePartsCntr += 1
                     }
-/*
-                    if (wait4ValidateCheck > 0) {
-                      // Get Partitions keys and values for every M secs
-                      if (getValidateAdapCntr >= wait4ValidateCheck) { // for every waitForValidateCheck secs
-                        // Persists the previous ones if we have any
-                        if (validateUniqVals != null && validateUniqVals.size > 0) {
-                          envCtxt.PersistValidateAdapterInformation(validateUniqVals.map(kv => (kv._1.Serialize, kv._2.Serialize)))
-                        }
-                        // Get the latest ones
-//                        validateUniqVals = GetEndPartitionsValuesForValidateAdapters
-                        getValidateAdapCntr = 0
-                        wait4ValidateCheck = 60 // Next time onwards it is 60 secs
-                      } else {
-                        getValidateAdapCntr += 1
-                      }
-                    } else {
-                      getValidateAdapCntr = 0
-                    }
-*/
                   }
                 } else {
                   wait4ValidateCheck = 0 // Not leader node, don't check for it until we set it in redistribute
