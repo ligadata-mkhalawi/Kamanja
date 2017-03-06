@@ -6,9 +6,10 @@ node {
         stage('Build')  {
             checkout scm
             // Navigating to the trunk directory, building the package and generating the documentation.
-            sh "cd trunk; sbt '++ 2.11.7 package' doc makeSite"
+            sh "cd trunk; sbt '++ 2.11.7 package' doc"
             sh "cd trunk/docs/; make pdf"
-            sh "cp trunk/docs/build/html/*.pdf trunk/target/site"
+            sh "cd trunk; sbt makeSite"
+            //sh "cp trunk/docs/build/html/*.pdf trunk/target/site"
 
             // This publishes the documentation generated on that branch so anyone with Jenkins access may review it.
             publishHTML([
