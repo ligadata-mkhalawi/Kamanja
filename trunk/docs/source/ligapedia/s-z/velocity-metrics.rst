@@ -45,3 +45,10 @@ For example:
   $KAFKA_HOME/bin/kafka-console-consumer.sh --zookeeper localhost:2181
       --topic velocitymetrics --from-beginning
 
+For more information:
+
+- :ref:`outpututils-velmet` tells how to implement Velocity Metrics
+  to the hdfs and jdbc OutputUtils.
+
+
+

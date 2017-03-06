@@ -60,6 +60,39 @@ The memory stream is processed as follows:
   with the possible exception of the last file in the stream
   which is not flushed if processing has not completed.
 
+Basically, archiving is a two-stage process
+that can be viewed through the log files.
+
+The first stage copies the source file into memory,
+compresses the data, and checks to see
+if the maximum consolidation limit has been reached.
+This produces a file with a name like
+*billing_20170122T120901.csv.tgz*:
+
+::
+
+  2017-02-01 03:01:19,118 -
+     com.ligadata.InputAdapters.Archiver [pool-17030-thread-5] -
+     WARN - finished archiving file /home/bigdata/billing_20170122T120901.csv.tgz
+     into memory. totalReadLen=204810240
+
+The WARN string merely indicates a notification, not an error.
+
+The second stage dumps this file into disk storage
+along with other files in that archive:
+
+::
+
+  2017-02-01 03:02:51,253 - com.ligadata.InputAdapters.Archiver [pool-17030-thread-5] -
+    WARN - archive file hdfs://jmbdcls01-ns/user/kamanjaprod/ARCHIVE/tt/reconciliation/file_20170201_025948312
+    dumped successfully. last src file is /home/bigdata/billing_20170122T132420.csv.tgz .
+    other finished src files are
+    (/home/bigdata/billing_20170122T120901.csv.tgz,
+     /home/bigdata/billing_20170122T130911.csv.tgz,
+     /home/bigdata/billing_20170122T125408.csv.tgz,
+     /home/bigdata/billing_20170122T133918.csv.tgz)
+
+
 Each record in the archive index contains the following fields:
 srcFile (path is from processed directory), destFile,
 srcFileStartOffset, srcFileEndOffset, destFileStartOffset,

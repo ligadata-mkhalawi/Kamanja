@@ -53,7 +53,8 @@ Example
 
 ::
 
-  bash /Users/<userid>/Downloads/Kamanja-<version-number>/trunk/SampleApplication/EasyInstall/easyInstallKamanja.sh \
+  bash /Users/<userid>/Downloads/Kamanja-<version-number>/trunk/SampleApplication/
+      EasyInstall/easyInstallKamanja.sh \
       /Users/<userid>/Downloads/installKamanja \
       /Users/<userid>/Downloads/Kamanja-<version-number>/trunk ~/.ivy2 \
       /Users/<userid>/Downloads/kafka_2.11-0.9.0.0

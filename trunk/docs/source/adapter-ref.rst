@@ -19,7 +19,7 @@ Adapter Reference Pages
    * - :ref:`smart-input-config-ref`
      - ingest streaming messages automatically
    * - :ref:`smart-output-config-ref`
-     -
+     - Output processed data to an outside consumer.
 
 
 

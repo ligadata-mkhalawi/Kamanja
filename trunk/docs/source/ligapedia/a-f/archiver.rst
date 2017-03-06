@@ -49,12 +49,12 @@ that were archived into same destination archive file
 
 ::
 
-  /home/bigdata/emm/jam/air_adjustments/kprod/processed/20170222.AIR.aircur2a.cur.0268.Adjustment,
-     hdfs://jmbdcls01-ns/user/kamanjaprod/ARCHIVE/jam/air_adjustments/file_20170221_235229961,
+  /home/bigdata/20170222.AIR.aircur2a.cur.0268.Adjustment,
+     hdfs://jmbdcls01-ns/user/kamanjaprod/ARCHIVE/air_adjustments/file_20170221_235229961,
      0,6127,0,6127,2017-02-21 23:53:27:327
 
-  /home/bigdata/emm/jam/air_adjustments/kprod/processed/20170221.AIR.AIRCAY2A.CAY.8003.Adjustment,
-     hdfs://jmbdcls01-ns/user/kamanjaprod/ARCHIVE/jam/air_adjustments/file_20170221_235229961,
+  /home/bigdata/processed/20170221.AIR.AIRCAY2A.CAY.8003.Adjustment,
+     hdfs://jmbdcls01-ns/user/kamanjaprod/ARCHIVE/air_adjustments/file_20170221_235229961,
      0,1132,6128,7260,2017-02-21 23:53:31:008
 
 
@@ -63,7 +63,9 @@ that were archived into same destination archive file
 See also:
 
 - :ref:`smart-input-config-ref` gives details about implementing
-  the archiver, including an example configuration.
+  the archiver, including a description of the new parameters
+  in :ref:`archiver-adapter-params` and an example configuration
+  in :ref:`archive-sftp2hdfs-ex`.
 - :ref:`archiver-arch` gives details about how the archiver
   is implemented internally
 

@@ -6,16 +6,15 @@ node {
         stage('Build')  {
             checkout scm
             // Navigating to the trunk directory, building the package and generating the documentation.
-            sh "cd trunk; sbt '++ 2.11.7 package' doc makeSite"
-            sh "cd trunk/docs/; make pdf"
-            sh "cp trunk/docs/build/html/*.pdf trunk/target/site"
+            sh "cd trunk/docs/; make clean html pdf"
+            sh "cd trunk; sbt clean '++ 2.11.7 package' doc"
 
             // This publishes the documentation generated on that branch so anyone with Jenkins access may review it.
             publishHTML([
                 allowMissing: false, 
                 alwaysLinkToLastBuild: false, 
-                keepAll: false, 
-                reportDir: 'trunk/target/site', 
+                keepAll: false,
+                reportDir: 'trunk/docs/build/html', 
                 reportFiles: 'index.html', 
                 reportName: 'Documentation'
             ])
@@ -23,7 +22,7 @@ node {
                 allowMissing: false, 
                 alwaysLinkToLastBuild: false, 
                 keepAll: false, 
-                reportDir: 'trunk/target/site', 
+                reportDir: 'trunk/docs/build/html', 
                 reportFiles: 'index.pdf', 
                 reportName: 'PDF Documentation'
             ])

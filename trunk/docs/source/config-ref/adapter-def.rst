@@ -121,6 +121,10 @@ plus the following:
 - **JarName** – name of the JAR in which the aforementioned ClassName exists.
 
 - **DependencyJars** - list of JARs on which the adapters JarName jar depends.
+  An individual class loader must be used for each adapter
+  based on the jar dependencies in the configuration
+  so that the required jars can be included at run time
+  without fear of having version compatibility issues with other adapters.
 
 - **AdapterSPecificCfg** - configuration that is specific to this
   Input or Output adapter.  This should include the following attributes

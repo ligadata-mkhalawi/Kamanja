@@ -1,7 +1,7 @@
 
 .. _elastic-output-adapter-ref:
 
-ElasticSearch Output Adapter
+Elasticsearch Output Adapter
 ============================
 
 The ElasticSearch Output Adapter is used
@@ -46,6 +46,7 @@ used in all adapter definitions.
 
 Usage
 -----
+
 
 See also
 --------

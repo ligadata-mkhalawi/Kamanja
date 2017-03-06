@@ -113,7 +113,8 @@ the error message is:
 
   ERROR [main] - you should pass truncate or delete or select in operation
     option WARN [main] - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
-    --config <config file while has jarpaths, metadata store information & data store information>
+    --config <config file while has jarpaths, metadata store information
+      & data store information>
     $KAMANJA_HOME/config/Engine1config.properties
     --container name <full package qualified name of a Container without
     version> test.kamanja.container --operation <truncate, select, delete>
@@ -126,8 +127,9 @@ the error message is:
       and not necessary for truncate and delete*>
     --compression string <the extension of file gz or dat *mandatory for select
       and not necessary for truncate and delete*>Sample uses:
-     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer
-      --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
+     bash $KAMANJA_HOME/bin/ContainerUtility.sh
+       --containername System.TestContainer
+    --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
 
 If an incorrect or invalid filter file is provided, the error message is:
 
@@ -135,7 +137,8 @@ If an incorrect or invalid filter file is provided, the error message is:
 
   ERROR [main] - this path does not exist: /opt/tesjson.json WARN [main]
     - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
-    --config <config file while has jarpaths, metadata store information & data store information>
+    --config <config file while has jarpaths, metadata store information
+        & data store information>
       $KAMANJA_HOME/config/Engine1config.properties
     --container name <full package qualified name of a Container without version>
       test.kamanja.container
@@ -198,9 +201,11 @@ the error message is:
 
   ERROR [main] - you should pass a serializer option for select operation WARN [main]
     - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
-    --config <config file while has jarpaths, metadata store information & data store information>
+    --config <config file while has jarpaths, metadata store information
+        & data store information>
       $KAMANJA_HOME/config/Engine1config.properties
-    --container name <full package qualified name of a Container without version> test.kamanja.container
+    --container name <full package qualified name of a Container without version>
+        test.kamanja.container
     --operation <truncate, select, delete>
     --filter <a json file that includes timeranges and keys>
     --outputpath <a path where you want put a selected rows *mandatory for select
@@ -297,7 +302,8 @@ Use a command like the following to select data from a container:
     --outputpath /tmp/kamanja --operation select \
     --filter /opt/testjson.json \
     --serializer "com.ligadata.kamanja.serializer.csvserdeser" \
-    --serializeroptionsjson '{"alwaysQuoteFields":false,"fieldDelimiter":",","valueDelimiter":"~"}' \
+    --serializeroptionsjson '{"alwaysQuoteFields":false,"fieldDelimiter":",",
+      "valueDelimiter":"~"}' \
     --compressionstring "gz"
 
 The contents of the filter file determine how the data is selected:

@@ -18,7 +18,9 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 .PHONY: pdf
 pdf:
 	sphinx-build -b pdf source build/html
-	@echo "pdf finished; the PDF files are in $(BUILDDIR)."
+	@echo "pdf finished; the PDF files are in $(BUILDDIR)/html."
+	@echo "Copying PDF files to $(BUILDDIR)/html/_static"
+	rsync -zarv --include "*/" --include="*.pdf"  --exclude="*" $(BUILDDIR)/html/ $(BUILDDIR)/html/_static/
 
 .PHONY: help
 help:

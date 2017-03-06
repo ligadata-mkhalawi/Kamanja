@@ -53,7 +53,8 @@ Parameters
 
 - **MetaDataStore** -
 
-  - **StoreType** -
+  - **StoreType** - Set to the format used for the data store such as
+    sqlserver, hdfs, cassandra.
   - **SchemaName** -
   - **Location** -
 

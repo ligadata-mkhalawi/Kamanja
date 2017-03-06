@@ -13,6 +13,7 @@ The Kamanja software can be installed in two different forms:
 This is a list of the steps required to install Kamanja:
 
 .. list-table::
+   :class: ld-wrap-fixed-table
    :widths: 50 50
    :header-rows: 1
 
@@ -26,22 +27,30 @@ This is a list of the steps required to install Kamanja:
      - :ref:`env-variables-install`
    * - :ref:`kamanja-user-install`
      - :ref:`kamanja-user-install`
-   * - :ref:`hbase-install` (optional)
-     - :ref:`hbase-install` (optional)
-   * - :ref:`cassandra-install` (optional)
-     - :ref:`cassandra-install` (optional)
    * - --
      - :ref:`Set up passwordless SSH<ssh-term>`
    * - :ref:`kamanja-download`
      - :ref:`kamanja-download`
-   * - how to choose ClustConfig/kafka?
+   * - --
      - :ref:`config-edit-install`
    * - :ref:`setpath-install`
-     - --
-   * - --
      - :ref:`clusterinstallerdriver-install`
+   * - :ref:`start-stop-cluster`
+     - :ref:`start-stop-cluster`
    * - :ref:`develop-install-top`
      - :ref:`develop-install-top`
+
+
+
+- The structure of the installed software is described in
+  :ref:`dir-struct-install`.
+- If you installed this cluster to study and explore Kamanja,
+  a good next step is to run and study the
+  :ref:`sample applications<run-samples-install>`
+  that are provided.
+- You can also create your own application
+  by creating and configuring your own messages, models, and so forth.
+  See :ref:`models-top`.
 
 
 

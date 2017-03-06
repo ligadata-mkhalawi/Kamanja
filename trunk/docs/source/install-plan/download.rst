@@ -7,10 +7,9 @@ Download Kamanja software
 
 The Kamanja software is released as a tarball.
 
-Download the tarball that corresponds to the version of Scala you are using:
-
-- URL for 2.10-1.6.2
-- URL for 2.11-1.6.2
+Download the 1.6.2 tarball that corresponds
+to the version of Scala you are using
+from the `Kamanja download page <http://kamanja.org/about/releasenotes/>`_.
 
 We recommend that you download the tarball to a location
 (such as */tmp* or *Downloads*)

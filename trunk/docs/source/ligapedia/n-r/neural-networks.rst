@@ -27,5 +27,5 @@ See also:
 - `scikit-learn documentation about supervised neural networks
   <http://scikit-learn.org/stable/modules/neural_networks_supervised.html>`_
 - `scikit-learn documentation about unsupervised neural networks
-  <http://scikit-learn.org/stable/modules/neural_networks_unsupervised.html>`
+  <http://scikit-learn.org/stable/modules/neural_networks_unsupervised.html>`_
 

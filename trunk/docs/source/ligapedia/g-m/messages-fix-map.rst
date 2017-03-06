@@ -12,9 +12,5 @@ in the incoming data stream and they are presented to the model;
 they are represented as a Scala class instance at runtime.
 
 
-To use fixed messages:
-
-1. In the message definition, set Fixed:false to indicate a mapped message.
-
 
 

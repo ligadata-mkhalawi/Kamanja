@@ -10,4 +10,5 @@ Administration Guide
 
    admin/start-services
    admin/monitor-cluster
+   admin/outpututils-velmet
 
