@@ -10,4 +10,4 @@ Kamanja can run on top of HortonWorks HDP.
 
 For more information, see:
 
-- `HortonWorks home page <:ref:`clusterinstallerdriver-command-ref`>`_
+- `HortonWorks home page <:ref:`clusterinstallerdriver-command-ref`>`

@@ -31,7 +31,7 @@ and is used to load the metadata into memory
 when then engine is initialized.
 
 
-For more information::
+For more information:
 
 - :ref:`MetadataAPIConfig.properties<metadataapiconfig-config-ref>`
 
