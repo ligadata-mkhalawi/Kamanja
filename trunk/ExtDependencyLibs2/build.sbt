@@ -62,7 +62,7 @@ assemblyMergeStrategy in assembly := {
   case "blueprint.xml" => MergeStrategy.discard
   case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
   case "features.xml" => MergeStrategy.discard
-  case "ScalaTestBundle.properties" => MergeStrategy.discard
+  case x if x contains "ScalaTestBundle.properties" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)

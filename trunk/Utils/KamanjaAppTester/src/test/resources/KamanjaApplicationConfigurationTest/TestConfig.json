@@ -40,6 +40,7 @@
         "Type": "Model",
         "ModelType": "PMML",
         "Filename": "pmmlModel.xml",
+        "ModelName": "com.ligadata.test.model.PmmlModel",
         "MessageConsumed": "com.ligadata.test.message.InputMessage",
         "MessageProduced": "com.ligadata.test.message.OutputMessage"
       },
@@ -47,6 +48,7 @@
         "Type": "Model",
         "ModelType": "PMML",
         "Filename": "pmmlModel2.xml",
+        "ModelName": "com.ligadata.test.model.PmmlModel2",
         "MessageConsumed": "com.ligadata.test.message.InputMessage"
       },
       {

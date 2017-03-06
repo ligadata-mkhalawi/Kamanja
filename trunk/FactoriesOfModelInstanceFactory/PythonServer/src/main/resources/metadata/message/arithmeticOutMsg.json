@@ -22,7 +22,7 @@
       {
         "Field": {
           "Name": "result",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       }
     ]

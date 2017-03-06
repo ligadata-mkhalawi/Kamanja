@@ -415,7 +415,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar",
+              "kafka-clients-0.10.0.1.jar",
               "ExtDependencyLibs_2.11-1.6.2.jar",
               "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
@@ -431,7 +431,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar",
+              "kafka-clients-0.10.0.1.jar",
               "ExtDependencyLibs_2.11-1.6.2.jar",
               "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
@@ -447,7 +447,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar",
+              "kafka-clients-0.10.0.1.jar",
               "ExtDependencyLibs_2.11-1.6.2.jar",
               "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
@@ -463,7 +463,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar",
+              "kafka-clients-0.10.0.1.jar",
               "ExtDependencyLibs_2.11-1.6.2.jar",
               "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
@@ -479,7 +479,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar",
+              "kafka-clients-0.10.0.1.jar",
               "ExtDependencyLibs_2.11-1.6.2.jar",
               "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
@@ -495,7 +495,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar",
+              "kafka-clients-0.10.0.1.jar",
               "ExtDependencyLibs_2.11-1.6.2.jar",
               "ExtDependencyLibs2_2.11-1.6.2.jar"
             ],
@@ -511,7 +511,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar"
+              "kafka-clients-0.10.0.1.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -525,7 +525,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar"
+              "kafka-clients-0.10.0.1.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",
@@ -539,7 +539,7 @@ to install your multi-node Kamanja cluster.
             "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
             "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.2.jar",
             "DependencyJars": [
-              "kafka-clients-0.10.0.0.jar"
+              "kafka-clients-0.10.0.1.jar"
             ],
             "AdapterSpecificCfg": {
               "HostList": " ip.of.kafka.server:6667",

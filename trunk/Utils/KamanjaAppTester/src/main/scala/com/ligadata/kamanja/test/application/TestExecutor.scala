@@ -57,6 +57,7 @@ object TestExecutor {
       val clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
       val appName: String = options.getOrElse('appname, null).asInstanceOf[String]
       val skipMetadata: Boolean = options.getOrElse('skipmetadata, false).asInstanceOf[Boolean]
+
       logger = KamanjaAppLogger.createKamanjaAppLogger(installDir)
       val appManager = new KamanjaApplicationManager(installDir + "/test")
 
@@ -66,6 +67,7 @@ object TestExecutor {
             logger.info(s"Ignore Kamanja Application '${app.name}'")
             break
           }
+
           logger.info(s"Beginning test for Kamanja Application '${app.name}'")
           // Initializing Kamanja Environment Manager, which will deal with setting up metadata manager and
           /// generating config files and start embedded services if user doesn't provide said files.
@@ -127,8 +129,9 @@ object TestExecutor {
                 logger.warn(s"***WARN*** Failed to discover messages in error queue")
                 logger.warn(s"Checking message event queue")
 
-                val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-                if (events != null) {
+		val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+		if (events != null) {
+
                   events.foreach(event => {
                     logger.info(s"Event Message: $event")
                   })

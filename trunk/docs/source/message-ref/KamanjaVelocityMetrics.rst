@@ -155,7 +155,7 @@ with Velocity Metrics enabled.
 	    "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
 	    "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.1.jar",
 	    "DependencyJars": [
-		  "kafka-clients-0.10.0.0.jar",
+		  "kafka-clients-0.10.0.1.jar",
 		  "KamanjaInternalDeps_2.11-1.6.1.jar",
 		  "ExtDependencyLibs_2.11-1.6.1.jar",
 		  "ExtDependencyLibs2_2.11-1.6.1.jar"

@@ -147,7 +147,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.0.jar"
+      |            "kafka-clients-0.10.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -161,7 +161,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.0.jar"
+      |            "kafka-clients-0.10.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -175,7 +175,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.0.jar"
+      |            "kafka-clients-0.10.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -189,7 +189,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.0.jar"
+      |            "kafka-clients-0.10.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -203,7 +203,7 @@ object EmbeddedConfiguration {
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.0.jar"
+      |            "kafka-clients-0.10.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",

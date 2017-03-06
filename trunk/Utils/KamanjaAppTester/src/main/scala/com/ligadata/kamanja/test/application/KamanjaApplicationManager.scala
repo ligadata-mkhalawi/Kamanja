@@ -88,8 +88,11 @@ class KamanjaApplicationManager(baseDir: String) {
           }
           case e: PmmlModelElement => {
             logger.info(s"Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
-            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
-            setMetadataElementName(element, apiResult)
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), None, Some(e.modelName), Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
+          }
+          case e: PythonModelElement => {
+            logger.info(s"Adding PYTHON model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
+            apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), None, Some(e.modelName), Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced,Some(e.modelOptions))
           }
           case e: AdapterMessageBindingElement => {
             logger.info(s"Adding adapter message bindings from file '${e.filename}'")

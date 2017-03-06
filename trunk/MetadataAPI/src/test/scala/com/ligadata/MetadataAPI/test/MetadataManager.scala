@@ -179,8 +179,8 @@ class MetadataManager extends KamanjaTestLogger {
           modelVersion: Option[String] = None,
           msgConsumed: Option[String] = None,
           msgVersion: Option[String] = None,
-          msgProduced: Option[String] = None): ApiResult = {
-
+          msgProduced: Option[String] = None,
+	        modelOptions: Option[String] = None): ApiResult = {
     var result: ApiResult = null
     val file = new File(filepath)
 
@@ -201,9 +201,9 @@ class MetadataManager extends KamanjaTestLogger {
           case None =>
             throw new MetadataManagerException("[Metadata Manager]: Adding a model requires the model type to be specified")
           case Some(ModelType.SCALA) | Some(ModelType.JAVA) =>
-            result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, Some(userId + "." + modelCfg.get), modelVersion, msgConsumed, msgVersion, msgProduced, None))
+            result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, Some(userId + "." + modelCfg.get), modelVersion, msgConsumed, msgVersion, msgProduced, None,modelOptions))
           case Some(_) =>
-            result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, modelName, modelVersion, msgConsumed, msgVersion, msgProduced, None))
+            result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, modelName, modelVersion, msgConsumed, msgVersion, msgProduced, None, modelOptions))
             val model: Option[ModelDef] = MdMgr.GetMdMgr.Model(s"$modelName", MdMgr.ConvertVersionToLong(modelVersion.getOrElse("-1")), true)
         }
       }

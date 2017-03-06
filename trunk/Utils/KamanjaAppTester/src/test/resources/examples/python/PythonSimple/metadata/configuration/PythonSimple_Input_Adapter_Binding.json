@@ -1,0 +1,9 @@
+{
+    "AdapterName": "TestIn_1", 
+    "MessageName": "org.kamanja.arithmetic.arithmeticMsg", 
+    "Options": {
+        "alwaysQuoteFields": false, 
+        "fieldDelimiter": ","
+    }, 
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser"
+}
