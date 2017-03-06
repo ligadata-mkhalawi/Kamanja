@@ -1,5 +1,6 @@
 package com.ligadata.InputAdapters
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -1941,7 +1942,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
 
     if (participantsFilesAssignmentExecutor != null)
-      participantsFilesAssignmentExecutor.shutdownNow()
+      participantsFilesAssignmentExecutor.shutdown()
+      participantsFilesAssignmentExecutor.awaitTermination(1,STimeUnit.DAYS)
     participantsFilesAssignmentExecutor = null
 
     isShutdown = false
@@ -2159,7 +2161,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     isShutdown = true
 
     if (participantsFilesAssignmentExecutor != null)
-      participantsFilesAssignmentExecutor.shutdownNow()
+      participantsFilesAssignmentExecutor.shutdown()
+      participantsFilesAssignmentExecutor.awaitTermination(1,STimeUnit.DAYS)
     participantsFilesAssignmentExecutor = null
 
     _leaderCallbackRequests.clear

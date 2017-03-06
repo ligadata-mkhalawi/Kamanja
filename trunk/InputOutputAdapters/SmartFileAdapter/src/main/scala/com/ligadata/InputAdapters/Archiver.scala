@@ -1,5 +1,6 @@
 package com.ligadata.InputAdapters
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io.OutputStream
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -1333,7 +1334,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       return
 
     if (archiveExecutor != null)
-      archiveExecutor.shutdownNow()
+      archiveExecutor.shutdown()
+      archiveExecutor.awaitTermination(1,STimeUnit.DAYS )
 
     archiveExecutor = null
 

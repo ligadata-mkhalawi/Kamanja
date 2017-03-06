@@ -1,5 +1,6 @@
 package com.ligadata.kafkaInputOutputAdapters_v9
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.util
 import java.util.Properties
 
@@ -824,7 +825,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       case e: Throwable => {}
     }
 
-    if (readExecutor != null) readExecutor.shutdownNow
+    if (readExecutor != null) { readExecutor.shutdown; readExecutor.awaitTermination(1,STimeUnit.DAYS) }
     var cntr = 0
     while (readExecutor != null && readExecutor.isTerminated == false && cntr < 1001) {
       cntr += 1

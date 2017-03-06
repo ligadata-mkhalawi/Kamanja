@@ -1,5 +1,6 @@
 package com.ligadata.InputAdapters
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io.IOException
 
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
@@ -216,7 +217,8 @@ class MonitorController {
 
     keepMontoringBufferingFiles = false
     if (monitorsExecutorService != null)
-      monitorsExecutorService.shutdownNow()
+      monitorsExecutorService.shutdown()
+      monitorsExecutorService.awaitTermination(1,STimeUnit.DAYS)
     monitorsExecutorService = null
 
     if (monitoringThreadsFileHandlers != null) {

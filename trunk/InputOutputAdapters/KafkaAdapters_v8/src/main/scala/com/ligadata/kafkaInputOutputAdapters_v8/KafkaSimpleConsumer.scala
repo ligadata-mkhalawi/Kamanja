@@ -17,6 +17,7 @@
 
 package com.ligadata.kafkaInputOutputAdapters_v8
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import com.ligadata.AdaptersConfiguration._
 import com.ligadata.InputOutputAdapterInfo._
 import kafka.api._
@@ -916,7 +917,8 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
 
     // Give the threads to gracefully stop their reading cycles, and then execute them with extreme prejudice.
     Thread.sleep(qc.noDataSleepTimeInMs + 1)
-    readExecutor.shutdownNow
+    readExecutor.shutdown
+    readExecutor.awaitTermination(1,STimeUnit.DAYS)
     while (readExecutor.isTerminated == false) {
       Thread.sleep(100)
     }
