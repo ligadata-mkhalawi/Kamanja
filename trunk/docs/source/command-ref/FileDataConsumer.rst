@@ -135,8 +135,6 @@ The Velocity Metrics properties are:
 - **velocitymetricsinfo** -
 
 
-
-
 Usage
 -----
 

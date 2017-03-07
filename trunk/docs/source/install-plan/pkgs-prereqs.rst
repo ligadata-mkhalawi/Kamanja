@@ -11,8 +11,7 @@ that must be installed before Kamanja is installed.
   you must install these packages.
 - If you are installing on a Hadoop stack or existing servers,
   you may already have some of these packages installed;
-  be sure that you are running a compatible version of each package;
-  see :ref:`component-versions` for a list of supported versions.
+  be sure that you are running a compatible version of each package.
 - After you install the packages,
   :ref:`define environment variables<env-variables-install>`
   that identify the installation path for each package.
@@ -81,9 +80,7 @@ Kamanja can instead use Scala 2.10_4, which can be downloaded from
 
 Note that the Scala version must be specified
 when you issue the **ClusterInstallerDriver** command
-
-Note that the Scala version must be specified
-when you issue the **ClusterInstallerDriver** command.
+and most JAR files are specific to the version of Scala that you are using.
 
 .. _zookeeper-install:
 
@@ -93,7 +90,8 @@ Install ZooKeeper
 Download and install :ref:`ZooKeeper<zookeeper-term>` 3.4.6 from the
 `Zookeeper download page <http://www.apache.org/dyn/closer.cgi/zookeeper/>`_.
 
-After adding $ZOOKEEPER_HOME to your .bashrc or .bash_profile file,
+After adding $ZOOKEEPER_HOME to your
+:ref:`.bashrc or .bash_profile<bashrc-term>` file,
 issue the following commands to complete the ZooKeeper installation:
 
 ::
@@ -184,7 +182,8 @@ Define environment variables
 
 Before proceeding, you must define the environment variables
 for the root directory of each add-on software component.
-Do this by editing the *.bashrc* file (Linux) or the *.bash_profile* (Mac):
+Do this by editing the *.bashrc* file (Linux) or the *.bash_profile* (Mac);
+see :ref:`.bashrc and .bash_profile<bashrc-term>`:
 
 - Issue the **sudo -v command** to confirm that you have admin privileges.
   If you get a Password prompt and it accepts your password,

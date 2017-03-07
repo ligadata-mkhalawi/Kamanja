@@ -15,6 +15,9 @@ that are included in the Kamanja software distribution.
 
    * - Message
      - Description
+   * - :ref:`inputadaptersstatssg-msg-ref`
+     - record statistical data about information being
+       ingested to the Kamanja cluster.
    * - :ref:`kamanjamessageevent-msg-ref`
      - internal message created each time a message comes into the Kamanja engine.
        This message includes the :ref:`kamanjamodelevent-msg-ref` array`
@@ -26,6 +29,7 @@ that are included in the Kamanja software distribution.
 .. toctree::
    :titlesonly:
 
+   message-ref/InputAdapterStatsMsg
    message-ref/KamanjaMessageEvent
    message-ref/KamanjaVelocityMetrics
 

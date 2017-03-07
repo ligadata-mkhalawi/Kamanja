@@ -30,6 +30,7 @@ The following table gives more details about the supported modeling language,
 with links to guide material for each:
 
 .. list-table::
+   :class: ld-wrap-fixed-table
    :widths: 20 50 30
    :header-rows: 1
 
@@ -90,7 +91,9 @@ putting the code that prepares and pre-processes the data
 in models that are separate from the code
 that executes the actual algorithms; this is discussed more below.
 
-For a list of machine learning models and libraries that have been validated on the Kamanja platform, see http://kamanja.org/wiki/model-validation-process/ .
+For a list of machine learning models and libraries
+that have been validated on the Kamanja platform,
+see :ref:`model-validation-arch`.
 
 For instructions about setting up a development environment on Kamanja,
 see :ref:`develop-install-top`.

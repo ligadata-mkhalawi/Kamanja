@@ -4,7 +4,7 @@
 Audit adapter
 -------------
 
-The MetadataAPIConfig.properties metadata configuration file
+The :ref:`metadataapiconfig-config-ref` configuration file
 can optionally specify a file where the adapter-specific initialization
 is defined.
 

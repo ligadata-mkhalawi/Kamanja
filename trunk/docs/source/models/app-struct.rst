@@ -1,10 +1,10 @@
 
 .. _app-structure:
 
-Katmanja application structure
+Kamanja application structure
 ------------------------------
 
-Katmanja applications should be modularized into a pipeline
+Kamanja applications should be modularized into a pipeline
 of :ref:`messages<messages-term>`,
 :ref:`containers<container-term>`, and :ref:`models<model-term>`.
 Even very complex applications are implemented
@@ -55,13 +55,15 @@ as a series of relatively simple messages, containers, and models.
 :ref:`Adapter message bindings<message-bindings-term>`
 control the flow of messages and models.  For example:
 
-- The output message binding defines how messages are passed
-  from model to model; see :ref:`adapters-output-guide`.
-- The output message definition is written to the metadata API;
-  see http://kamanja.org/wiki/output-messages/
+- The :ref:`adapter binding<adapter-binding-config-ref>`
+  defines how messages are passed from model to model;
+  see :ref:`adapters-output-guide`.
+- The :ref:`message definitions<message-def-config-ref>`
+  is written to the metadata
+  using the :ref:`kamanja-command-ref` command.
 - Results can be persisted to HDFS, Cassandra, ElasticSearch,
   or to a local file system;
-  see :ref:`smart-file-adapter`.
+  see :ref:`adapters-storage-guide`.
 
 Implementing a Kamanja application
 ----------------------------------
@@ -114,6 +116,6 @@ this is much less serious than the havoc that can ensue
 if you pass invalid data down the pipeline.
 
 For information about how Kamanja processes exceptions,
-see :ref:`failure-tracking-admin`.
+see tha :ref:`kamanjamessageevent-msg-ref` reference page.
 
 

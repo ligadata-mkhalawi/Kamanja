@@ -31,8 +31,6 @@ Ligapedia
    ligapedia/a-f/error-capture
    ligapedia/a-f/etl
    ligapedia/a-f/failover-nodes
-   ligapedia/a-f/feature-extraction
-   ligapedia/a-f/feature-selection
    ligapedia/a-f/features
    ligapedia/a-f/file-formats
    ligapedia/a-f/functions

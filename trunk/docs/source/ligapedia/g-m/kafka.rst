@@ -7,7 +7,7 @@ Kafka
 Kafka is a high-throughput, distributed messaging queue system
 that supports partitions.
 Krtmanja uses Kafka or to stream transactions
-into and out of Katmanja in real time.
+into and out of Kamanja in real time.
 
 Logical partitions are not supported in Release 1.6.*
 but are under development for future releases.

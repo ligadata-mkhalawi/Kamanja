@@ -5,7 +5,8 @@ Passwords, encrypted
 --------------------
 
 Encrypted and encoded passwords are supported in Kamanja 1.6.1 and later.
-The MetadataAPIService and SmartFileAdapter in 1.6.1
+The :ref:`metadataapiconfig-config-ref`
+and :ref:`smart-input-adapter-ref`
 can be configured to use encrypted passwords
 or can be run with plain-text passwords as in earlier releases.
 You can also add encrypted password support to your adapters.

@@ -246,6 +246,106 @@ See:
 Usage
 -----
 
+Before installing or upgrading your cluster,
+you need to edit a copy of this file
+with specific information about your cluster.
+That copy of the file is passed to the
+:ref:`clusterinstallerdriver-command-ref`,
+which uses the information to set up your cluster.
+
+After installation, you can modify your cluster configuration
+by editing this file and restarting the Kamanja engine.
+
+.. _change-data-store-cluster:
+
+Changing the data store used
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can change the datastore used for the cluster
+by modifying the *ClusterConfig.json* file:
+
+- Replace the **SystemCatalog** section
+  with the datastore information for the current Kamanja deployment,
+  if needed.
+  For example, if using sqlserver as the data source, replace:
+
+::
+
+    Before
+
+    "SystemCatalog": {
+     "StoreType": "hbase",
+     "SchemaName": "syscatalog",
+     "Location": "localhost",
+     "authentication": "kerberos",
+     "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+     "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+     "principal": "ligadata@INTRANET.LIGADATA.COM",
+     "keytab": "/home/ligadata/keytab/ligadata.keytab"
+    },
+
+with
+
+::
+
+    After
+
+    "SystemCatalog": {
+     "StoreType": "sqlserver",
+     "hostname": "192.168.56.1",
+     "instancename": "KAMANJA",
+     "portnumber": "1433",
+     "database": "syscatalog",
+     "user": "catalog_user",
+     "SchemaName": "catalog_user",
+     "password": "catalog_user",
+     "jarpaths": "/media/home2/jdbc",
+     "jdbcJar": "sqljdbc4-2.0.jar",
+     "clusteredIndex": "YES",
+     "autoCreateTables": "YES"
+    },
+
+
+- Replace the **PrimaryDataStore** section in the *ClusterConfig.json* file
+  with the datastore information for the current Kamanja deployment, if needed.
+  For example, if using sqlserver as the data source, replace:
+
+::
+
+    Before
+
+    "PrimaryDataStore": {
+     "StoreType": "hbase",
+     "SchemaName": "tenant1_default",
+     "Location": "localhost",
+     "authentication": "kerberos",
+     "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+     "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+     "principal": "ligadata@INTRANET.LIGADATA.COM",
+     "keytab": "/home/ligadata/keytab/ligadata.keytab"
+    },
+
+with
+
+::
+
+    After
+
+    "PrimaryDataStore": {
+     "StoreType": "sqlserver",
+     "hostname": "192.168.56.1",
+     "instancename": "KAMANJA",
+     "portnumber": "1433",
+     "database": "kamanja_tenant",
+     "user": "all_tenants",
+     "SchemaName": "all_tenants",
+     "password": "all_tenants",
+     "jarpaths": "/media/home2/jdbc",
+     "jdbcJar": "sqljdbc4-2.0.jar",
+     "clusteredIndex": "YES",
+     "autoCreateTables": "YES"
+    },
+
 
 .. _clusterconfig-ex1:
 

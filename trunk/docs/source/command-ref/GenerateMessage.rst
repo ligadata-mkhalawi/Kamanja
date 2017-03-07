@@ -431,8 +431,10 @@ based on this information is:
 
   cd $KAMANJA_HOME \
   GenerateMessage.sh
-    --inputfile /opt/KamanjaGitTest/Kamanja/trunk/Utils/GenerateMessage/src/test/resources/DecisionTreeEnsembleIris.pmml \
-    --config /opt/KamanjaDoubleVersionsTest/Kamanja-1.5.0_2.10/config/ConfigFile_GeneratMessage.properties
+    --inputfile /opt/KamanjaGitTest/Kamanja/trunk/Utils/GenerateMessage/src/test/
+      resources/DecisionTreeEnsembleIris.pmml \
+    --config /opt/KamanjaDoubleVersionsTest/Kamanja-1.5.0_2.10/config/
+      ConfigFile_GeneratMessage.properties
 
 
 After running the tool, the following messages are output:
@@ -570,7 +572,8 @@ which defines the following data:
           <Value value="virginica"/>
         </DataField>
       </DataDictionary>
-      <ClusteringModel modelName="k-means" functionName="clustering" modelClass="centerBased" numberOfClusters="3">
+      <ClusteringModel modelName="k-means" functionName="clustering" modelClass="centerBased"
+        numberOfClusters="3">
         <MiningSchema>
           <MiningField name="Sepal_Length" invalidValueTreatment="asIs"/>
           <MiningField name="Sepal_Width" invalidValueTreatment="asIs"/>

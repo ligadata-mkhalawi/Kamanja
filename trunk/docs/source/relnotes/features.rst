@@ -17,6 +17,21 @@ plus the following new features:
   after they are processed)
   is now supported by the
   :ref:`smart-input-config-ref`.
+- Addition of the :ref:`inputadaptersstatssg-msg-ref` message
+  that can be specified to the **StatusMsgTypeName** parameter
+  in the :ref:`smart-input-config-ref`
+  to have the input adapter send a status message
+  for each file it successfully processes.
+- The **MsgTags** parameter in the :ref:`smart-input-config-ref`
+  has been replaced by the **MsgTagsKV** parameter.
+  The functionality is similar
+  but now the information is sent to a map
+  so that the tag also has a name
+  which can be used to parse the tags part of the message (in models)
+  then access the values by keys rather than order.
+  The predefined tag $Msg_Start_Offset
+  (representing the bite offset of the message in the input file)
+  is also added.
 - Additional configuration options for the
   :ref:`smart-output-config-ref`
   and the ability to consolidate files into configured maximum size.

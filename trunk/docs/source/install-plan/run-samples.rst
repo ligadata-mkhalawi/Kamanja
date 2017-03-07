@@ -32,7 +32,6 @@ The Kamanja engine takes data from the input queue,
 processes that data using a model,
 and outputs data that follows the criteria in the model to the output queue.
 
-[details not yet converted]
 
 Medical sample
 --------------
@@ -40,7 +39,6 @@ Medical sample
 The medical use case uses the Kamanja engine
 to discover which patients are at risk for COPD.
 
-[details not yet converted]
 
 Telecom sample
 --------------
@@ -49,7 +47,6 @@ The telecom use case uses the Kamanja engine
 to generate an alert when the specified threshold
 for the number of minutes talking on the cell phone has been exceeded.
 
-[details not yet converted]
 
 Finance sample
 --------------
@@ -58,10 +55,8 @@ The finance sample uses the Kamanja engine to generate
 an alert when a bank balance gets below a certain threshold
 so a penalty is not incurred.
 
-[details not yet converted]
 
 Simple model ensemble
 ---------------------
 
-[details not yet converted]
 

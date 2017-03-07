@@ -29,10 +29,12 @@ File structure
       "version": "{KamanjaFromVersion}",
       "scalaVersion": "{ScalaFromVersion}",
       "versionInstallPath": "{OldPackageInstallPath}",
-      "implemtedClass": "com.ligadata.Migrate.MigrateFrom_V_{KamanjaFromVersionWithUnderscore}",
+      "implemtedClass": "com.ligadata.Migrate.MigrateFrom_V_
+           {KamanjaFromVersionWithUnderscore}",
       "jars": [
         "{NewPackageInstallPath}/lib/system/commons-pool2-2.4.2.jar",
-        "{NewPackageInstallPath}/lib/system/migratefrom_v_{KamanjaFromVersionWithUnderscore}_{ScalaFromVersion}-1.6.2.jar",
+        "{NewPackageInstallPath}/lib/system/migratefrom_v_
+           {KamanjaFromVersionWithUnderscore}_{ScalaFromVersion}-1.6.2.jar",
         "{OldPackageInstallPath}/bin/KamanjaManager-1.0"
       ]
     },

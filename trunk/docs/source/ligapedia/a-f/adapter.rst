@@ -12,7 +12,13 @@ There are two general types of adapters:
   (that is, record structures) with systems such as Kafka or MQ.
 - storage adapters for saving data.
   Kamanja is packaged with several storage adapters 
-  including Cassandra, Hbase, and Microsoft SQL server.
+  including :ref:`Cassandra<cassandra-term>`,
+  :ref:`Hbase<hbase-term>`, and Microsoft SQL server.
+
+An adapters is associated with a :ref:`message<messages-term>`
+and a :ref:`serializer/deserializer<serial-deserial-term>`
+by an adapter binding that is defined in
+an :ref:`adapter message binding definition<adapter-binding-config-ref>`.
 
 For more information:
 
@@ -22,6 +28,7 @@ For more information:
   output adapters.
 - :ref:`adapters-storage-guide` provides details about how to implement
   storage adapters.
+- :ref:`adapter-ref-top` lists adapters that are included in Kamanja.
 
 - Adapters are defined in
   the :ref:`adapter definitions<adapter-def-config-ref>` section
