@@ -53,6 +53,9 @@ object KamanjaLeader {
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val lock = new Object()
   private[this] val lock1 = new Object()
+  private[this] var newClusterStatus = ClusterStatus("", false, "", null)
+  private[this] var newClusterStatusChangedTime = 0L
+  private[this] var newClusterStatusCopiedTime = 0L
   private[this] var clusterStatus = ClusterStatus("", false, "", null)
 //  private[this] var zkLeaderLatch: ZkLeaderLatch = _
   private[this] var nodeId: String = _
@@ -88,7 +91,10 @@ object KamanjaLeader {
   private val MAX_ZK_RETRIES = 1
 
   def Reset: Unit = {
+    newClusterStatus = ClusterStatus("", false, "", null)
     clusterStatus = ClusterStatus("", false, "", null)
+    newClusterStatusChangedTime = 0L
+    newClusterStatusCopiedTime = 0L
 //    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
@@ -489,8 +495,52 @@ object KamanjaLeader {
     allPartitionsToValidate.toMap
   }
 
+  private def SetModifiedClusterStatus(cs: ClusterStatus): Unit = lock1.synchronized {
+    newClusterStatus = cs
+    newClusterStatusChangedTime = System.currentTimeMillis
+    logger.warn("SetModifiedClusterStatus - Got updatePartitionsFlag. Waiting for distribution")
+  }
+
+  private val waitTmBeforeRedistribute = 15000
+  private def copyClusterStatusIfNeeded: Unit = lock1.synchronized {
+    val newDistribution =
+      if (newClusterStatusCopiedTime == 0 && newClusterStatusChangedTime > 0) {
+        true
+      }
+      else {
+        var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < System.currentTimeMillis))
+        if (canCopyClusterStatus) {
+          // Check whether ClusterStatus is really changed?
+          val curParticipents = if (clusterStatus.participantsNodeIds != null) clusterStatus.participantsNodeIds.toArray else Array[String]()
+          val newParticipents = if (newClusterStatus.participantsNodeIds != null) newClusterStatus.participantsNodeIds.toArray else Array[String]()
+          val curParticipentsSet = curParticipents.toSet
+          val newParticipentsSet = newParticipents.toSet
+          val diff1 = curParticipentsSet -- newParticipentsSet
+          val diff2 = newParticipentsSet -- curParticipentsSet
+          canCopyClusterStatus =
+            (clusterStatus.leaderNodeId == newClusterStatus.leaderNodeId &&
+              clusterStatus.nodeId == newClusterStatus.nodeId &&
+              curParticipents.size == newParticipents.size &&
+              diff1.size == 0 && diff2.size == 0)
+          if (! canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
+            // Resetting newClusterStatusCopiedTime from newClusterStatusChangedTime. Because no need to change ClusterStatus/ClusterDistribution
+            newClusterStatusCopiedTime = newClusterStatusChangedTime
+          }
+        }
+        canCopyClusterStatus
+      }
+
+    if (newDistribution) {
+      clusterStatus = newClusterStatus
+      newClusterStatusCopiedTime = newClusterStatusChangedTime
+      updatePartitionsFlag = true
+      logger.warn("SetClusterStatus - Got updatePartitionsFlag. Waiting for distribution")
+    }
+  }
+
   private def SetClusterStatus(cs: ClusterStatus): Unit = lock1.synchronized {
     clusterStatus = cs
+    newClusterStatusCopiedTime = newClusterStatusChangedTime
     updatePartitionsFlag = true
     logger.warn("SetClusterStatus - Got updatePartitionsFlag. Waiting for distribution")
   }
@@ -530,7 +580,7 @@ object KamanjaLeader {
     logger.warn("DistributionCheck:EventChangeCallback got new ClusterStatus")
     LOG.debug("EventChangeCallback => Enter")
     KamanjaConfiguration.participentsChangedCntr += 1
-    SetClusterStatus(cs)
+    SetModifiedClusterStatus(cs)
     LOG.warn("DistributionCheck:NodeId:%s, IsLeader:%s, Leader:%s, AllParticipents:{%s}, participentsChangedCntr:%d".format(cs.nodeId, cs.isLeader.toString, cs.leaderNodeId, cs.participantsNodeIds.mkString(","), KamanjaConfiguration.participentsChangedCntr))
     LOG.debug("EventChangeCallback => Exit")
   }
@@ -1345,6 +1395,8 @@ object KamanjaLeader {
                   LOG.debug("", e)
                 }
               }
+
+              copyClusterStatusIfNeeded
 
               if (LOG.isDebugEnabled())
                 LOG.debug("DistributionCheck:Checking for Distribution information. IsLeaderNode:%s, GetUpdatePartitionsFlag:%s, distributionExecutor.isShutdown:%s".format(
