@@ -505,11 +505,14 @@ object KamanjaLeader {
   private def copyClusterStatusIfNeeded: Unit = lock1.synchronized {
     val newDistribution =
       if (newClusterStatusCopiedTime == 0 && newClusterStatusChangedTime > 0) {
+        logger.warn("First time - Copy ClusterStatus")
         true
       }
       else {
-        var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < System.currentTimeMillis))
+        val curTm = System.currentTimeMillis
+        var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < curTm))
         if (canCopyClusterStatus) {
+          logger.warn("Found canCopyClusterStatus as true. newClusterStatusCopiedTime:%d < newClusterStatusChangedTime:%d, CurrentTime:%d".format(newClusterStatusCopiedTime, newClusterStatusChangedTime, curTm))
           // Check whether ClusterStatus is really changed?
           val curParticipents = if (clusterStatus.participantsNodeIds != null) clusterStatus.participantsNodeIds.toArray else Array[String]()
           val newParticipents = if (newClusterStatus.participantsNodeIds != null) newClusterStatus.participantsNodeIds.toArray else Array[String]()
@@ -518,12 +521,13 @@ object KamanjaLeader {
           val diff1 = curParticipentsSet -- newParticipentsSet
           val diff2 = newParticipentsSet -- curParticipentsSet
           canCopyClusterStatus =
-            (clusterStatus.leaderNodeId == newClusterStatus.leaderNodeId &&
-              clusterStatus.nodeId == newClusterStatus.nodeId &&
-              curParticipents.size == newParticipents.size &&
-              diff1.size == 0 && diff2.size == 0)
+            (clusterStatus.leaderNodeId != newClusterStatus.leaderNodeId ||
+              // clusterStatus.nodeId != newClusterStatus.nodeId ||
+              curParticipents.size != newParticipents.size ||
+              diff1.size > 0 || diff2.size > 0)
           if (! canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
             // Resetting newClusterStatusCopiedTime from newClusterStatusChangedTime. Because no need to change ClusterStatus/ClusterDistribution
+            logger.warn("Found canCopyClusterStatus as true, but there is no real change in ClusterStatus.")
             newClusterStatusCopiedTime = newClusterStatusChangedTime
           }
         }
@@ -531,10 +535,11 @@ object KamanjaLeader {
       }
 
     if (newDistribution) {
+      logger.warn("Copying ClusterStatus to Distribute.")
       clusterStatus = newClusterStatus
       newClusterStatusCopiedTime = newClusterStatusChangedTime
       updatePartitionsFlag = true
-      logger.warn("SetClusterStatus - Got updatePartitionsFlag. Waiting for distribution")
+      logger.warn("copyClusterStatusIfNeeded - Got updatePartitionsFlag. Waiting for distribution")
     }
   }
 
