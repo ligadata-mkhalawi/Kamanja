@@ -129,32 +129,9 @@ object MonitorUtils {
   }
 
   def shutdownAndAwaitTermination(pool : ExecutorService, id : String) : Unit = {
-    shutdownAndAwaitTermination(pool, id, 10000)
-  }
-  private def shutdownAndAwaitTermination(pool : ExecutorService, id : String, waitInMs : Long) : Unit = {
     pool.shutdown(); // Disable new tasks from being submitted
-    pool.awaitTermination(waitInMs, TimeUnit.MILLISECONDS)
-
-    //i remove this part we dont need it anymore
-//    try {
-//      // Wait a while for existing tasks to terminate
-//      if (!pool.awaitTermination(waitInMs, TimeUnit.MILLISECONDS)) {
-//        pool.shutdownNow(); // Cancel currently executing tasks
-//        // Wait a while for tasks to respond to being cancelled
-//        if (!pool.awaitTermination(waitInMs, TimeUnit.MILLISECONDS)) {
-//          logger.warn("Pool did not terminate " + id);
-//          //Thread.currentThread().interrupt()
-//        }
-//      }
-//    } catch  {
-//      case ie : InterruptedException => {
-//        logger.info("InterruptedException for " + id, ie)
-//        // (Re-)Cancel if current thread also interrupted
-//        pool.shutdownNow();
-//
-//        //Thread.currentThread().interrupt()
-//      }
-//    }
+    pool.awaitTermination(1, TimeUnit.DAYS) //giving a very short time may cuz the thread to interrupt
+    logger.info("InterruptedException for " + id)
   }
 
   def isPatternMatch(name : String, regex : String): Boolean ={
