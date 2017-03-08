@@ -3,30 +3,33 @@ package com.ligadata.KamanjaManager
 
 import com.ligadata.HeartBeat.MonitoringContext
 import com.ligadata.KamanjaBase._
-import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
+import com.ligadata.InputOutputAdapterInfo.{ ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue }
 import com.ligadata.StorageBase.{ DataStore }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata.{ ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo }
 import org.json4s.jackson.JsonMethods._
 
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{ universe => ru }
 import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
-import collection.mutable.{MultiMap, Set}
-import java.io.{PrintWriter, File, PrintStream, BufferedReader, InputStreamReader}
+import collection.mutable.{ MultiMap, Set }
+import java.io.{ PrintWriter, File, PrintStream, BufferedReader, InputStreamReader }
 import scala.util.Random
 import scala.Array.canBuildFrom
-import java.util.{Properties, Observer, Observable}
+import java.util.{ Properties, Observer, Observable }
 import java.sql.Connection
 import scala.collection.mutable.TreeSet
-import java.net.{Socket, ServerSocket}
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
-import org.apache.logging.log4j.{Logger, LogManager}
-import com.ligadata.Exceptions.{FatalAdapterException}
-import scala.actors.threadpool.{ExecutorService}
+import java.net.{ Socket, ServerSocket }
+import java.util.concurrent.{ Executors, ScheduledExecutorService, TimeUnit }
+import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
+import org.apache.logging.log4j.{ Logger, LogManager }
+import com.ligadata.Exceptions.{ FatalAdapterException }
+import scala.actors.threadpool.{ ExecutorService }
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import org.json4s._
 
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
@@ -353,6 +356,7 @@ class KamanjaManager extends Observer {
 
   private val execCtxts = ArrayBuffer[ExecContextImpl]()
   private var execCtxtsCommitPartitionOffsetPool: ExecutorService = null
+  private var execCtxtsAdapterInfoPool: ExecutorService = null // 
 
   def AddExecContext(execCtxt: ExecContextImpl): Unit = synchronized {
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
@@ -370,6 +374,8 @@ class KamanjaManager extends Observer {
     execCtxts.toArray
   }
 
+  var adapterJson: String = ""
+
   def RecreateExecCtxtsCommitPartitionOffsetPool(): Unit = synchronized {
     if (LOG.isDebugEnabled()) LOG.debug("Called RecreateExecCtxtsCommitPartitionOffsetPool")
     if (execCtxtsCommitPartitionOffsetPool != null) {
@@ -377,7 +383,14 @@ class KamanjaManager extends Observer {
       // Not really waiting for termination
     }
 
+    if (execCtxtsAdapterInfoPool != null) {
+      execCtxtsAdapterInfoPool.shutdownNow()
+      // Not really waiting for termination
+    }
+
+    KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(sendAdapterPartitionInfo, collectAdapterPartitionInfo) // listen to start info
     execCtxtsCommitPartitionOffsetPool = scala.actors.threadpool.Executors.newFixedThreadPool(1)
+    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2)
 
     // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
@@ -385,7 +398,7 @@ class KamanjaManager extends Observer {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
-          while (!KamanjaConfiguration.shutdown && ! tp.isShutdown && ! tp.isTerminated) {
+          while (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated) {
             // Sleeping upto 1000ms more than given interval
             val tmMs = commitOffsetsTimeInterval + 1000
             val nSecs = tmMs / 1000
@@ -396,7 +409,7 @@ class KamanjaManager extends Observer {
                 Thread.sleep(1000)
               } catch {
                 case e: InterruptedException => {}
-                case e: Throwable => {}
+                case e: Throwable            => {}
               }
             }
             if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
@@ -416,10 +429,79 @@ class KamanjaManager extends Observer {
           }
         }
       })
+
+      var adapInfoMap = scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]()
+      var keyvalues = ArrayBuffer[AdapterPartKeyValues]()
+
+      val postAdapterInfoSvc = new Runnable() {
+        override def run() {
+          val tp = execCtxtsAdapterInfoPool
+          val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
+          while (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated) {
+            try {
+              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
+            } catch {
+              case e: Throwable => {}
+            }
+            if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+              val envCtxts = GetEnvCtxts
+              if (LOG.isDebugEnabled()) LOG.debug("Running execCtxtsAdapterInfo for " + envCtxts.length + " envCtxts")
+              var idx = 0
+              while (idx < envCtxts.length && !tp.isShutdown) {
+                try {
+                  val (adapterName, key, keyValue) = envCtxts(idx).GetAdapterPartitionKVInfo
+                  if (adapInfoMap.contains(adapterName)) keyvalues = adapInfoMap(adapterName)
+                  keyvalues += new AdapterPartKeyValues(key, keyValue)
+                  adapInfoMap(adapterName) = keyvalues
+                  keyvalues.clear()
+                  println("aadapInfoMap: " + adapInfoMap)
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to commit partitions offsets", e)
+                  }
+                }
+                idx += 1
+              }
+              postAdapterPartitionsInfoToNodes(adapInfoMap)
+            }
+          }
+        }
+      }
+
+      execCtxtsAdapterInfoPool.execute(postAdapterInfoSvc)
+
+      val writeAdapterInfoSvc = new Runnable() {
+        override def run() {
+          val tp = execCtxtsAdapterInfoPool
+          val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
+          while (!tp.isShutdown) {
+            try {
+              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
+            } catch {
+              case e: Throwable => {}
+            }
+            if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+              val envCtxts = GetEnvCtxts
+              if (LOG.isDebugEnabled()) LOG.debug("Running execCtxtsAdapterInfo for " + envCtxts.length + " envCtxts")
+              var idx = 0
+              while (idx < envCtxts.length && !tp.isShutdown) {
+                try {
+                  writeAdapPartitionInfoToNodes(allPartitions)
+
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to commit partitions offsets", e)
+                  }
+                }
+                idx += 1
+              }
+            }
+          }
+        }
+      }
+      execCtxtsAdapterInfoPool.execute(writeAdapterInfoSvc)
     }
   }
-
-
 
   private def PrintUsage(): Unit = {
     LOG.warn("Available commands:")
@@ -458,7 +540,7 @@ class KamanjaManager extends Observer {
         }
       })
     }
-    
+
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.Shutdown
     if (serviceObj != null)
@@ -691,7 +773,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt").replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -706,7 +788,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -718,11 +800,10 @@ class KamanjaManager extends Observer {
         }
       }
 
-
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval").replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -737,7 +818,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -851,8 +932,7 @@ class KamanjaManager extends Observer {
           return true
         if (trmln.compareToIgnoreCase("forceAdapterRebalance") == 0) {
           KamanjaLeader.forceAdapterRebalance
-        }
-        else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
+        } else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
           KamanjaLeader.forceAdapterRebalanceAndSetEndOffsets
         }
       }
@@ -1207,7 +1287,6 @@ class KamanjaManager extends Observer {
       LOG.debug("KamanjaManager " + KamanjaConfiguration.nodeId.toString + " externalized metrics for UID: " + thisEngineInfo.uniqueId)
   }
 
-
   private def processConfigChange(objType: String, action: String, objectName: String, adapter: Any): Boolean = {
     // For now we are only handling adapters.
     if (objType.equalsIgnoreCase("adapterdef")) {
@@ -1301,6 +1380,116 @@ class KamanjaManager extends Observer {
       notifyObservers(signal)
     }
   }
+
+  def postAdapterPartitionsInfoToNodes(adapterInfoArr: scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]): Unit = {
+    val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+    println("11111111=========nodeId=================== " + nodeId)
+
+    adapterJson = AdapterPartitionInfoUtil.generateAdapterInfoJson(adapterInfoArr, nodeId)
+
+    println("11111111=========adapterJson=================== " + adapterJson)
+
+    // do this very x millisecs 
+
+    Thread.sleep(1000) // Get the value from CLusterConfig
+
+    val SendAdapterInfo = sendAdapterPartitionInfo + "/" + nodeId
+    println("11111111=========SendAdapterInfo=================== " + SendAdapterInfo)
+    KamanjaMetadata.gNodeContext.getEnvCtxt().setListenerCacheKey(SendAdapterInfo, sendAdapterPartitionInfo) // => Goes to Leader
+
+    if (allPartitions != null && allPartitions.size > 0) {
+      allPartitions.foreach(kv => {
+        println("2222222=========key=================== " + kv._1)
+        println("222222222=========value=================== " + kv._2)
+      })
+    } else println("2222222=========allPartitions=================== " + allPartitions)
+
+  }
+
+  def collectAdapterPartitionInfo(eventType: String, eventPath: String, eventPathData: String): Unit = {
+
+    LOG.debug("Kamanja Manager - ", eventPath, eventPathData)
+    val pathTokens = eventPath.split("/")
+    val sendingNodeId = pathTokens(pathTokens.length - 1)
+
+    println("000000=========sendingNodeId=================== " + sendingNodeId)
+    println("000000=========eventType=================== " + eventType)
+    println("000000=========eventPath=================== " + eventPath)
+    println("000000=========eventPathData=================== " + eventPathData)
+    println("11111111=========adapterJson=================== " + adapterJson)
+
+    try {
+      lock.writeLock().lock()
+      allPartitions.put(sendingNodeId, adapterJson)
+    } finally {
+      lock.writeLock().unlock()
+    }
+
+    if (allPartitions != null && allPartitions.size > 0) {
+      allPartitions.foreach(kv => {
+        println("11111111=========key=================== " + kv._1)
+        println("11111111=========value=================== " + kv._2)
+      })
+    } else println("1111111100000=========allPartitions=================== " + allPartitions)
+
+  }
+
+  def writeAdapPartitionInfoToNodes(allPartitions: scala.collection.mutable.Map[String, String]) = {
+
+    try {
+      if (allPartitions != null && allPartitions.size > 0) {
+        //get the node local drive location
+        //do this every y millisecs
+
+        val y = "2000"
+        Thread.sleep(2000)
+        val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+        var nodepath = "/data/node/"
+        if (nodepath != null && nodepath.length() > 0) {
+          if (!nodepath.endsWith("/"))
+            nodepath = nodepath + "/"
+          val nodeadapterInfoPath = nodepath + nodeId //Get this info from cluster config
+
+          val nodepathsplit = nodeadapterInfoPath.split("/")
+          var dirpath: String = ""
+          println("nodepathsplit.length " + nodepathsplit.length)
+          println("nodeadapterInfoPath " + nodeadapterInfoPath)
+          if (nodepathsplit != null && nodepathsplit.length > 0) {
+            for (i <- 0 until nodepathsplit.length) {
+              println("nodepathsplit(i) " + nodepathsplit(i))
+              if (nodepathsplit(i) != null && nodepathsplit(i).length() > 0) {
+                dirpath = dirpath + "/" + nodepathsplit(i)
+                println("dirpath " + dirpath)
+                val folder = new File(dirpath)
+                if (!folder.exists()) {
+                  System.out.print("No Folder ");
+                  folder.mkdir();
+                  System.out.print("Folder created ");
+                }
+              }
+            }
+          }
+          // chec if the nodeadapterInfoPath directory exists, if not create 
+
+          var arrJValue = new scala.collection.mutable.ArrayBuffer[JValue]
+          allPartitions.foreach(adapinfoKV => {
+            if (adapinfoKV != null && adapinfoKV._2 != null && adapinfoKV._2.length() > 0)
+              arrJValue += parse(adapinfoKV._2)
+          })
+          AdapterPartitionInfoUtil.writeToFile(arrJValue, nodeadapterInfoPath)
+
+        }
+      }
+    } catch {
+      case e: Exception => LOG.error("Kamanja Manager - Write AdapterPartitionInfo to File" + e.getMessage)
+    }
+
+  }
+
+  //key is node id, value is (partition id, file name, offset, ignoreFirstMsg)
+  private val allPartitions = scala.collection.mutable.Map[String, String]()
+  var sendAdapterPartitionInfo = "data/node"
+  private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
 
 }
 
