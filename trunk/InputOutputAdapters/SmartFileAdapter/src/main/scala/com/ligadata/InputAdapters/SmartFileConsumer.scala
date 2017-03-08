@@ -1941,9 +1941,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       MonitorUtils.adaptersSessions.clear()
     }
 
-    if (participantsFilesAssignmentExecutor != null)
-      participantsFilesAssignmentExecutor.shutdown()
-      participantsFilesAssignmentExecutor.awaitTermination(1,STimeUnit.DAYS)
+    if (participantsFilesAssignmentExecutor != null) { participantsFilesAssignmentExecutor.shutdown(); participantsFilesAssignmentExecutor.awaitTermination(1,STimeUnit.DAYS) }
     participantsFilesAssignmentExecutor = null
 
     isShutdown = false
@@ -2160,9 +2158,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     initialized = false
     isShutdown = true
 
-    if (participantsFilesAssignmentExecutor != null)
-      participantsFilesAssignmentExecutor.shutdown()
-      participantsFilesAssignmentExecutor.awaitTermination(1,STimeUnit.DAYS)
+    if (participantsFilesAssignmentExecutor != null){participantsFilesAssignmentExecutor.shutdown() ;participantsFilesAssignmentExecutor.awaitTermination(1,STimeUnit.DAYS)}
     participantsFilesAssignmentExecutor = null
 
     _leaderCallbackRequests.clear
