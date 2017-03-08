@@ -135,6 +135,8 @@ class KamanjaApplicationManager(baseDir: String) {
   }
 
   def removeApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
+    var metadataFailedToRemove: List[String] = List()
+    var removeStatus: Boolean = true
       kamanjaApp.metadataElements.foreach(element => {
         var apiResult: ApiResult = null
         try {
@@ -147,26 +149,40 @@ class KamanjaApplicationManager(baseDir: String) {
             case e: PmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
             case e: ModelConfigurationElement =>
             case e: AdapterMessageBindingElement =>
+              val result = KamanjaEnvironmentManager.mdMan.removeBindings(element.filename)
+              if (result == 0)
+                apiResult = new ApiResult(result, "RemoveAdapterMessageBindings", "null", s"Successfully removed all adapter message bindings from file ${element.filename}")
+              else apiResult = new ApiResult(result, "RemoveAdapterMessageBindings", "null", s"Fail to remove all adapter message bindings from file ${element.filename}")
           }
         }
         catch {
           case e: com.ligadata.MetadataAPI.test.MetadataManagerException =>
             logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
-            return false
+            removeStatus = false
+            metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
           case e: Exception =>
             logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
-            return false
+            metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
+            removeStatus = false
         }
         if(apiResult != null) {
           if (apiResult.statusCode != 0) {
             logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult'")
-            return false
+            metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
+            removeStatus = false
           }
           else
             logger.info(s"${element.elementType} '${element.namespace}.${element.name}.${element.version}' successfully removed")
         }
       })
-    return true
+    if(metadataFailedToRemove.length > 0) {
+      logger.warn("***WARN*** Failed to remove metadata:")
+      metadataFailedToRemove.foreach(md => {
+        logger.warn(s"\t$md")
+      })
+    }
+
+    return removeStatus
   }
 
   /** Given a directory, this will return a list of directories contained with the baseDir/tests

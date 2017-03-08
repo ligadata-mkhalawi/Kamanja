@@ -170,6 +170,39 @@ class MetadataManager extends KamanjaTestLogger {
     validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(adapterMessageBindingDefs, Some(userId)))
   }
 
+  def removeBindings(filepath: String): Int = {
+    val file = new File(filepath)
+
+    logger.info(s"[Metadata Manager]: Adding message bindings from file $filepath")
+    if (!file.exists())
+      throw new MetadataManagerException(s"[Metadata Manager]: The file ${file.getAbsolutePath} does not exist")
+
+    val source = Source.fromFile(file)
+    implicit val formats = org.json4s.DefaultFormats
+    val adapterBindingsListMap = parse(source.mkString).extract[List[Map[String, Any]]]
+    source.close()
+
+    var bindingKeys: List[String] = List()
+
+    adapterBindingsListMap.foreach(binding => {
+      val messageNames: List[String] = binding.getOrElse("MessageNames", List[String]()).asInstanceOf[List[String]]
+      if (messageNames.length != 0) {
+        messageNames.foreach(name => {
+          bindingKeys :+= binding("AdapterName").toString.toLowerCase + "," + name.toLowerCase + "," + binding("Serializer").toString.toLowerCase
+        })
+      }
+      else {
+        bindingKeys :+= binding("AdapterName").toString.toLowerCase + "," + binding("MessageName").toString.toLowerCase + "," + binding("Serializer").toString.toLowerCase
+      }
+    })
+
+    validateApiResults(AdapterMessageBindingUtils.RemoveAdapterMessageBindings(bindingKeys, Some(userId)))
+  }
+
+  def removingBindingsFromString(adapterMessageBindingDefs: String): Int = {
+    validateApiResults(AdapterMessageBindingService.removeFromInlineAdapterMessageBinding(adapterMessageBindingDefs, Some(userId)))
+  }
+
   def add(mdType: String,
           filepath: String,
           tenantId: Option[String] = None,

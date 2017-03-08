@@ -73,15 +73,17 @@ object TestExecutor {
           /// generating config files and start embedded services if user doesn't provide said files.
           KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
 
-          if(!skipMetadata) {
+          if (!skipMetadata) {
             logger.info(s"Adding metadata...")
             if (!appManager.addApplicationMetadata(app)) {
               logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+              appManager.removeApplicationMetadata(app)
               throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
             }
             logger.info(s"All metadata successfully added")
           }
           else {
+            logger.warn(s"***WARN*** Skip Metadata option set to true. Not adding metadata.")
             logger.warn(s"***WARN*** Skip Metadata option set to true. Not adding metadata.")
           }
           var testResult = true
@@ -129,8 +131,8 @@ object TestExecutor {
                 logger.warn(s"***WARN*** Failed to discover messages in error queue")
                 logger.warn(s"Checking message event queue")
 
-		val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-		if (events != null) {
+                val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+                if (events != null) {
 
                   events.foreach(event => {
                     logger.info(s"Event Message: $event")
@@ -196,11 +198,11 @@ object TestExecutor {
             KamanjaEnvironmentManager.stopServices
             TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
           }
-
-          logger.close
         }
       })
     }
+    logger.close
+    println(Thread.getAllStackTraces)
   }
 
   private def optionMap(map: OptionMap, list: List[String]): OptionMap = {

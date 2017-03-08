@@ -161,7 +161,6 @@ object AdapterMessageBindingUtils {
     * @return result string for all of the AdapterMessageBindings removed.
     */
   def RemoveAdapterMessageBindings(bindingList: List[String], userId: Option[String]): String = {
-
     /** Only remove the bindings iff all of them can be removed */
     val allBindingsPresent: List[String] = bindingList.map(bindingKey => {
       if (mdMgr.AllAdapterMessageBindings.contains(bindingKey))

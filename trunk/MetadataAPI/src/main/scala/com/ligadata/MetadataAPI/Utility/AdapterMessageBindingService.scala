@@ -118,6 +118,7 @@ object AdapterMessageBindingService {
     @throws(classOf[com.ligadata.Exceptions.Json4sParsingException])
     @throws(classOf[com.ligadata.Exceptions.InvalidArgumentException])
     def jsonStringAsColl(configJson: String): Any = {
+        println("CONFIG JSON:\n" + configJson)
         val jsonObjs : Any = try {
             implicit val jsonFormats: Formats = DefaultFormats
             val json = parse(configJson)
@@ -231,6 +232,7 @@ object AdapterMessageBindingService {
             throw InvalidArgumentException("attempting to remove by file one or adapter message binding with bogus input text", null)
         }
         val jsonText: String = Source.fromFile(input).mkString
+        println("JSON TEXT:\n" + jsonText)
         val result = removeAdapterMessageBindingFromJson(jsonText, userId)
         result
     }

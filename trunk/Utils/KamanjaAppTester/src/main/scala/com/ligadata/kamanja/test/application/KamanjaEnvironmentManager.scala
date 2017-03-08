@@ -120,8 +120,6 @@ object KamanjaEnvironmentManager {
       val tenantId: String = adapter("TenantId").toString
       val name: String = adapter("Name").toString
 
-      logger.info("adapter => " + adapter);
-
       typeString.toLowerCase match {
         case "input" | "output" => {
           val dependencyJars: List[String] = adapter("DependencyJars").asInstanceOf[List[String]]
@@ -335,14 +333,6 @@ object KamanjaEnvironmentManager {
       throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
     }
 
-    val classPath: String = {
-      List(
-        s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-        s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-        s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
-      ).mkString(s"$kamanjaInstallDir/lib/system/", s":$kamanjaInstallDir/lib/system/", "")
-    }
-
     try {
       val zkStartCode = startZookeeper
 
@@ -400,7 +390,7 @@ object KamanjaEnvironmentManager {
     zkClient = new ZookeeperClient(embeddedZookeeper.getConnection)
     try {
       logger.info(s"Starting Kamanja with configuration file $kamanjaConfigFile...")
-      val startCode = embeddedKamanjaManager.startup(this.kamanjaConfigFile, getZookeeperConfiguration, zkClient)
+      val startCode = embeddedKamanjaManager.startup(this.kamanjaConfigFile, getZookeeperConfiguration, zkClient, 60)
       if (startCode != 0) {
         logger.error("***ERROR*** Failed to start Kamanja")
         return false

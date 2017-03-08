@@ -21,7 +21,7 @@ class EmbeddedKamanjaManager {
   var engThread: Thread = null
   var nodeId: String = ""
 
-  def startup(configFile: String, zkConfig: ZookeeperConfig, zkc: ZookeeperClient): Int = {
+  def startup(configFile: String, zkConfig: ZookeeperConfig, zkc: ZookeeperClient, timeout: Int = 30): Int = {
     logger.info(s"[Embedded Kamanja Manager]: Starting Kamanja Manager with configuration file $configFile...")
     val confProperties: Properties = new Properties()
     confProperties.load(new FileInputStream(configFile))
@@ -49,7 +49,7 @@ class EmbeddedKamanjaManager {
       engThread.start()
 
       breakable {
-        for (i <- 0 to 30) {
+        for (i <- 0 to timeout) {
           if (isRunning(zkConfig, zkc)) {
             logger.info("[Embedded Kamanja Manager]: Kamanja Manager started")
             return 0
@@ -107,6 +107,7 @@ class EmbeddedKamanjaManager {
   private def isRunning(zkConfig: ZookeeperConfig, zkc: ZookeeperClient): Boolean = {
     val formatter: DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
     var heartbeatJson: String = ""
+
     try {
       heartbeatJson = zkc.getNodeData(zkConfig.zkNodeBasePath + s"/monitor/engine/$nodeId")
       if (heartbeatJson == "") {
