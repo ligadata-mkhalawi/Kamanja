@@ -29,25 +29,25 @@ class ResultsManager {
   }
 
   def compareResults(dataSet: DataSet, actualResults: List[String]): List[MatchResult] = {
-    if(dataSet.expectedResultsFormat.toLowerCase == "csv") compareCsvResults(dataSet, actualResults)
+    if(dataSet.expectedResultsSet.format.toLowerCase == "csv") compareCsvResults(dataSet, actualResults)
     else compareJsonResults(dataSet, actualResults)
   }
 
   def parseExpectedResults(dataSet: DataSet): List[String] = {
     var source: Source = null
-    if(!(new File(dataSet.expectedResultsFile).exists)) {
-      logger.error(s"***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
-      throw new Exception(s"***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
+    if(!(new File(dataSet.expectedResultsSet.file).exists)) {
+      logger.error(s"***ERROR*** Expected results file '${dataSet.expectedResultsSet.file}' does not exist.")
+      throw new Exception(s"***ERROR*** Expected results file '${dataSet.expectedResultsSet.file}' does not exist.")
     }
-    if(dataSet.expectedResultsFormat.toLowerCase == "csv") {
+    if(dataSet.expectedResultsSet.format.toLowerCase == "csv") {
       try {
-        source = Source.fromFile(dataSet.expectedResultsFile)
+        source = Source.fromFile(dataSet.expectedResultsSet.file)
         source.getLines().toList
       }
       catch {
         case e: Exception => {
-          logger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'\n${logger.getStackTraceAsString(e)}")
-          throw new Exception(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'", e)
+          logger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsSet.file}'\n${logger.getStackTraceAsString(e)}")
+          throw new Exception(s"***ERROR*** Failed to read file '${dataSet.expectedResultsSet.file}'", e)
         }
       }
       finally {
@@ -57,7 +57,7 @@ class ResultsManager {
     else {
       try {
         val sb = new StringBuilder
-        source = Source.fromFile(dataSet.expectedResultsFile)
+        source = Source.fromFile(dataSet.expectedResultsSet.file)
         source.getLines().toList.foreach(line => {
           sb ++= line
         })
@@ -70,7 +70,6 @@ class ResultsManager {
         expectedResultsList.foreach(map => {
           stringResultsList :+= org.json4s.jackson.Serialization.write(map)
         })
-
         return stringResultsList
       }
       catch {
@@ -78,8 +77,8 @@ class ResultsManager {
           logger.error(s"***ERROR*** Failed to parse json\n${logger.getStackTraceAsString(e)}")
           throw new Exception(s"***ERROR*** Failed to parse json", e)
         case e: Exception =>
-          logger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'\n${logger.getStackTraceAsString(e)}")
-          throw new Exception(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'", e)
+          logger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsSet.file}'\n${logger.getStackTraceAsString(e)}")
+          throw new Exception(s"***ERROR*** Failed to read file '${dataSet.expectedResultsSet.file}'", e)
       }
       finally {
         source.close()

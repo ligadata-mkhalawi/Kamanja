@@ -62,22 +62,26 @@
         "Input": {
           "Filename": "inputFile1.csv",
           "Format": "CSV",
+          "AdapterName": "TestIn_1",
           "PartitionKey": "3"
         },
         "ExpectedResults": {
           "Filename": "expectedResults1.csv",
-          "Format": "CSV"
+          "Format": "CSV",
+          "AdapterName": "TestOut_1"
         }
       },
       {
         "Input": {
           "Filename": "inputFile2.json",
           "Format": "JSON",
+          "AdapterName": "TestIn_1",
           "PartitionKey": "com.ligadata.test.message.InputMessage:TestKey"
         },
         "ExpectedResults": {
           "Filename": "expectedResults2.json",
-          "Format": "JSON"
+          "Format": "JSON",
+          "AdapterName": "TestOut_1"
         }
       }
     ]

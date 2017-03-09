@@ -56,10 +56,12 @@ class KamanjaApplicationManagerTests extends FlatSpec {
 
     // Verifying Data Sets read in
     assert(app1DataSets.length == 1)
-    assert(app1DataSets(0).inputDataFile == s"$testAppDir/data/testApp1InputFile.csv")
-    assert(app1DataSets(0).inputDataFormat == "CSV")
-    assert(app1DataSets(0).expectedResultsFile == s"$testAppDir/data/testApp1ExpectedResults.csv")
-    assert(app1DataSets(0).expectedResultsFormat == "CSV")
+    assert(app1DataSets(0).inputSet.file == s"$testAppDir/data/testApp1InputFile.csv")
+    assert(app1DataSets(0).inputSet.format == "CSV")
+    assert(app1DataSets(0).inputSet.adapterName == "TestIn_1")
+    assert(app1DataSets(0).expectedResultsSet.file == s"$testAppDir/data/testApp1ExpectedResults.csv")
+    assert(app1DataSets(0).expectedResultsSet.format == "CSV")
+    assert(app1DataSets(0).expectedResultsSet.adapterName == "TestOut_1")
   }
 
 

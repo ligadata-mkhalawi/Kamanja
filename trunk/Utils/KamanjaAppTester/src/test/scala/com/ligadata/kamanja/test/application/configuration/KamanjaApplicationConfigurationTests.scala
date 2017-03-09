@@ -66,17 +66,21 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
     val ds1 = app.dataSets.head
     val ds2 = app.dataSets(1)
 
-    assert(ds1.inputDataFile == s"$testAppDir/data/inputFile1.csv")
-    assert(ds1.inputDataFormat == "CSV")
-    assert(ds1.expectedResultsFile == s"$testAppDir/data/expectedResults1.csv")
-    assert(ds1.expectedResultsFormat == "CSV")
-    assert(ds1.partitionKey == Some("3"))
+    assert(ds1.inputSet.file == s"$testAppDir/data/inputFile1.csv")
+    assert(ds1.inputSet.format == "CSV")
+    assert(ds1.inputSet.adapterName == "TestIn_1")
+    assert(ds1.inputSet.partitionKey == Some("3"))
+    assert(ds1.expectedResultsSet.file == s"$testAppDir/data/expectedResults1.csv")
+    assert(ds1.expectedResultsSet.format == "CSV")
+    assert(ds1.expectedResultsSet.adapterName == "TestOut_1")
 
-    assert(ds2.inputDataFile == s"$testAppDir/data/inputFile2.json")
-    assert(ds2.inputDataFormat == "JSON")
-    assert(ds2.expectedResultsFile == s"$testAppDir/data/expectedResults2.json")
-    assert(ds2.expectedResultsFormat == "JSON")
-    assert(ds2.partitionKey == Some("com.ligadata.test.message.InputMessage:TestKey"))
+    assert(ds2.inputSet.file == s"$testAppDir/data/inputFile2.json")
+    assert(ds2.inputSet.format == "JSON")
+    assert(ds2.inputSet.adapterName == "TestIn_1")
+    assert(ds2.inputSet.partitionKey == Some("com.ligadata.test.message.InputMessage:TestKey"))
+    assert(ds2.expectedResultsSet.file == s"$testAppDir/data/expectedResults2.json")
+    assert(ds2.expectedResultsSet.format == "JSON")
+    assert(ds2.expectedResultsSet.adapterName == "TestOut_1")
   }
 
   it should "read in a configuration file and produce an Application name" in {

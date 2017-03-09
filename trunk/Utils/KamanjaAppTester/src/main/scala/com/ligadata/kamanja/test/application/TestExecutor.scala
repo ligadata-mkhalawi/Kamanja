@@ -6,9 +6,13 @@ import com.ligadata.test.embedded.kafka._
 import com.ligadata.test.utils.{Globals, TestUtils}
 import com.ligadata.MetadataAPI.test._
 import com.ligadata.kamanja.test.application.configuration.EmbeddedConfiguration
+import com.ligadata.test.configuration.cluster.adapters.interfaces._
 import com.ligadata.tools.kvinit.KVInit
 import com.ligadata.tools.test._
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
+import com.ligadata.test.configuration.cluster.adapters.KafkaAdapterConfig
+import com.ligadata.test.configuration.cluster.adapters.interfaces.{Adapter, IOAdapter}
+
 import scala.util.control.Breaks._
 
 case class TestExecutorException(message: String, cause: Throwable = null) extends Exception(message, cause)
@@ -88,8 +92,8 @@ object TestExecutor {
           }
           var testResult = true
 
-          val consumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig)
-          val consumerThread = new Thread(consumer)
+          //val consumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig)
+          //val consumerThread = new Thread(consumer)
 
           val errorConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig)
           val errorConsumerThread = new Thread(errorConsumer)
@@ -97,7 +101,7 @@ object TestExecutor {
           val eventConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getEventKafkaAdapterConfig)
           val eventConsumerThread = new Thread(eventConsumer)
 
-          consumerThread.start()
+          //consumerThread.start()
           errorConsumerThread.start()
           eventConsumerThread.start()
 
@@ -106,18 +110,60 @@ object TestExecutor {
             val resultsManager = new ResultsManager
 
             //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
+            //Thread sleep 1000
+
+            val setInputAdapterName = set.inputSet.adapterName
+            //filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testin_1")(0).asInstanceOf[KafkaAdapterConfig]
+            val setInputAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setInputAdapterName)(0).asInstanceOf[IOAdapter]
+            val inputAdapterConfig = {
+              setInputAdapter.adapterType match {
+                case a @ InputAdapter => {
+                  setInputAdapter match {
+                    case a: KafkaAdapterConfig => setInputAdapter.asInstanceOf[KafkaAdapterConfig]
+                    case _ =>
+                      logger.error("***ERROR*** Only Kafka adapters are supported.")
+                      throw new Exception("***ERROR*** Only Kafka adapters are supported.")
+                  }
+                }
+                case a @ OutputAdapter =>
+                  logger.error("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
+                  throw new Exception("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
+              }
+            }
+
+            val setExpectedResultsAdapterName = set.expectedResultsSet.adapterName
+            val setExpectedResultsAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setExpectedResultsAdapterName)(0).asInstanceOf[IOAdapter]
+            val outputAdapterConfig = {
+              setExpectedResultsAdapter.adapterType match {
+                case a @ InputAdapter =>
+                  logger.error("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
+                  throw new Exception("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
+                case a @ OutputAdapter => {
+                  setExpectedResultsAdapter match {
+                    case a: KafkaAdapterConfig => setExpectedResultsAdapter.asInstanceOf[KafkaAdapterConfig]
+                    case _ =>
+                      logger.error("***ERROR Only Kafka adapters are supported.")
+                      throw new Exception("***ERROR Only Kafka adapters are supported.")
+                  }
+                }
+              }
+            }
+
+            val consumer = new TestKafkaConsumer(outputAdapterConfig)
+            val consumerThread = new Thread(consumer)
+            consumerThread.start()
+
             Thread sleep 1000
 
             val producer = new TestKafkaProducer
-            logger.info(s"Pushing data from file ${set.inputDataFile} in format ${set.inputDataFormat}")
-            producer.inputMessages(KamanjaEnvironmentManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
+            logger.info(s"Pushing data from file ${set.inputSet.file} in format ${set.inputSet.format}")
+            producer.inputMessages(inputAdapterConfig, set.inputSet.file, set.inputSet.format, set.inputSet.partitionKey.getOrElse("1"))
 
             //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
             val expectedResults = resultsManager.parseExpectedResults(set)
 
-
             logger.info("Waiting for output results...")
-            val results = Globals.waitForOutputResults(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+            val results = Globals.waitForOutputResults(outputAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
             if (results == null) {
               testResult = false
               logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
@@ -144,7 +190,7 @@ object TestExecutor {
               }
             }
             else if (results.length > expectedResults.length) {
-              logger.error(s"***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsFile}")
+              logger.error(s"***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsSet.file}")
               logger.error(s"Results Found: ")
               results.foreach(result => {
                 logger.error(s"Result: $result")
@@ -168,16 +214,17 @@ object TestExecutor {
               if (matchFailureCount > 0) {
                 testResult = false
                 logger.error(s"***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
-                logger.error(s"Expected Results File:   ${set.expectedResultsFile}")
-                logger.error(s"Expected Results Format: ${set.expectedResultsFormat}")
-                logger.error(s"Input Data File:         ${set.inputDataFile}")
-                logger.error(s"Input Data Format:       ${set.inputDataFormat}")
-                logger.error(s"Partition Key:           ${set.partitionKey.getOrElse("None")}")
+                logger.error(s"Expected Results File:   ${set.expectedResultsSet.file}")
+                logger.error(s"Expected Results Format: ${set.expectedResultsSet.format}")
+                logger.error(s"Input Data File:         ${set.inputSet.file}")
+                logger.error(s"Input Data Format:       ${set.inputSet.format}")
+                logger.error(s"Partition Key:           ${set.inputSet.partitionKey.getOrElse("None")}")
               }
               else {
                 logger.info(s"Actual results match expected results")
               }
             }
+            consumer.shutdown
           })
 
           if (!testResult)
@@ -185,7 +232,6 @@ object TestExecutor {
           else
             logger.info(s"Application '${app.name}' testing passed")
 
-          consumer.shutdown
           eventConsumer.shutdown
           errorConsumer.shutdown
 
@@ -202,7 +248,6 @@ object TestExecutor {
       })
     }
     logger.close
-    println(Thread.getAllStackTraces)
   }
 
   private def optionMap(map: OptionMap, list: List[String]): OptionMap = {

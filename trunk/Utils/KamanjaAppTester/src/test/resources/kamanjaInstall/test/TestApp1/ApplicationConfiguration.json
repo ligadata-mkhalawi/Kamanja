@@ -35,11 +35,13 @@
         "Input": {
           "Filename": "testApp1InputFile.csv",
           "Format": "CSV",
+          "AdapterName": "TestIn_1",
           "PartitionKey": "1"
         },
         "ExpectedResults": {
           "Filename": "testApp1ExpectedResults.csv",
-          "Format": "CSV"
+          "Format": "CSV",
+          "AdapterName": "TestOut_1"
         }
       }
     ]
