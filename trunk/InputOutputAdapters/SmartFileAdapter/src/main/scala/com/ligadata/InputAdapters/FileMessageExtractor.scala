@@ -99,6 +99,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       }
       updatExecutor.execute(statusUpdateThread)
 
+
       //just run it in a separate thread
       val extractorThread = new Runnable() {
         override def run(): Unit = {
@@ -114,6 +115,12 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         }
       }
       extractExecutor.execute(extractorThread)
+
+      logger.debug("File message Extractor - shutting down updatExecutor")
+      MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
+
+      logger.debug("File message Extractor - shutting down extractExecutor")
+      MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
     }
   }
 
@@ -381,12 +388,6 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     } catch {
       case et: Throwable =>
     }
-
-    logger.debug("File message Extractor - shutting down updatExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
-
-    logger.debug("File message Extractor - shutting down extractExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
   }
 
   private def extractMessages(chunk: Array[Byte], len: Int): Int = {

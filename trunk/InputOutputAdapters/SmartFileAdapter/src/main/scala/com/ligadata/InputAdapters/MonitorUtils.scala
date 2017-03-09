@@ -1,5 +1,6 @@
 package com.ligadata.InputAdapters
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io._
 import java.nio.file.{Paths, Files}
 
@@ -129,9 +130,16 @@ object MonitorUtils {
   }
 
   def shutdownAndAwaitTermination(pool : ExecutorService, id : String) : Unit = {
-    pool.shutdown(); // Disable new tasks from being submitted
-    pool.awaitTermination(1, TimeUnit.DAYS) //giving a very short time may cuz the thread to interrupt
-    logger.info("InterruptedException for " + id)
+    try {
+      if(!pool.isShutdown){
+        pool.shutdown() // Disable new tasks from being submitted
+        pool.awaitTermination(1, STimeUnit.DAYS) //giving a very short time may cuz the thread to interrupt
+      }
+    } catch {
+      case ie: InterruptedException => {
+        logger.error("InterruptedException for " + id, ie)
+      }
+    }
   }
 
   def isPatternMatch(name : String, regex : String): Boolean ={
