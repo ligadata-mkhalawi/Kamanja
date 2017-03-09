@@ -11,6 +11,7 @@ Usage()
     echo "      StopKamanjaCluster.sh --ClusterId <cluster name identifer> "
     echo "                           --MetadataAPIConfig  <metadataAPICfgPath>  "
     echo "                           [--NodeIds  <nodeIds>] "
+    echo "                           [--JstackLocation <JstackPath>] "
     echo 
     echo "  NOTES: Stop the cluster specified by the cluster identifier parameter.  Use the metadata api configuration to locate"
     echo "         the appropriate metadata store.  "
@@ -21,6 +22,7 @@ Usage()
 scalaVersion="2.10"
 name1=$1
 currentKamanjaVersion=1.5.3
+ScriptStartTime=`date +%Y%m%d%H%M%S`
 
 if [[ "$#" -eq 4 || "$#" -eq 6 ]]; then
     echo
@@ -42,6 +44,7 @@ fi
 metadataAPIConfig=""
 clusterId=""
 nodeIds=""
+jstackLocation=""
 valid_nodeIds=();
 
 while [ "$1" != "" ]; do
@@ -55,6 +58,9 @@ while [ "$1" != "" ]; do
                                 ;;
         --NodeIds )             shift
                                 nodeIds=$1
+                                ;;
+        --JstackLocation )      shift
+                                jstackLocation=$1
                                 ;;
         * )                     echo "Problem: Argument $1 is invalid named parameter."
                                 Usage
@@ -141,6 +147,18 @@ while read LINE; do
 
     if [ ! -z "$pidvals" ]; then
        if [ -n "$pidvals" ]; then
+           if [ "$jstackLocation" != "" ]; then
+              echo "About to jstack for PID(s):$pidvals on node $machine at $jstackLocation"
+              for pid in ${pidvals// / } ; do 
+                 if [ "$pid" != "" ]; then
+                    file="$jstackLocation/Kamanja_PID_${pid}_${ScriptStartTime}.jstack"
+                    echo "Producing jstack information for PID:$pid on node $machine to $file"
+                    ssh -o StrictHostKeyChecking=no -T $machine  <<-EOF
+                       jstack $pid > $file
+EOF
+                 fi
+              done
+           fi
             echo "Killing Pid(s):$pidvals on $machine"
            # FIXME: We can check whether we really have pidvals or not and do ssh
            ssh -o StrictHostKeyChecking=no -T $machine  <<-EOF
