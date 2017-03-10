@@ -104,12 +104,7 @@ object TestExecutor {
           logger.info(s"Processing data sets...")
           app.dataSets.foreach(set => {
             val resultsManager = new ResultsManager
-
-            //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
-            //Thread sleep 1000
-
             val setInputAdapterName = set.inputSet.adapterName
-            //filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testin_1")(0).asInstanceOf[KafkaAdapterConfig]
             val setInputAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setInputAdapterName)(0).asInstanceOf[IOAdapter]
             val inputAdapterConfig = {
               setInputAdapter.adapterType match {
@@ -149,6 +144,7 @@ object TestExecutor {
             val consumerThread = new Thread(consumer)
             consumerThread.start()
 
+            //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
             Thread sleep 1000
 
             val producer = new TestKafkaProducer

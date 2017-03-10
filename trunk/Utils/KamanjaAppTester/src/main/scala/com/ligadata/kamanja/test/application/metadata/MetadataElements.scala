@@ -14,11 +14,19 @@ import scala.io.Source
   * This is used if a kvFile is given so that we know the proper type we are uploading.
   *
   * @param filename The name of the file containing the container definition
-  * @param kvFilename The name of the file containing the Key-Value data to upload into a lookup table
+  * @param kvInitOptions Some class that contains the filename and serializer options for kvinit
   */
-case class ContainerElement(filename: String, kvFilename: Option[String]) extends MetadataElement {
+case class ContainerElement(filename: String, kvInitOptions: Option[KVInitOptions]) extends MetadataElement {
   val elementType: String = "container"
 }
+
+case class KVInitOptions(filename: String,
+                         ignoreRecords: Option[String] = Some("1"),
+                         deserializer: Option[String] = Some("com.ligadata.kamanja.serializer.csvserdeser"),
+                         alwaysQuoteFields: Option[Boolean] = Some(false),
+                         fieldDelimiter: Option[String] = Some(","),
+                         valueDelimiter: Option[String] = Some("~")
+                        )
 
 case class MessageElement(filename: String) extends MetadataElement {
   val elementType = "message"

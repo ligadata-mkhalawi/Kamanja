@@ -5,7 +5,14 @@
       {
         "Type": "Container",
         "Filename": "testApp1Container.json",
-        "KVFile": "testApp1ContainerData.csv"
+        "KVInitOptions": {
+          "Filename": "testApp1ContainerData.csv",
+          "IgnoreRecords": "1",
+          "Deserializer": "com.ligadata.kamanja.serializer.csvserdeser",
+          "AlwaysQuoteFields": false,
+          "FieldDelimiter": ",",
+          "ValueDelimiter": "~"
+        }
       },
       {
         "Type": "Message",

@@ -50,18 +50,20 @@ class KamanjaApplicationManager(baseDir: String) {
             logger.info(s"Adding container from file '${e.filename}'")
             apiResult = KamanjaEnvironmentManager.mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
             setMetadataElementName(element, apiResult)
-            e.kvFilename match {
-              case Some(file) =>
-                logger.info(s"Key-Value filename associated with container ${e.namespace}.${e.name} found. Adding data from $file")
+            e.kvInitOptions match {
+              case Some(opts) =>
+                logger.info(s"Key-Value options associated with container ${e.namespace}.${e.name} found. Adding data from ${opts.filename}")
                 if (KVInit.run(Array("--typename", s"${e.namespace}.${e.name}",
                   "--config", KamanjaEnvironmentManager.metadataConfigFile,
-                  "--datafiles", file,
-                  "--ignorerecords", "1",
-                  "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
+                  "--datafiles", opts.filename,
+                  "--ignorerecords", opts.ignoreRecords.get,
+                  "--deserializer", opts.deserializer.get,
                   "--optionsjson",
-                  """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
-                )) != 0)
-                  throw new TestExecutorException(s"***ERROR*** Failed to upload data from Key-Value file")
+                  s"""{"alwaysQuoteFields": ${opts.alwaysQuoteFields.get}, "fieldDelimiter": ${opts.fieldDelimiter.get}, "valueDelimiter": ${opts.valueDelimiter.get}""".stripMargin
+                )) != 0) {
+                  logger.error(s"***ERROR*** Failed to upload data from Key-Value file")
+                  throw TestExecutorException(s"***ERROR*** Failed to upload data from Key-Value file")
+                }
                 else {
                   logger.info(s"Successfully added Key-Value data")
                   // KVInit calls MetadataAPIImpl.CloseDB after it loads container data.

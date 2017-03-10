@@ -58,74 +58,91 @@ class KamanjaApplicationConfiguration {
     mdElems.foreach(elem => {
       elem("Type").toString.toLowerCase match {
         case "container" => {
-          if (!elem.keySet.exists(_ == "Filename")) {
+          val file = elem.getOrElse("Filename", {
             logger.error("***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
-            throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
-          }
-          val kvFile: Option[String] = if (elem.keySet.exists(_ == "KVFile")) Some(s"$appDir/data/${elem("KVFile").toString}") else None
-          metadataElements = metadataElements :+ new ContainerElement(appDir + "/metadata/container/" + elem("Filename").toString, kvFile)
-        }
-        case "message" => {
-          if (!elem.keySet.exists(_ == "Filename")) {
-            logger.error("***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
-            throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
+            throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
+          }).asInstanceOf[String]
+
+          var kvInitOpts: Option[KVInitOptions] = None
+
+          if(elem.contains("KVInitOptions")) {
+            val kvOptMap: Map[String, String] = elem("KVInitOptions").asInstanceOf[Map[String, String]]
+            val kvFile: String = kvOptMap.getOrElse("Filename", {
+              logger.error("***ERROR*** KVInitOptions have been declared but a filename has not be provided.")
+              throw KamanjaApplicationConfigurationException("***ERROR*** KVInitOptions have been declared but a filename has not be provided.")
+            }).asInstanceOf[String]
+            val ignoreRecords = Some(kvOptMap.getOrElse("IgnoreRecords", "1"))
+            val deserializer = Some(kvOptMap.getOrElse("Deserializer", "com.ligadata.kamanja.serializer.csvserdeser"))
+            val alwaysQuoteFields = Some(kvOptMap.getOrElse("AlwaysQuoteFields", false).asInstanceOf[Boolean])
+            val fieldDelimiter = Some(kvOptMap.getOrElse("FieldDelimiter", ","))
+            val valueDelimiter = Some(kvOptMap.getOrElse("ValueDelimiter", "~"))
+            kvInitOpts = Some(KVInitOptions(appDir + "/data/" + kvFile, ignoreRecords, deserializer, alwaysQuoteFields, fieldDelimiter, valueDelimiter))
           }
 
-          metadataElements = metadataElements :+ new MessageElement(appDir + "/metadata/message/" + elem("Filename").toString)
+          metadataElements = metadataElements :+ ContainerElement(appDir + "/metadata/container/" + file, kvInitOpts)
+        }
+        case "message" => {
+          val filename = elem.getOrElse("Filename", {
+            logger.error("***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
+            throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
+          }).asInstanceOf[String]
+
+          metadataElements = metadataElements :+ MessageElement(appDir + "/metadata/message/" + filename)
         }
         case "model" => {
           elem("ModelType").toString.toLowerCase match {
             case "java" =>
-              if (!elem.keySet.exists(_ == "Filename")) {
+              val filename = elem.getOrElse("Filename", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
-              }
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
+              }).asInstanceOf[String]
 
-              if (!elem.keySet.exists(_ == "ModelConfiguration")) {
+              val modelConfiguration = elem.getOrElse("ModelConfiguration", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
-              }
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
+              }).asInstanceOf[String]
 
-              metadataElements = metadataElements :+ new JavaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
+              metadataElements = metadataElements :+ JavaModelElement(appDir + "/metadata/model/" + filename, modelConfiguration)
             case "scala" => {
-              if (!elem.keySet.exists(_ == "Filename")) {
+              val filename = elem.getOrElse("Filename", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
-              }
-              if (!elem.keySet.exists(_ == "ModelConfiguration")) {
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
+              }).asInstanceOf[String]
+
+              val modelConfiguration = elem.getOrElse("ModelConfiguration", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
-              }
-              metadataElements = metadataElements :+ new ScalaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
+              }).asInstanceOf[String]
+
+              metadataElements = metadataElements :+ ScalaModelElement(appDir + "/metadata/model/" + filename, modelConfiguration)
             }
             case "kpmml" => {
-              if (!elem.keySet.exists(_ == "Filename")) {
+              val filename = elem.getOrElse("Filename", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
-              }
-              metadataElements = metadataElements :+ new KPmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString)
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
+              }).asInstanceOf[String]
+
+              metadataElements = metadataElements :+ KPmmlModelElement(appDir + "/metadata/model/" + filename)
             }
             case "pmml" => {
-              if (!elem.keySet.exists(_ == "Filename")) {
+              val filename = elem.getOrElse("Filename", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'Filename' to be defined.")
-              }
-              if (!elem.keySet.exists(_ == "ModelName")) {
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'Filename' to be defined.")
+              }).asInstanceOf[String]
+
+              val modelName = elem.getOrElse("ModelName", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'ModelName' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'ModelName' to be defined.")
-              }
-              if (!elem.keySet.exists(_ == "MessageConsumed")) {
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'ModelName' to be defined.")
+              }).asInstanceOf[String]
+
+              val msgConsumed = elem.getOrElse("MessageConsumed", {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'MessageConsumed' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'MessageConsumed' to be defined.")
-              }
-              if (elem.keySet.exists(_ == "MessageProduced")) {
-                if (elem("MessageProduced") != null && elem("MessageProduced") != "") {
-                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelName").toString, elem("MessageConsumed").toString, Some(elem("MessageProduced").toString))
-                }
-                else {
-                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelName").toString, elem("MessageConsumed").toString, None)
-                }
-              }
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'pmml' requires 'MessageConsumed' to be defined.")
+              }).asInstanceOf[String]
+
+              val msgProduced = if(elem.contains("MessageProduced")) Some(elem("MessageProduced").asInstanceOf[String]) else None
+
+              metadataElements :+= PmmlModelElement(appDir + "/metadata/model/" + filename, modelName, msgConsumed, msgProduced)
             }
             case "python" => {
               if (!elem.keySet.exists(_ == "Filename")) {
