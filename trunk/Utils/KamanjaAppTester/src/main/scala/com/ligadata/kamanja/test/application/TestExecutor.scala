@@ -92,16 +92,12 @@ object TestExecutor {
           }
           var testResult = true
 
-          //val consumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig)
-          //val consumerThread = new Thread(consumer)
-
           val errorConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig)
           val errorConsumerThread = new Thread(errorConsumer)
 
           val eventConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getEventKafkaAdapterConfig)
           val eventConsumerThread = new Thread(eventConsumer)
 
-          //consumerThread.start()
           errorConsumerThread.start()
           eventConsumerThread.start()
 
