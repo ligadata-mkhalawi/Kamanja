@@ -74,6 +74,16 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
       }
     }
 
+  def isAvro = (compressionString != null && compressionString.toLowerCase.startsWith("avro"))
+  def avroCodec: String = {
+    if (! isAvro) {
+      ""
+    } else {
+      val tokens = compressionString.split("/")
+      if(tokens.length == 1)  "" else tokens(1).toLowerCase
+    }
+  }
+
 }
 
 
