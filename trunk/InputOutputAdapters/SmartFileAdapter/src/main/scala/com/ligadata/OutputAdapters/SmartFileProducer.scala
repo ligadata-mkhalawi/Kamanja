@@ -462,14 +462,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     fc.uri = fc.uri.substring("file://".length() - 1)
 
   val isParquet = fc.isParquet
+  val isAvro = fc.isAvro
   val parquetCompression = if (fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
   if (isParquet)
     LOG.info(">>>>>>>>> using parquet with compression: " + parquetCompression)
   else LOG.info(">>>>>>>>> compression: " + fc.compressionString)
 
-  val defaultExtension = if (isParquet || fc.isAvro) "" else fc.compressionString
+  val defaultExtension = if (isParquet || isAvro) "" else fc.compressionString
 
-  val compress = (fc.compressionString != null && !isParquet)
+  val compress = (fc.compressionString != null && !isParquet && !isAvro)
   if (compress) {
     if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(fc.compressionString) ||
       CompressorStreamFactory.GZIP.equalsIgnoreCase(fc.compressionString) ||
@@ -685,7 +686,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
-          val baseFileExt = if (fc.isAvro) ".avro" else ".dat"
+          val baseFileExt = if (isAvro) ".avro" else ".dat"
           val finalExtn = "%s%s".format(baseFileExt, extensions.getOrElse(defaultExtension, ""))
           val initialFileName = "%s/%s/%s%s-%d-%s%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, finalExtn)
           val fileName =
@@ -702,7 +703,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
                 "%s/%s/%s%s-%d-%s%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, finalExtn)
               } else initialFileName
-            } else if (fc.isAvro) {
+            } else if (isAvro) {
               // BUGBUG:: Does not want to append the data for the same file for now. Later we can use appendTo while creating the file
               val extLen = baseFileExt.length
               var flPath = initialFileName
