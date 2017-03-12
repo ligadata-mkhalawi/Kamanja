@@ -68,7 +68,7 @@ class StreamPartitionFile(fc: SmartFileProducerConfiguration, key: String, val a
 
     originalStream = osWriter.openFile(fc, filePath, canAppend)
 
-    if (compress)
+    if (!isAvroFile && compress)
       os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, originalStream)
     else
       os = originalStream
@@ -232,8 +232,9 @@ class StreamPartitionFile(fc: SmartFileProducerConfiguration, key: String, val a
            serializer : SmartFileProducer) : Int = {
 
     if (isAvroFile) {
-      this.synchronized {
-        try {
+      var retVal = SendStatus.FAILURE
+      try {
+        this.synchronized {
           val recBuilder = new GenericRecordBuilder(avroSchema)
           val attrs = record.getAllAttributeValues
 
@@ -243,15 +244,15 @@ class StreamPartitionFile(fc: SmartFileProducerConfiguration, key: String, val a
 
           val rec = recBuilder.build
           dataFileWriter.append(rec)
-          return SendStatus.SUCCESS
-        } catch {
-          case e: Throwable => {
-            LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message into avro", e)
-            throw e
-          }
+        }
+        retVal = SendStatus.SUCCESS
+      } catch {
+        case e: Throwable => {
+          LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message into avro", e)
+          throw e
         }
       }
-      return SendStatus.FAILURE
+      return retVal
     }
 
     val (outContainers, serializedContainerData, serializerNames) = serializer.serialize(tnxCtxt, Array(record))
