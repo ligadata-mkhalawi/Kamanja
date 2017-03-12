@@ -705,11 +705,14 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               } else initialFileName
             } else if (isAvro) {
               // BUGBUG:: Does not want to append the data for the same file for now. Later we can use appendTo while creating the file
+              val curTm = System.currentTimeMillis
               val extLen = baseFileExt.length
               var flPath = initialFileName
+              var cntr = 1L
               while (isFileExists(fc, flPath)) {
                 val flWithoutExtn = flPath.substring(0, flPath.length - extLen)
-                flPath = flWithoutExtn + "_ext" + baseFileExt
+                flPath = flWithoutExtn + "_" + curTm + "_" + cntr + baseFileExt
+                cntr += 1
               }
               flPath
             } else {
