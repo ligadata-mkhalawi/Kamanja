@@ -76,8 +76,12 @@ class FileAdapterMonitoringConfig {
 
   var enableMoving: String = "on"
 
+  var enableDelete: String = ""
+
   //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  def isDeleteEnabled: Boolean = enableDelete.equalsIgnoreCase("on")
 
   val createInputStructureInTargetDirs = true
 
@@ -115,8 +119,12 @@ class LocationInfo {
 
   var enableMoving: String = ""
 
+  var enableDelete: String = ""
+
   //on, off, empty means get it from public attribute
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  def isDeleteEnabled: Boolean = enableDelete.equalsIgnoreCase("on")
 }
 
 object SmartFileAdapterConfiguration {
@@ -304,6 +312,10 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
         monitoringConfig.enableMoving = kv._2.asInstanceOf[String]
       }
+      else if (kv._1.compareToIgnoreCase("EnableDelete") == 0) {
+        if (kv._2 != null)
+          monitoringConfig.enableDelete = kv._2.asInstanceOf[String]
+      }
       else if (kv._1.compareToIgnoreCase("FileComponents") == 0) {
         //public FileComponents
         val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
@@ -326,6 +338,10 @@ object SmartFileAdapterConfiguration {
             else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
               locationInfo.enableMoving = kv._2.asInstanceOf[String]
             }
+            else if (kv._1.compareToIgnoreCase("EnableDelete") == 0) {
+              if (kv._2 != null)
+                locationInfo.enableDelete = kv._2.asInstanceOf[String]
+            }
             else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
               locationInfo.msgTags = kv._2.asInstanceOf[List[String]].toArray
             }
@@ -346,6 +362,10 @@ object SmartFileAdapterConfiguration {
 
           })
 
+          // Disabling delete in case MOVE & DELETE enabled
+          if (locationInfo.isMovingEnabled && locationInfo.isDeleteEnabled)
+            locationInfo.enableDelete = ""
+
           locationsInfoBuffer.append(locationInfo)
         })
 
@@ -354,12 +374,15 @@ object SmartFileAdapterConfiguration {
 
     })
 
+    // Disabling delete in case MOVE & DELETE enabled
+    if (monitoringConfig.isMovingEnabled && monitoringConfig.isDeleteEnabled)
+      monitoringConfig.enableDelete = ""
 
     //if no detailedLocations defined, use locations, define them as detailedLocations
     if (monitoringConfig.detailedLocations.length == 0) {
       if (simpleLocations.length > 0) {
-        if ((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)) {
-          val err = "Not found TargetMoveDir corresponding to locations for Smart File Adapter Config:" + adapterName
+        if (((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)) || !monitoringConfig.isDeleteEnabled) {
+          val err = "Not found TargetMoveDir corresponding to locations for Smart File Adapter Config:" + adapterName + " and not enabled Delete"
           throw new KamanjaException(err, null)
         }
 
@@ -375,13 +398,18 @@ object SmartFileAdapterConfiguration {
             if (monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
             else monitoringConfig.enableMoving
 
+          locationInfo.enableDelete = monitoringConfig.enableDelete
+
+          // Disabling delete in case MOVE & DELETE enabled
+          if (locationInfo.isMovingEnabled && locationInfo.isDeleteEnabled)
+            locationInfo.enableDelete = ""
+
           locationInfo.messageSeparator = monitoringConfig.messageSeparator
           locationInfo.fileComponents = publicFileComponents
 
           monitoringConfig.detailedLocations = monitoringConfig.detailedLocations :+ locationInfo
         })
       }
-
     }
     else {
       //for each location, if local attributes have no values get them from public corresponding attributes
@@ -400,6 +428,13 @@ object SmartFileAdapterConfiguration {
             if (monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
             else monitoringConfig.enableMoving
         }
+
+        if (locationInfo.enableDelete.length == 0)
+          locationInfo.enableDelete = monitoringConfig.enableDelete
+
+        // Disabling delete in case MOVE & DELETE enabled
+        if (locationInfo.isMovingEnabled && locationInfo.isDeleteEnabled)
+          locationInfo.enableDelete = ""
 
         if (locationInfo.messageSeparator == 0) {
           //this location has no separator, get the public value

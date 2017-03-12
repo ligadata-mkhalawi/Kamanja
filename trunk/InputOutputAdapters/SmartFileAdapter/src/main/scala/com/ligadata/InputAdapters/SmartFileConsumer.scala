@@ -1061,9 +1061,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
               val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
               if (procFileLocationInfo.isMovingEnabled) {
-                //                logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : before moveFile")
                 val moved = moveFile(processingFilePath)
                 if (moved)
+                  monitorController.markFileAsProcessed(processingFilePath)
+              } else if (procFileLocationInfo.isDeleteEnabled) {
+                val deleted = deleteFile(processingFilePath)
+                if (deleted)
                   monitorController.markFileAsProcessed(processingFilePath)
               }
               else {
@@ -1299,9 +1302,21 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
+  def deleteFile(originalFilePath: String): Boolean = {
+    var isFileDeleted = false
+    try {
+      val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
+      isFileDeleted = deleteFile(smartFileHandler)
+    } catch {
+      case e: Throwable => {
+        LOG.error("Failed to delete file", e)
+      }
+    }
+    isFileDeleted
+  }
+
   //after a file is changed, move it into targetMoveDir
   def moveFile(originalFilePath: String): Boolean = {
-    //    logger.error("==============> HaithamLog => inside moveFile originalFilePath = " + originalFilePath)
     var isFileMoved = false
     try {
       val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
@@ -1318,12 +1333,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val (targetMoveDir1, flBaseName1) = getTargetFile(smartFileHandler)
         targetMoveDir = targetMoveDir1
         flBaseName = flBaseName1
-        //        logger.error("==============> HaithamLog => inside moveFile targetMoveDir = " + targetMoveDir + " ,flBaseName = " + flBaseName)
-
       }
 
       isFileMoved = moveFile(smartFileHandler)
-      //      logger.error("==============> HaithamLog => inside moveFile isFileMoved = " + isFileMoved)
 
       if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
         addArchiveFileInfo(ArchiveFileInfo(adapterConfig, targetMoveDir, flBaseName, componentsMap))
@@ -1360,6 +1372,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       else targetMoveDirBase
 
     (targetMoveDir, fileStruct(fileStruct.size - 1))
+  }
+
+  def deleteFile(fileHandler: SmartFileHandler): Boolean = {
+    val originalFilePath = fileHandler.getFullPath
+    fileHandler.deleteFile(originalFilePath)
   }
 
   def moveFile(fileHandler: SmartFileHandler): Boolean = {

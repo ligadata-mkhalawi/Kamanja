@@ -89,7 +89,12 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
         else if (!targetHandler.isAccessible)
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
+
+        // Disabling delete in case MOVE & DELETE enabled
+        if (location.isDeleteEnabled)
+          location.enableDelete = ""
       }
+
     })
 
   }
@@ -393,12 +398,13 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                               logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
 
                               if (currentFileLocationInfo.isMovingEnabled) {
-                                //                              logger.error("==============> HaithamLog => inside monitorBufferingFiles : before moveFile")
                                 parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                              }
-                              else
-                                logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
+                              } else if (currentFileLocationInfo.isDeleteEnabled) {
+                                parentSmartFileConsumer.deleteFile(fileTuple._1.getFullPath)
+                              } else {
+                                logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved/deleted since moving/deleting is disabled for folder {} - Adapter {}",
                                   fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+                              }
 
                               // bufferingQ_map.remove(fileTuple._1)
                               removedEntries += fileTuple._1
@@ -407,11 +413,12 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                             //Invalid File - due to content type
                             if (currentFileLocationInfo.isMovingEnabled) {
                               logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
-                              //                            logger.error("==============> HaithamLog => inside monitorBufferingFiles 2: before moveFile")
                               parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                            }
-                            else {
-                              logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
+                            } else if (currentFileLocationInfo.isDeleteEnabled) {
+                              logger.error("SMART FILE CONSUMER (MonitorController): Deleting " + fileHandler.getFullPath + " with invalid file type ")
+                              parentSmartFileConsumer.deleteFile(fileTuple._1.getFullPath)
+                            } else {
+                              logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved/deleted since moving/deleting is disabled for folder {} - Adapter {}",
                                 fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
                             }
                             // bufferingQ_map.remove(fileTuple._1)
@@ -443,16 +450,27 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
               } catch {
                 case ioe: IOException => {
                   thisFileFailures += 1
-                  if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                  val curTm = System.currentTimeMillis
+                  if (currentFileLocationInfo.isMovingEnabled && ((curTm - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                     logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
                     try {
-                      //                      logger.error("==============> HaithamLog => inside monitorBufferingFiles 3: before moveFile")
                       parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                       // bufferingQ_map.remove(fileTuple._1)
                       removedEntries += fileTuple._1
                     } catch {
                       case e: Throwable => {
                         logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                      }
+                    }
+                  } else if (currentFileLocationInfo.isDeleteEnabled && ((curTm - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                    logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue. Deleting", ioe)
+                    try {
+                      parentSmartFileConsumer.deleteFile(fileTuple._1.getFullPath)
+                      // bufferingQ_map.remove(fileTuple._1)
+                      removedEntries += fileTuple._1
+                    } catch {
+                      case e: Throwable => {
+                        logger.error("SMART_FILE_CONSUMER: Failed to delete file, retyring", e)
                       }
                     }
                   } else {
@@ -462,16 +480,27 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                 }
                 case e: Throwable => {
                   thisFileFailures += 1
-                  if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                  val curTm = System.currentTimeMillis
+                  if (currentFileLocationInfo.isMovingEnabled && ((curTm - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                     logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                     try {
-                      //                      logger.error("==============> HaithamLog => inside monitorBufferingFiles 4: before moveFile")
                       parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                       // bufferingQ_map.remove(fileTuple._1)
                       removedEntries += fileTuple._1
                     } catch {
                       case e: Throwable => {
                         logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", e)
+                      }
+                    }
+                  } else if (currentFileLocationInfo.isDeleteEnabled && ((curTm - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                    logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue. Deleting", e)
+                    try {
+                      parentSmartFileConsumer.deleteFile(fileTuple._1.getFullPath)
+                      // bufferingQ_map.remove(fileTuple._1)
+                      removedEntries += fileTuple._1
+                    } catch {
+                      case e: Throwable => {
+                        logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to delete file, retyring", e)
                       }
                     }
                   } else {
