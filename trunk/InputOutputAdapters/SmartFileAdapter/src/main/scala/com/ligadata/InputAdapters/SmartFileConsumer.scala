@@ -1810,9 +1810,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
 
     //clear start info path
-    val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId
-    envContext.setListenerCacheKey(SendStartInfoToLeaderPath, "")
-
+    if (clusterStatus != null) {
+      val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId
+      envContext.setListenerCacheKey(SendStartInfoToLeaderPath, "")
+    }
 
     if (clusterStatus != null) {
       if (clusterStatus.isLeader) {
