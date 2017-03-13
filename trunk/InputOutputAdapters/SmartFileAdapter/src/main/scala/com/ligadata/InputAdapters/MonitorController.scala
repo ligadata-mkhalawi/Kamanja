@@ -116,6 +116,9 @@ class MonitorController {
         /*else if (!targetHandler.isAccessible)
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
           */
+        // Disabling delete in case MOVE & DELETE enabled
+        if (location.isDeleteEnabled)
+          location.enableDelete = ""
       }
     })
 
@@ -395,8 +398,9 @@ class MonitorController {
     val yetToValidateFileGroups = ArrayBuffer[Array[MonitoredFile]]()
     val finalValidFileGroups = ArrayBuffer[Array[MonitoredFile]]()
     val curTm = System.currentTimeMillis
-    val zeroLenFls = ArrayBuffer[(String, Boolean)]()
+    val zeroLenFls = ArrayBuffer[(String, Boolean, Boolean)]()
     val move0LenFls = ArrayBuffer[String]()
+    val del0LenFls = ArrayBuffer[String]()
 
     if (logger.isDebugEnabled) logger.debug("ValidFiles:%s".format(validFiles.keys.mkString(",")))
 
@@ -423,7 +427,7 @@ class MonitorController {
               if ((curTm - validFl._1.lastModificationTime) <= bufferTimeout)
                 allFlsValidInGrp = false
               else
-                zeroLenFls += ((fl.path, (validFl._2 != null && validFl._2.isMovingEnabled)))
+                zeroLenFls += ((fl.path, (validFl._2 != null && validFl._2.isMovingEnabled), (validFl._2 != null && validFl._2.isDeleteEnabled)))
             }
           }
         } catch {
@@ -439,9 +443,11 @@ class MonitorController {
           if (zeroLenFls.length == grp.length) {
             move0LenFls ++= zeroLenFls.filter(f => f._2).map(f => f._1)
             removedEntries ++= zeroLenFls.map(f => f._1)
+            del0LenFls ++= zeroLenFls.filter(f => f._3).map(f => f._1)
           } else {
             move0LenFls ++= zeroLenFls.filter(f => f._2).map(f => f._1)
             removedEntries ++= zeroLenFls.map(f => f._1)
+            del0LenFls ++= zeroLenFls.filter(f => f._3).map(f => f._1)
             val excludeFlsSet = zeroLenFls.map(f => f._1).toSet
             finalValidFileGroups += grp.filter(fl => !excludeFlsSet(fl.path))
           }
@@ -475,6 +481,23 @@ class MonitorController {
           catch {
             case e: Exception => {
               logger.error("Failed to move file:" + fl, e)
+            }
+          }
+        }
+      })
+    }
+
+    if (!isShutdown && !del0LenFls.isEmpty) {
+      if (logger.isDebugEnabled) logger.debug("del0LenFls:%s".format(
+        del0LenFls.mkString(",")))
+      del0LenFls.foreach(fl => {
+        if (!isShutdown) {
+          try {
+            parentSmartFileConsumer.deleteFile(fl)
+          }
+          catch {
+            case e: Exception => {
+              logger.error("Failed to delete file:" + fl, e)
             }
           }
         }
