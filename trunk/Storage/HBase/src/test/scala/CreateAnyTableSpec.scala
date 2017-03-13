@@ -136,6 +136,8 @@ class CreateAnyTableSpec extends FunSpec with BeforeAndAfter with BeforeAndAfter
 
       And("Add sample rows to the container")
       var attribValues:scala.collection.mutable.Map[String,String] = scala.collection.mutable.HashMap()
+
+      var keyFields = Array("name","cellNumber");
       for (i <- 1 to 10) {
         var custName = "customer-" + i
         var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
@@ -144,16 +146,17 @@ class CreateAnyTableSpec extends FunSpec with BeforeAndAfter with BeforeAndAfter
 	attribValues("address") = custAddress
 	attribValues("cellNumber") = custNumber
         noException should be thrownBy {
-	  adapter.put(containerName,custName,attribValues)
+	  adapter.put(containerName,keyFields,attribValues);
         }
       }
 
       And("Get all the rows that were just added")
-      var attribSubset = Array("name","cellNumber")
+      var attribSubset = Array("address")
       var attribMap:scala.collection.mutable.Map[String, String] = new scala.collection.mutable.HashMap()
-      attribMap("name") = "customer-5"
+      attribMap("name") = "customer-1";
+      //attribMap("cellNumber") = "4256667775";
       noException should be thrownBy {
-        adapter.get(containerName, attribSubset, attribMap, readCallBack _)
+        adapter.get(containerName, attribSubset, attribMap, keyFields,readCallBack _)
       }
 
       And("Shutdown hbase session")

@@ -28,8 +28,9 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 // hbase filters
-import org.apache.hadoop.hbase.filter.{ Filter, SingleColumnValueFilter, FirstKeyOnlyFilter, FilterList, CompareFilter }
+import org.apache.hadoop.hbase.filter.{ Filter, SingleColumnValueFilter, FirstKeyOnlyFilter, FilterList, CompareFilter, RowFilter }
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp
+import org.apache.hadoop.hbase.filter.BinaryComparator
 // hadoop security model
 import org.apache.hadoop.security.UserGroupInformation
 
@@ -418,10 +419,8 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
           }
         }
         val tableDesc = new HTableDescriptor(TableName.valueOf(tableName));
-        var colDesc = new HColumnDescriptor("key".getBytes())
-        tableDesc.addFamily(colDesc)
 	fieldList.foreach(f => {
-          colDesc = new HColumnDescriptor(f.getBytes())
+          val colDesc = new HColumnDescriptor(f.getBytes())
           tableDesc.addFamily(colDesc)
 	})
         createTableFromDescriptor(tableDesc)
@@ -934,13 +933,30 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
-  override def put(containerName: String, keyValue: String, fieldValues: scala.collection.mutable.Map[String, String]): Unit = {
+  private def getCompositeKey(keyFields: Array[String], fieldValues: scala.collection.mutable.Map[String, String]): String = {
+    var keyValue = "";
+    keyFields.foreach( x => {
+      val v = fieldValues(x);
+      keyValue = keyValue + v + ".";
+    })
+    return keyValue.dropRight(1);
+  }
+
+
+  override def put(containerName: String, keyFields: Array[String], fieldValues: scala.collection.mutable.Map[String, String]): Unit = {
     var tableName = toFullTableName(containerName)
     var tableHBase: Table = null
     try {
       relogin
       val isMetadata = CheckTableExists(containerName)
       tableHBase = getTableFromConnection(tableName);
+      var keyValue = getCompositeKey(keyFields,fieldValues);
+
+      // filter key values from given input map of values
+      keyFields.foreach(x => {
+	fieldValues -= x;
+      });
+
       var kba = keyValue.getBytes()
       var p = new Put(kba)
       fieldValues.map( x => {
@@ -1305,8 +1321,16 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
+  private def isKeyField(fieldName:String,keyFields:Array[String]): Boolean = {
+    keyFields.foreach(x => {
+      if( x.equalsIgnoreCase(fieldName) ){
+	return true;
+      }
+    })
+    return false;
+  }
 
-  override def get(containerName: String, fieldList: Array[String], filterMap:scala.collection.mutable.Map[String, String], callbackFunction: (String, String, String) => Unit): Unit = {
+  override def get(containerName: String, fieldList: Array[String], filterMap:scala.collection.mutable.Map[String, String], keyFields: Array[String], callbackFunction: (String, String, String) => Unit): Unit = {
     var tableName = toFullTableName(containerName)
     var tableHBase: Table = null
     var valueList: scala.collection.mutable.Map[String, String] = new scala.collection.mutable.HashMap()
@@ -1320,9 +1344,18 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       val filters = new java.util.ArrayList[Filter]()
       if ( filterMap.size > 0 ){
 	filterMap.foreach(x => {
-	  val filter = new SingleColumnValueFilter(Bytes.toBytes(x._1), Bytes.toBytes("base"),
+	  logger.info("Added the column %s to the filter".format(x._1));
+	  if( isKeyField(x._1,keyFields) ){
+	    logger.info("Creating a row filter for the key column %s to the filter".format(x._1));
+	    val filter = new RowFilter(CompareOp.EQUAL,new BinaryComparator(Bytes.toBytes(x._2)));
+	    filters.add(filter);
+	  }
+	  else{
+	    logger.info("Creating a  filter for the non-key column %s to the filter".format(x._1));
+	    val filter = new SingleColumnValueFilter(Bytes.toBytes(x._1), Bytes.toBytes("base"),
 						CompareOp.EQUAL, Bytes.toBytes(x._2))
-	  filters.add(filter);
+	    filters.add(filter);
+	  }
 	})
 	val filterList = new FilterList(filters);  
 	scan.setFilter(filterList)
