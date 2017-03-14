@@ -385,7 +385,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build()
 
       val hostList = adapterConfig.hostList
-      hostList.foreach(values => client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(values._1), values._2)))
+      hostList.foreach(values => client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(values._1), values._2.toInt)))
 
       return client
     } catch {
