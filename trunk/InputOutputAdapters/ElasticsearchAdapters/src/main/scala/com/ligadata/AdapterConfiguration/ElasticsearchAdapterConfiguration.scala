@@ -9,7 +9,7 @@ import org.json4s.native.JsonMethods._
 
 
 class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
-  var hostList: String = null
+  var hostList = Map[String, Int]()
   //folder to write files
   var schemaName: String = ""
   // prefix for the file names
@@ -66,7 +66,7 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("hostList") == 0) {
-        adapterConfig.hostList = kv._2.toString.trim
+        adapterConfig.hostList = kv._2.asInstanceOf[Map[String, Int]]
       } else if (kv._1.compareToIgnoreCase("clustername") == 0) {
         adapterConfig.clusterName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("properties") == 0) {

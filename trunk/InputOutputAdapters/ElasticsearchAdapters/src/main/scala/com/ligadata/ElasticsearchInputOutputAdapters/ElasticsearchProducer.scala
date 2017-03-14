@@ -374,15 +374,19 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       settings.put("cluster.name", adapterConfig.clusterName)
 
       // add by saleh 15/12/2016
-      val it = adapterConfig.properties.keySet.iterator
-      while (it.hasNext) {
-        val key = it.next()
+      val properties = adapterConfig.properties.keySet.iterator
+      while (properties.hasNext) {
+        val key = properties.next()
         if (LOG.isInfoEnabled) LOG.info("ElasticSearch - properties [%s] - [%s]".format(key, adapterConfig.properties.get(key).get.toString))
         settings.put(key, adapterConfig.properties.get(key).get.toString)
       }
 
       settings.build()
-      val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(adapterConfig.location), adapterConfig.portNumber.toInt))
+      val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build()
+
+      val hostList = adapterConfig.hostList
+      hostList.foreach(values => client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(values._1), values._2)))
+
       return client
     } catch {
       case ex: Exception => LOG.error("Adapter getConnection ", ex)
