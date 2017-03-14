@@ -159,7 +159,7 @@ while read LINE; do
 		if [ ! -d "$installDir/run" ]; then
 			mkdir "$installDir/run"
 		fi
-			ps aux | egrep "KamanjaManager|MetadataAPIService" | grep -v "grep" | tr -s " " | cut -d " " -f2 | tr "\\n" "," | sed "s/,$//"   > "$installDir/run/$pidfile"
+			ps aux | egrep "KamanjaManager|MetadataAPIService" | grep -v "grep" | grep "$installDir" | tr -s " " | cut -d " " -f2 | tr "\\n" "," | sed "s/,$//"   > "$installDir/run/$pidfile"
 #		sleep 5
 EOF
 
