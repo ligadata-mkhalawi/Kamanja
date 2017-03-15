@@ -52,12 +52,14 @@ import java.text.{SimpleDateFormat}
 
 import parquet.hadoop._
 import parquet.hadoop.api.WriteSupport
+import com.ligadata.Utils.KamanjaLoaderInfo
 
+/*
 import com.ligadata.KvBase._
 import com.ligadata.StorageBase._
 import com.ligadata.Serialize._
-import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.keyvaluestore.HBaseAdapter
+*/
 
 object HBaseOutputAdapter extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new HBaseOutputAdapter(inputConfig, nodeContext)
@@ -66,18 +68,18 @@ object HBaseOutputAdapter extends OutputAdapterFactory {
 class HBaseOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
   private[this] val logger = LogManager.getLogger(getClass.getName);
   private val kvManagerLoader = new KamanjaLoaderInfo
-  private var hbaseAdapter: DataStore = null;
+  private var hbaseAdapter: HBaseAdapter = null;
   private val maxConnectionAttempts = 10;
   private var isShutdown = false
   
   // 1. Write function(s) to create HBASE connectivity
-  private def CreateHbaseAdapter(dataStoreInfo: String): DataStore = {
+  private def CreateHbaseAdapter(dataStoreInfo: String): HBaseAdapter = {
     var connectionAttempts = 0
 
     while (connectionAttempts < maxConnectionAttempts) {
       try {
 	logger.info("Creating HBase connection...")
-        hbaseAdapter = HBaseAdapter.CreateStorageAdapter(kvManagerLoader, dataStoreInfo, null, null)
+        hbaseAdapter = new HBaseAdapter(kvManagerLoader, dataStoreInfo, null, null)
         return hbaseAdapter
       } catch {
         case e: Exception => {
@@ -148,28 +150,26 @@ class HBaseOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext:
 	containers.foreach(cont => {
 	  // gather fieldName and corresponding values
 	  val fields = cont.getAllAttributeValues();
-	  val fieldValueMap:scala.collection.mutable.Map[String, String] = 
-	    scala.collection.mutable.HashMap();
+	  var fieldValues = new Array[(String,String,String)](0)
 	  fields.foreach(fld => {
 	      val fn = fld.getValueType().getName();
-	      /*
+	      /* No special processing based on the field type at this time
 	      val fv = fn match {
-		case BOOLEAN => fv+""
-		case BYTE => dos.writeByte(v.asInstanceOf[Byte])
-		case CHAR => dos.writeChar(v.asInstanceOf[Char])
-		case LONG => dos.writeLong(v.asInstanceOf[Long])
-		case INT => dos.writeInt(v.asInstanceOf[Int])
-		case FLOAT => dos.writeFloat(v.asInstanceOf[Float])
-		case DOUBLE => dos.writeDouble(v.asInstanceOf[Double])
-		case STRING => WriteStrVal(dos, if (v != null) v.asInstanceOf[String] else "")
+		case BOOLEAN => fld.getValue().toString()
+		case BYTE => fld.getValue().toString()
+		case CHAR => fld.getValue().toString()
+		case LONG => fld.getValue().toString()
+		case INT => fld.getValue().toString()
+		case FLOAT => fld.getValue().toString()
+		case DOUBLE => fld.getValue().toString()
+		case STRING => fld.getValue().toString()
 		case _ => throw new UnsupportedObjectException(s"HBaseOutputAdapter got unsupported type, typeId: $fn", null)
 	      }
 	      */
-	      //val fv = fld.getValue().asInstanceOf[String];
 	      val fv = fld.getValue().toString()
-	      fieldValueMap(fn) = fv;
+	      fieldValues = fieldValues :+ (fn,fn,fv)
 	  });
-	  hbaseAdapter.put(containerName, keyColumns, fieldValueMap);
+	  hbaseAdapter.put(containerName, keyColumns, fieldValues);
 	});
 	//put(containerName, containersValues, schema)
       })

@@ -304,12 +304,6 @@ class TestHBaseOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAndA
       val instances = ArrayBuffer[ContainerInterface]()
       for (i <- 1 to 10){
 	var inst = new ParameterContainer(ParameterContainer)
-	//var inst = KamanjaStatusEvent.createInstance()
-	//inst.set("statustype", "input")
-	//inst.set("nodeid", "1")
-	//inst.set("eventtime", getCurrentTime)
-	//inst.set("statusstring", "input status is OK")
-	//inst.withstatustype("input").withnodeid("1").witheventtime(getCurrentTimeAsString).withstatusstring("input status is GOOD");
 	inst.set("id",i)
 	inst.set("name","parameter" + i)
 	inst.set("value",getCurrentTimeAsString)
