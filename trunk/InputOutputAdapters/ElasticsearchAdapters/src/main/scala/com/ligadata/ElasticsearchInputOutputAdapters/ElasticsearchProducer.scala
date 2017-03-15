@@ -50,6 +50,9 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
 
   private def getConnection = producer.getConnection
 
+  private val adapterConfig = producer.adapterConfig
+  private val LOG = producer.LOG
+
   private def putJsonsWithMetadataLocal: Unit = {
     if (writeData.size == 0) return
     //   containerName: String, data_list: Array[String]
@@ -79,7 +82,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                 client = getConnection
                 connectedTime = System.currentTimeMillis
               }
-              createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
+              producer.createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
             } catch {
               case e: Throwable => {
                 if ((System.currentTimeMillis - connectedTime) > 10000) {
@@ -288,10 +291,13 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
     outStandingWrites.decrementAndGet()
   }
 
+  override def run(): Unit = {
+    putJsonsWithMetadata
+  }
 }
 
 class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
-  private[this] val LOG = LogManager.getLogger(getClass);
+  val LOG = LogManager.getLogger(getClass);
   private val nodeId = if (nodeContext == null || nodeContext.getEnvCtxt() == null) "1" else nodeContext.getEnvCtxt().getNodeId()
   private val FAIL_WAIT = 2000
   private var numOfRetries = 0
@@ -312,7 +318,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val counterLock = new Object
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
-  private val adapterConfig = ElasticsearchAdapterConfiguration.getAdapterConfig(inputConfig, "output")
+  val adapterConfig = ElasticsearchAdapterConfiguration.getAdapterConfig(inputConfig, "output")
   Thread.currentThread().setContextClassLoader(tempContext);
   val elaticsearchutil: ElasticsearchUtility = new ElasticsearchUtility
   private val kvManagerLoader = new KamanjaLoaderInfo
@@ -469,7 +475,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
       recsToWrite = 0
     } else {
-      writerTask.putJsonsWithMetadata()
+      writerTask.putJsonsWithMetadata
       sendData.clear()
       recsToWrite = 0
     }
@@ -744,7 +750,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     (adapterConfig.schemaName + "." + containerName).toLowerCase()
   }
 
-  private def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
+  def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
     createIndexForOutputAdapter(Array(indexName), indexMapping, false)
   }
 
