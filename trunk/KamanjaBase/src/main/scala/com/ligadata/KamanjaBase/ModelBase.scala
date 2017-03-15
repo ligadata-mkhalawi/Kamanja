@@ -468,6 +468,8 @@ trait EnvContext /* extends Monitorable */  {
 
   def getNodeId(): String
   def getClusterId(): String
+  def getNodeIdAndUUID(): String
+  def getNodeUUID(): String
 
   def setNodeInfo(nodeId: String, clusterId: String): Unit
 
