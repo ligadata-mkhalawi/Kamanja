@@ -286,7 +286,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
                   val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
                   val md = root.get("metadata")
                   var index = tableName
-                  val metadata_type = "type1"
+                  var metadata_type = "type1"
                   val metadata = if (md == None) null else md.get.asInstanceOf[Map[String, Any]]
 
                   if (md != None) {
