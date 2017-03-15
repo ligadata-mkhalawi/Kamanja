@@ -109,7 +109,7 @@ exclude_patterns = []
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
 #
-# show_authors = False
+show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -171,6 +171,7 @@ html_logo = '_images/kamy-logo-white.png'
 
 html_static_path = ['custom']
 html_style = 'css/ligadata_theme.css'
+pdf_style = 'css/ligadata_pdf.txt'
 
 
 # Add any extra paths that contain custom files (such as robots.txt or
@@ -389,4 +390,18 @@ for fname in matches:
     fn = fn.split('.')[0]
     pdf_documents.insert(0,(fn,fn, fn, u''));
 
+
+# A comma-separated list of custom stylesheets. Example:
+pdf_stylesheets = [u'ligadata_pdf.txt']
+
 # /Aladdin
+
+
+# Name of the cover page template to use
+pdf_cover_template = 'sphinxcover__.tmpl'
+
+# If false, no coverpage is generated.
+pdf_use_coverpage = True
+
+
+latex_additional_files = ['_static/_images/kamy.png','_images/kamy.png']
