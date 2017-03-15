@@ -1,11 +1,10 @@
-package com.ligadata.hbaseoutputadapter;
+package com.ligadata.OutputAdapters;
 
 import org.scalatest._
 import Matchers._
 import org.apache.logging.log4j._
 
 import com.ligadata.KamanjaBase._ // { AttributeTypeInfo, ContainerFactoryInterface, ContainerInterface, ContainerOrConcept }
-import com.ligadata.OutputAdapters.HBaseOutputAdapter
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.Exceptions.{ KamanjaException, FatalAdapterException, KeyNotFoundException }
 
@@ -85,7 +84,7 @@ object ParameterContainer extends RDDObject[ParameterContainer] with ContainerFa
       if (oldVerobj == null) return null;
       oldVerobj match {
 
-        case oldVerobj: com.ligadata.hbaseoutputadapter.ParameterContainer => { return oldVerobj; }
+        case oldVerobj: com.ligadata.OutputAdapters.ParameterContainer => { return oldVerobj; }
         case _ => {
           throw new Exception("Unhandled Version Found");
         }

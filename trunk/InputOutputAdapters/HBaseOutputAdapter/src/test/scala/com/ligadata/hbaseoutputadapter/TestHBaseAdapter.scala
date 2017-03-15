@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ligadata.hbaseoutputadapter;
+package com.ligadata.OutputAdapters;
 
 import org.scalatest._
 import Matchers._
@@ -24,19 +24,10 @@ import java.text.{SimpleDateFormat}
 import java.io._
 
 import org.apache.logging.log4j._
-
-import com.ligadata.KvBase._
-import com.ligadata.StorageBase._
-import com.ligadata.Serialize._
 import com.ligadata.Utils.KamanjaLoaderInfo
-import com.ligadata.keyvaluestore.HBaseAdapter
-
 import com.ligadata.Exceptions._
 
 class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
-  var adapter: DataStore = null
-  var serializer: Serializer = null
-
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
 
@@ -90,12 +81,12 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
     }
   }
 
-  private def CreateAdapter: DataStore = {
+  private def CreateAdapter: HBaseAdapter = {
     var connectionAttempts = 0
     while (connectionAttempts < maxConnectionAttempts) {
       try {
-        adapter = new HBaseAdapter(kvManagerLoader, dataStoreInfo, null, null)
-        return adapter
+        hbaseAdapter = new HBaseAdapter(kvManagerLoader, dataStoreInfo, null, null)
+        return hbaseAdapter
       } catch {
         case e: Exception => {
           logger.error("will retry after one minute ...", e)
@@ -111,7 +102,7 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
     try {
       logger.info("starting...");
       logger.info("Initialize HBaseAdapter")
-      adapter = CreateAdapter
+      hbaseAdapter = CreateAdapter
     }
     catch {
       case e: Exception => throw new Exception("Failed to execute set up properly", e)
@@ -124,24 +115,22 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
     it("Validate api operations") {
       val containerName = "customer1"
 
-      hbaseAdapter = adapter.asInstanceOf[HBaseAdapter]
       val tableName = hbaseAdapter.toTableName(containerName)
-
       val columnList = Array("name","address","cellNumber")
 
       And("Create Random Table ")
       noException should be thrownBy {
-        adapter.createAnyTable(containerName,columnList,"ddl")
+        hbaseAdapter.createAnyTable(containerName,columnList,"ddl")
       }
 
       And("Add sample rows to the container")
-      var columnValues = new Array[(String,String,String)](0)
 
       var keyColumns = Array("name");
       for (i <- 1 to 10) {
         var custName = "customer-" + i
         var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
         var custNumber = "425666777" + i
+	var columnValues = new Array[(String,String,String)](0)
 	columnValues = columnValues :+ ("name","name",custName)
 	columnValues = columnValues :+ ("address","address",custAddress)
 	columnValues = columnValues :+ ("cellNumber","cellNumber",custNumber)
@@ -149,7 +138,7 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
 	//columnValues("address") = custAddress
 	//columnValues("cellNumber") = custNumber
         noException should be thrownBy {
-	  adapter.put(containerName,keyColumns,columnValues);
+	  hbaseAdapter.put(containerName,keyColumns,columnValues);
         }
       }
 
@@ -159,12 +148,12 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
       filterColumns = filterColumns :+ ("name","name","customer-1");
       //filterColumns("cellNumber") = "4256667775";
       noException should be thrownBy {
-        adapter.get(containerName, selectList, filterColumns, keyColumns,readCallBack _)
+        hbaseAdapter.get(containerName, selectList, filterColumns, keyColumns,readCallBack _)
       }
 
       And("Shutdown hbase session")
       noException should be thrownBy {
-        adapter.Shutdown
+        hbaseAdapter.Shutdown
       }
     }
   }

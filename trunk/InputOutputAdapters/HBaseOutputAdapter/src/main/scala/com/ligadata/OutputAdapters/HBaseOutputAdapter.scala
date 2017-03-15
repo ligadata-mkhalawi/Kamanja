@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ligadata.OutputAdapters
+package com.ligadata.OutputAdapters;
 
 import org.apache.avro.generic.GenericRecord
 import org.apache.logging.log4j.{Logger, LogManager}

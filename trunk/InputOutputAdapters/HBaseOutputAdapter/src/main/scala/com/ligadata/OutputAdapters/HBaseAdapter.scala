@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ligadata.OutputAdapters
+package com.ligadata.OutputAdapters;
 
 // Hbase core
 import com.ligadata.KamanjaBase.NodeContext
@@ -446,11 +446,11 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
 
   private def getCompositeKey(keyColumns: Array[String], columnValues: Array[(String,String,String)]): String = {
     var keyValue = "";
-    var filteredColumnValues = columnValues
+    var keyColumnValues = columnValues
     keyColumns.foreach(x => {
-      filteredColumnValues = filteredColumnValues.filter(c => ! c._1.equals(x))
+      keyColumnValues = keyColumnValues.filter(c => c._1.equals(x))
     });
-    filteredColumnValues.foreach( x => {
+    keyColumnValues.foreach( x => {
       keyValue = keyValue + x._3 + ".";
     })
     return keyValue.dropRight(1);
@@ -467,14 +467,14 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       var keyValue = getCompositeKey(keyColumns,columnValues);
 
       // filter key values from given input map of values
-      var filteredColumnValues = columnValues
+      var nonkeyColumnValues = columnValues
       keyColumns.foreach(x => {
-	filteredColumnValues = filteredColumnValues.filter(c => ! c._1.equals(x))
+	nonkeyColumnValues = nonkeyColumnValues.filter(c => ! c._1.equals(x))
       });
 
       var kba = keyValue.getBytes()
       var p = new Put(kba)
-      filteredColumnValues.foreach( x => {
+      nonkeyColumnValues.foreach( x => {
 	p.addColumn(Bytes.toBytes(x._1), Bytes.toBytes(x._2), Bytes.toBytes(x._3))
       })
       tableHBase.put(p)
