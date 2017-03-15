@@ -199,6 +199,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     var connectedTime = 0L
     //    CheckTableExists(tableName)
     try {
+      val startTm = System.currentTimeMillis
       client = getConnection
       connectedTime = System.currentTimeMillis
 
@@ -293,8 +294,15 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
                   bulk.setSource(jsonData)
                   bulkRequest.add(bulk)
                 })
+
                 if (LOG.isDebugEnabled) LOG.debug("Executing bulk indexing...")
+                val beforeExec = System.currentTimeMillis
                 val bulkResponse = bulkRequest.execute().actionGet()
+                val endTm = System.currentTimeMillis
+
+                val timeDiff1 = beforeExec - startTm
+                val timeDiff2 = endTm - beforeExec
+                logger.warn("TimeTaken: TillExecute:%d, OnlyExecute:%d".format(timeDiff1, timeDiff2))
 
                 // BUGBUG:: If we have errors do we treat this data is added ???????
                 //added by saleh 15/12/2016
@@ -312,9 +320,10 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
               }
             }
           })
-          addedKeys.foreach(key => {
-            sendData.remove(key)
-          })
+
+          //changing the remove to clear this may speed things up
+          sendData.clear()
+
           if (gotException != null) {
             throw gotException
           }
@@ -363,9 +372,6 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         client = null
       }
     }
-
-    if (client != null)
-      client.close
   }
 
   private def getConnection: TransportClient = {
