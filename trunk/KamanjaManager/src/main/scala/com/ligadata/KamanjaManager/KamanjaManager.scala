@@ -132,6 +132,10 @@ object KamanjaConfiguration {
   var commitOffsetsMsgCnt = 0
   var commitOffsetsTimeInterval = 0
 
+  var postAdapterInfoTime = 0
+  var writeAdaterInfoTime = 0
+  var adapterInfoWriteLocation = ""
+
   var shutdown = false
   var participentsChangedCntr: Long = 0
   var baseLoader = new KamanjaLoaderInfo
@@ -161,6 +165,10 @@ object KamanjaConfiguration {
 
     commitOffsetsMsgCnt = 0
     commitOffsetsTimeInterval = 0
+
+    postAdapterInfoTime = 0
+    writeAdaterInfoTime = 0
+    adapterInfoWriteLocation = ""
 
     shutdown = false
     participentsChangedCntr = 0
@@ -375,6 +383,12 @@ class KamanjaManager extends Observer {
   }
 
   var adapterJson: String = ""
+  //key is node id, value is (partition id, file name, offset, ignoreFirstMsg)
+  private val allPartitions = scala.collection.mutable.Map[String, String]()
+  private val consolidatedPartitions = scala.collection.mutable.Map[String, String]()
+  var sendAdapterPartitionInfo = "data/node"
+  var consolidatedPartitionInfo = "/adapterinfo/consolidate/"
+  private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
 
   def RecreateExecCtxtsCommitPartitionOffsetPool(): Unit = synchronized {
     if (LOG.isDebugEnabled()) LOG.debug("Called RecreateExecCtxtsCommitPartitionOffsetPool")
@@ -389,11 +403,21 @@ class KamanjaManager extends Observer {
     }
 
     KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(sendAdapterPartitionInfo, collectAdapterPartitionInfo) // listen to start info
+
+    KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(consolidatedPartitionInfo, collectConsolidatedAdapterPartitionInfo) // listen to start info
+
     execCtxtsCommitPartitionOffsetPool = scala.actors.threadpool.Executors.newFixedThreadPool(1)
     execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2)
 
     // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+
+      //read to local map from local drive
+      //for now hard code location path
+      val nodeid = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+      val localDriveLocation = "/data/node/"
+      AdapterPartitionInfoUtil.readfromFile(nodeid, localDriveLocation, allPartitions)
+
       execCtxtsCommitPartitionOffsetPool.execute(new Runnable() {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
@@ -500,6 +524,9 @@ class KamanjaManager extends Observer {
         }
       }
       execCtxtsAdapterInfoPool.execute(writeAdapterInfoSvc)
+      val ConsolidatedAdapterInfo = consolidatedPartitionInfo + "/" + nodeid
+      KamanjaMetadata.gNodeContext.getEnvCtxt().setListenerCacheKey(ConsolidatedAdapterInfo, consolidatedPartitionInfo) // => Goes to Leader
+
     }
   }
 
@@ -736,6 +763,39 @@ class KamanjaManager extends Observer {
         }
       }
 
+      try {
+        val postAdapterInfoTime = loadConfigs.getProperty("PostAdapterInfoTime".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (postAdapterInfoTime > 0) {
+          KamanjaConfiguration.postAdapterInfoTime = postAdapterInfoTime
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      try {
+        val writeAdaterInfoTime = loadConfigs.getProperty("WriteAdaterInfoTime".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (writeAdaterInfoTime > 0) {
+          KamanjaConfiguration.writeAdaterInfoTime = writeAdaterInfoTime
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      try {
+        val adapterInfoWriteLocation = loadConfigs.getProperty("AdapterInfoWriteLocation".toLowerCase, "0").replace("\"", "").trim.toString
+        if (adapterInfoWriteLocation.size > 0) {
+          KamanjaConfiguration.adapterInfoWriteLocation = adapterInfoWriteLocation
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
       //      try {
       //        val adapterCommitTime = loadConfigs.getProperty("AdapterCommitTime".toLowerCase, "0").replace("\"", "").trim.toInt
       //        if (adapterCommitTime > 0) {
@@ -829,7 +889,90 @@ class KamanjaManager extends Observer {
           }
         }
       }
-
+      if (KamanjaConfiguration.postAdapterInfoTime == 0) {
+        try {
+          val postAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PostAdapterInfoTime").replace("\"", "").trim
+          if (!postAdapterInfoTimeStr.isEmpty) {
+            val postAdapterInfoTime = postAdapterInfoTimeStr.toInt
+            if (postAdapterInfoTime > 0)
+              KamanjaConfiguration.postAdapterInfoTime = postAdapterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.postAdapterInfoTime == 0) {
+        try {
+          val postAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PostAdapterInfoTime".toLowerCase).replace("\"", "").trim
+          if (!postAdapterInfoTimeStr.isEmpty) {
+            val postAdapterInfoTime = postAdapterInfoTimeStr.toInt
+            if (postAdapterInfoTime > 0)
+              KamanjaConfiguration.postAdapterInfoTime = postAdapterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.writeAdaterInfoTime == 0) {
+        try {
+          val writeAdaterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdaterInfoTime").replace("\"", "").trim
+          if (!writeAdaterInfoTimeStr.isEmpty) {
+            val writeAdaterInfoTime = writeAdaterInfoTimeStr.toInt
+            if (writeAdaterInfoTime > 0)
+              KamanjaConfiguration.writeAdaterInfoTime = writeAdaterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.writeAdaterInfoTime == 0) {
+        try {
+          val writeAdaterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdaterInfoTime".toLowerCase).replace("\"", "").trim
+          if (!writeAdaterInfoTimeStr.isEmpty) {
+            val writeAdaterInfoTime = writeAdaterInfoTimeStr.toInt
+            if (writeAdaterInfoTime > 0)
+              KamanjaConfiguration.writeAdaterInfoTime = writeAdaterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.adapterInfoWriteLocation == 0) {
+        try {
+          val adapterInfoWriteLocationStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "AdapterInfoWriteLocation").replace("\"", "").trim
+          if (!adapterInfoWriteLocationStr.isEmpty) {
+            val adapterInfoWriteLocation = adapterInfoWriteLocationStr.toString
+            if (adapterInfoWriteLocation.size > 0)
+              KamanjaConfiguration.adapterInfoWriteLocation = adapterInfoWriteLocation
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.adapterInfoWriteLocation == 0) {
+        try {
+          val adapterInfoWriteLocationStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "AdapterInfoWriteLocation".toLowerCase).replace("\"", "").trim
+          if (!adapterInfoWriteLocationStr.isEmpty) {
+            val adapterInfoWriteLocation = adapterInfoWriteLocationStr.toString
+            if (adapterInfoWriteLocation.size > 0)
+              KamanjaConfiguration.adapterInfoWriteLocation = adapterInfoWriteLocation
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
       LOG.debug("Validating required jars")
       KamanjaMdCfg.ValidateAllRequiredJars(intiConfigs.jarPaths)
       LOG.debug("Load Environment Context")
@@ -1383,26 +1526,26 @@ class KamanjaManager extends Observer {
 
   def postAdapterPartitionsInfoToNodes(adapterInfoArr: scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]): Unit = {
     val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
-    println("11111111=========nodeId=================== " + nodeId)
+    println("postAdapterPartitionsInfoToNodes=========nodeId=================== " + nodeId)
 
     adapterJson = AdapterPartitionInfoUtil.generateAdapterInfoJson(adapterInfoArr, nodeId)
 
-    println("11111111=========adapterJson=================== " + adapterJson)
+    println("postAdapterPartitionsInfoToNodes=========adapterJson=================== " + adapterJson)
 
     // do this very x millisecs 
 
     Thread.sleep(1000) // Get the value from CLusterConfig
 
     val SendAdapterInfo = sendAdapterPartitionInfo + "/" + nodeId
-    println("11111111=========SendAdapterInfo=================== " + SendAdapterInfo)
+    println("postAdapterPartitionsInfoToNodes=========SendAdapterInfo=================== " + SendAdapterInfo)
     KamanjaMetadata.gNodeContext.getEnvCtxt().setListenerCacheKey(SendAdapterInfo, sendAdapterPartitionInfo) // => Goes to Leader
 
     if (allPartitions != null && allPartitions.size > 0) {
       allPartitions.foreach(kv => {
-        println("2222222=========key=================== " + kv._1)
-        println("222222222=========value=================== " + kv._2)
+        println("postAdapterPartitionsInfoToNodes=========key=================== " + kv._1)
+        println("postAdapterPartitionsInfoToNodes=========value=================== " + kv._2)
       })
-    } else println("2222222=========allPartitions=================== " + allPartitions)
+    } else println("postAdapterPartitionsInfoToNodes=========allPartitions=================== " + allPartitions)
 
   }
 
@@ -1412,11 +1555,11 @@ class KamanjaManager extends Observer {
     val pathTokens = eventPath.split("/")
     val sendingNodeId = pathTokens(pathTokens.length - 1)
 
-    println("000000=========sendingNodeId=================== " + sendingNodeId)
-    println("000000=========eventType=================== " + eventType)
-    println("000000=========eventPath=================== " + eventPath)
-    println("000000=========eventPathData=================== " + eventPathData)
-    println("11111111=========adapterJson=================== " + adapterJson)
+    println("collectAdapterPartitionInfo=========sendingNodeId=================== " + sendingNodeId)
+    println("collectAdapterPartitionInfo=========eventType=================== " + eventType)
+    println("collectAdapterPartitionInfo=========eventPath=================== " + eventPath)
+    println("collectAdapterPartitionInfo=========eventPathData=================== " + eventPathData)
+    println("collectAdapterPartitionInfo=========adapterJson=================== " + adapterJson)
 
     try {
       lock.writeLock().lock()
@@ -1427,10 +1570,40 @@ class KamanjaManager extends Observer {
 
     if (allPartitions != null && allPartitions.size > 0) {
       allPartitions.foreach(kv => {
-        println("11111111=========key=================== " + kv._1)
-        println("11111111=========value=================== " + kv._2)
+        println("collectAdapterPartitionInfo=========key=================== " + kv._1)
+        println("collectAdapterPartitionInfo=========value=================== " + kv._2)
       })
-    } else println("1111111100000=========allPartitions=================== " + allPartitions)
+    } else println("collectAdapterPartitionInfo=========allPartitions=================== " + allPartitions)
+
+  }
+
+  /*Collect the consolidated adapter parititon info */
+  def collectConsolidatedAdapterPartitionInfo(eventType: String, eventPath: String, eventPathData: String): Unit = {
+
+    LOG.debug("Kamanja Manager - ", eventPath, eventPathData)
+    val pathTokens = eventPath.split("/")
+    val sendingNodeId = pathTokens(pathTokens.length - 1)
+    val consolidatedAdapterJson = AdapterPartitionInfoUtil.consolidatingAdapterInfo(allPartitions)
+
+    println("collectConsolidatedAdapterPartitionInfo=========sendingNodeId=================== " + sendingNodeId)
+    println("collectConsolidatedAdapterPartitionInfo=========eventType=================== " + eventType)
+    println("collectConsolidatedAdapterPartitionInfo=========eventPath=================== " + eventPath)
+    println("collectConsolidatedAdapterPartitionInfo=========eventPathData=================== " + eventPathData)
+    println("collectConsolidatedAdapterPartitionInfo=========adapterJson=================== " + consolidatedAdapterJson)
+
+    try {
+      lock.writeLock().lock()
+      consolidatedPartitions.put(sendingNodeId, consolidatedAdapterJson)
+    } finally {
+      lock.writeLock().unlock()
+    }
+
+    if (consolidatedPartitions != null && consolidatedPartitions.size > 0) {
+      consolidatedPartitions.foreach(kv => {
+        println("collectConsolidatedAdapterPartitionInfo=========key=================== " + kv._1)
+        println("collectConsolidatedAdapterPartitionInfo=========value=================== " + kv._2)
+      })
+    } else println("collectConsolidatedAdapterPartitionInfo=========consolidatedPartitions=================== " + consolidatedPartitions)
 
   }
 
@@ -1476,7 +1649,7 @@ class KamanjaManager extends Observer {
             if (adapinfoKV != null && adapinfoKV._2 != null && adapinfoKV._2.length() > 0)
               arrJValue += parse(adapinfoKV._2)
           })
-          AdapterPartitionInfoUtil.writeToFile(arrJValue, nodeadapterInfoPath)
+          AdapterPartitionInfoUtil.takeBackUpAndWriteToFile(arrJValue, nodeadapterInfoPath)
 
         }
       }
@@ -1485,11 +1658,6 @@ class KamanjaManager extends Observer {
     }
 
   }
-
-  //key is node id, value is (partition id, file name, offset, ignoreFirstMsg)
-  private val allPartitions = scala.collection.mutable.Map[String, String]()
-  var sendAdapterPartitionInfo = "data/node"
-  private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
 
 }
 

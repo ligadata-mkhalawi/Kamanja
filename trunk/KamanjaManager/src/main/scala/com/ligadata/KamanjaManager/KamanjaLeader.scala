@@ -39,7 +39,7 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.apache.curator.utils.ZKPaths
 import scala.actors.threadpool.{ Executors, ExecutorService }
-import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
+import com.ligadata.Exceptions.{ KamanjaException, FatalAdapterException }
 import scala.collection.JavaConversions._
 import com.ligadata.KvBase.{ Key }
 
@@ -49,12 +49,17 @@ case class DistributionMap(Node: String, Adaps: List[NodeDistMap])
 case class FoundKeysInValidation(K: String, V1: String, V2: Int, V3: Int, V4: Long)
 case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap]])
 
+case class NodeDistMap1(Adap: String, Parts: List[(String, String)])
+case class DistributionMap1(Node: String, Adaps: List[NodeDistMap1])
+case class ActionOnAdaptersMap1(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap1]])
+
+
 object KamanjaLeader {
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val lock = new Object()
   private[this] val lock1 = new Object()
   private[this] var clusterStatus = ClusterStatus("", false, "", null)
-//  private[this] var zkLeaderLatch: ZkLeaderLatch = _
+  //  private[this] var zkLeaderLatch: ZkLeaderLatch = _
   private[this] var nodeId: String = _
   private[this] var zkConnectString: String = _
   private[this] var engineLeaderZkNodePath: String = _
@@ -63,13 +68,13 @@ object KamanjaLeader {
   private[this] var adaptersStatusPath: String = _
   private[this] var zkSessionTimeoutMs: Int = _
   private[this] var zkConnectionTimeoutMs: Int = _
-//  private[this] var zkEngineDistributionNodeListener: ZooKeeperListener = _
-//  private[this] var zkAdapterStatusNodeListener: ZooKeeperListener = _
-//  private[this] var zkDataChangeNodeListener: ZooKeeperListener = _
+  //  private[this] var zkEngineDistributionNodeListener: ZooKeeperListener = _
+  //  private[this] var zkAdapterStatusNodeListener: ZooKeeperListener = _
+  //  private[this] var zkDataChangeNodeListener: ZooKeeperListener = _
   private[this] var zkcForSetData: CuratorFramework = null
   private[this] val setDataLockObj = new Object()
   private[this] var distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]() // Nodeid & Unique Keys (adapter unique name & unique key)
-//  private[this] var foundKeysInValidation: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = _
+  //  private[this] var foundKeysInValidation: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = _
   private[this] var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]() // Adapters & Max Partitions
   private[this] var allPartitionsToValidate = scala.collection.mutable.Map[String, Set[String]]()
   private[this] var nodesStatus = scala.collection.mutable.Set[String]() // NodeId
@@ -89,7 +94,7 @@ object KamanjaLeader {
 
   def Reset: Unit = {
     clusterStatus = ClusterStatus("", false, "", null)
-//    zkLeaderLatch = null
+    //    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
     engineLeaderZkNodePath = null
@@ -98,12 +103,12 @@ object KamanjaLeader {
     adaptersStatusPath = null
     zkSessionTimeoutMs = 0
     zkConnectionTimeoutMs = 0
-//    zkEngineDistributionNodeListener = null
-//    zkAdapterStatusNodeListener = null
-//    zkDataChangeNodeListener = null
+    //    zkEngineDistributionNodeListener = null
+    //    zkAdapterStatusNodeListener = null
+    //    zkDataChangeNodeListener = null
     zkcForSetData = null
     distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]() // Nodeid & Unique Keys (adapter unique name & unique key)
-//    foundKeysInValidation = null
+    //    foundKeysInValidation = null
     adapterMaxPartitions = scala.collection.mutable.Map[String, Int]() // Adapters & Max Partitions
     allPartitionsToValidate = scala.collection.mutable.Map[String, Set[String]]()
     nodesStatus = scala.collection.mutable.Set[String]() // NodeId
@@ -306,7 +311,7 @@ object KamanjaLeader {
     return (allPartitionUniqueRecordKeys.toArray, allPartsToValidate.toMap)
   }
 
-/*
+  /*
   private def getValidateAdaptersInfo: scala.collection.immutable.Map[String, (String, Int, Int, Long)] = lock.synchronized {
 
     val savedValidatedAdaptInfo = envCtxt.GetValidateAdapterInformation
@@ -432,13 +437,13 @@ object KamanjaLeader {
         })
 
         val (allPartitionUniqueRecordKeys, allPartsToValidate) = getAllPartitionsToValidate
-//        val validateFndKeysAndVals = getValidateAdaptersInfo
+        //        val validateFndKeysAndVals = getValidateAdaptersInfo
 
         allPartsToValidate.foreach(kv => {
           AddPartitionsToValidate(kv._1, kv._2)
         })
 
-//        foundKeysInValidation = validateFndKeysAndVals
+        //        foundKeysInValidation = validateFndKeysAndVals
 
         // Update New partitions for all nodes and Set the text
         val totalParticipents: Int = cs.participantsNodeIds.size
@@ -446,7 +451,7 @@ object KamanjaLeader {
           LOG.debug("allPartitionUniqueRecordKeys: %d".format(allPartitionUniqueRecordKeys.size))
           var cntr: Int = 0
           allPartitionUniqueRecordKeys.foreach(k => {
-//            val fnd = foundKeysInValidation.getOrElse(k._2.toLowerCase, null)
+            //            val fnd = foundKeysInValidation.getOrElse(k._2.toLowerCase, null)
             val af = tmpDistMap(cntr % totalParticipents)._2.getOrElse(k._1, null)
             if (af == null) {
               val af1 = new ArrayBuffer[String]
@@ -535,7 +540,7 @@ object KamanjaLeader {
     LOG.debug("EventChangeCallback => Exit")
   }
 
-  private def GetUniqueKeyValue(uk: String): String  = {
+  private def GetUniqueKeyValue(uk: String): String = {
     envCtxt.getAdapterUniqueKeyValue(uk)
   }
 
@@ -799,10 +804,10 @@ object KamanjaLeader {
 
             if (distributionExecutor.isShutdown == false) {
               // Save the state and Clear the maps
-//              ProcessedAdaptersInfo.CommitAdapterValues
+              //              ProcessedAdaptersInfo.CommitAdapterValues
               ProcessedAdaptersInfo.clearInstances
               // envCtxt.PersistLocalNodeStateEntries
-//              envCtxt.clearIntermediateResults
+              //              envCtxt.clearIntermediateResults
 
               // Set STOPPED action in adaptersStatusPath + "/" + nodeId path
               val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
@@ -818,7 +823,7 @@ object KamanjaLeader {
           }
         }
         case "distribute" => {
-//          envCtxt.clearIntermediateResults // We may not need it here. But anyway safe side
+          //          envCtxt.clearIntermediateResults // We may not need it here. But anyway safe side
           // Clear the maps
           ProcessedAdaptersInfo.clearInstances
           var distributed = true
@@ -831,12 +836,12 @@ object KamanjaLeader {
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
 
-//              if (actionOnAdaptersMap.foundKeysInValidation != None && actionOnAdaptersMap.foundKeysInValidation != null) {
-//                actionOnAdaptersMap.foundKeysInValidation.get.foreach(ks => {
-//                  foundKeysInVald(ks.K.toLowerCase) = (ks.V1, ks.V2, ks.V3, ks.V4)
-//                })
-//
-//              }
+              //              if (actionOnAdaptersMap.foundKeysInValidation != None && actionOnAdaptersMap.foundKeysInValidation != null) {
+              //                actionOnAdaptersMap.foundKeysInValidation.get.foreach(ks => {
+              //                  foundKeysInVald(ks.K.toLowerCase) = (ks.V1, ks.V2, ks.V3, ks.V4)
+              //                })
+              //
+              //              }
               StartNodeKeysMap(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)
             }
 
@@ -909,31 +914,31 @@ object KamanjaLeader {
       }
 
       val values = json.values.asInstanceOf[Map[String, Any]]
-//      val changedMsgsContainers = values.getOrElse("changeddata", null)
+      //      val changedMsgsContainers = values.getOrElse("changeddata", null)
       val tmpChngdContainersAndKeys = values.getOrElse("changeddatakeys", null)
 
-//      if (changedMsgsContainers != null) {
-//        // Expecting List/Array of String here
-//        var changedVals: Array[String] = null
-//        if (changedMsgsContainers.isInstanceOf[List[_]]) {
-//          try {
-//            changedVals = changedMsgsContainers.asInstanceOf[List[String]].toArray
-//          } catch {
-//            case e: Exception => { LOG.warn("", e) }
-//          }
-//        } else if (changedMsgsContainers.isInstanceOf[Array[_]]) {
-//          try {
-//            changedVals = changedMsgsContainers.asInstanceOf[Array[String]]
-//          } catch {
-//            case e: Exception => { LOG.warn("", e) }
-//          }
-//        }
-//
-//        if (changedVals != null) {
-//          envCtxt.clearIntermediateResults(changedVals)
-//        }
-//      }
-//
+      //      if (changedMsgsContainers != null) {
+      //        // Expecting List/Array of String here
+      //        var changedVals: Array[String] = null
+      //        if (changedMsgsContainers.isInstanceOf[List[_]]) {
+      //          try {
+      //            changedVals = changedMsgsContainers.asInstanceOf[List[String]].toArray
+      //          } catch {
+      //            case e: Exception => { LOG.warn("", e) }
+      //          }
+      //        } else if (changedMsgsContainers.isInstanceOf[Array[_]]) {
+      //          try {
+      //            changedVals = changedMsgsContainers.asInstanceOf[Array[String]]
+      //          } catch {
+      //            case e: Exception => { LOG.warn("", e) }
+      //          }
+      //        }
+      //
+      //        if (changedVals != null) {
+      //          envCtxt.clearIntermediateResults(changedVals)
+      //        }
+      //      }
+      //
       if (tmpChngdContainersAndKeys != null) {
         val changedContainersAndKeys = if (tmpChngdContainersAndKeys.isInstanceOf[List[_]]) tmpChngdContainersAndKeys.asInstanceOf[List[_]] else if (tmpChngdContainersAndKeys.isInstanceOf[Array[_]]) tmpChngdContainersAndKeys.asInstanceOf[Array[_]].toList else null
         if (changedContainersAndKeys != null && changedContainersAndKeys.size > 0) {
@@ -1041,94 +1046,94 @@ object KamanjaLeader {
               }
             } // else // not handling              if (contName.size > 0 && tmpKeys != null) {
             // Expecting List/Array of Keys
-//            var keys: List[Any] = null
-//            if (tmpKeys.isInstanceOf[List[_]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[List[Any]]
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            } else if (tmpKeys.isInstanceOf[Array[_]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[Array[Any]].toList
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            } else if (tmpKeys.isInstanceOf[Map[_, _]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[Map[String, Any]].toList
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            } else if (tmpKeys.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
-//              try {
-//                keys = tmpKeys.asInstanceOf[scala.collection.mutable.Map[String, Any]].toList
-//              } catch {
-//                case e: Exception => { LOG.warn("", e) }
-//              }
-//            }
-//
-//            if (keys != null && keys.size > 0) {
-//              var loadableKeys = ArrayBuffer[Key]()
-//              val ks = keys.map(k => {
-//                var oneKey: Map[String, Any] = null
-//                if (k.isInstanceOf[List[_]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[List[(String, Any)]].toMap
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                } else if (k.isInstanceOf[Array[_]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[Array[(String, Any)]].toMap
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                } else if (k.isInstanceOf[Map[_, _]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[Map[String, Any]]
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                } else if (k.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
-//                  try {
-//                    oneKey = k.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap
-//                  } catch {
-//                    case e: Exception => { LOG.warn("", e) }
-//                  }
-//                }
-//
-//                if (oneKey != null) {
-//                  val bk = oneKey.getOrElse("bk", null)
-//                  if (bk != null) {
-//                    val tm = oneKey.getOrElse("tm", "0").toString().toLong
-//                    val tx = oneKey.getOrElse("tx", "0").toString().toLong
-//                    val rid = oneKey.getOrElse("rid", "0").toString().toInt
-//                    loadableKeys += Key(tm, bk.asInstanceOf[List[String]].toArray, tx, rid)
-//                  }
-//                }
-//              })
-//
-//              if (loadableKeys.size > 0) {
-//                try {
-//                  logger.debug("Loading Keys => Txnid:%d, ContainerName:%s, Keys:%s".format(txnid, contName, loadableKeys.map(k => (k.timePartition, k.bucketKey.mkString("="), k.transactionId, k.rowId)).mkString(",")))
-//                  envCtxt.ReloadKeys(txnid, contName, loadableKeys.toList)
-//                } catch {
-//                  case e: Exception => {
-//                    logger.error("Failed to reload keys for container:" + contName, e)
-//                  }
-//                  case t: Throwable => {
-//                    logger.error("Failed to reload keys for container:" + contName, t)
-//                  }
-//                }
-//              }
-//            }
-//
-//
-//          }
-//        } // else // not handling
-//
-//
+            //            var keys: List[Any] = null
+            //            if (tmpKeys.isInstanceOf[List[_]]) {
+            //              try {
+            //                keys = tmpKeys.asInstanceOf[List[Any]]
+            //              } catch {
+            //                case e: Exception => { LOG.warn("", e) }
+            //              }
+            //            } else if (tmpKeys.isInstanceOf[Array[_]]) {
+            //              try {
+            //                keys = tmpKeys.asInstanceOf[Array[Any]].toList
+            //              } catch {
+            //                case e: Exception => { LOG.warn("", e) }
+            //              }
+            //            } else if (tmpKeys.isInstanceOf[Map[_, _]]) {
+            //              try {
+            //                keys = tmpKeys.asInstanceOf[Map[String, Any]].toList
+            //              } catch {
+            //                case e: Exception => { LOG.warn("", e) }
+            //              }
+            //            } else if (tmpKeys.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
+            //              try {
+            //                keys = tmpKeys.asInstanceOf[scala.collection.mutable.Map[String, Any]].toList
+            //              } catch {
+            //                case e: Exception => { LOG.warn("", e) }
+            //              }
+            //            }
+            //
+            //            if (keys != null && keys.size > 0) {
+            //              var loadableKeys = ArrayBuffer[Key]()
+            //              val ks = keys.map(k => {
+            //                var oneKey: Map[String, Any] = null
+            //                if (k.isInstanceOf[List[_]]) {
+            //                  try {
+            //                    oneKey = k.asInstanceOf[List[(String, Any)]].toMap
+            //                  } catch {
+            //                    case e: Exception => { LOG.warn("", e) }
+            //                  }
+            //                } else if (k.isInstanceOf[Array[_]]) {
+            //                  try {
+            //                    oneKey = k.asInstanceOf[Array[(String, Any)]].toMap
+            //                  } catch {
+            //                    case e: Exception => { LOG.warn("", e) }
+            //                  }
+            //                } else if (k.isInstanceOf[Map[_, _]]) {
+            //                  try {
+            //                    oneKey = k.asInstanceOf[Map[String, Any]]
+            //                  } catch {
+            //                    case e: Exception => { LOG.warn("", e) }
+            //                  }
+            //                } else if (k.isInstanceOf[scala.collection.mutable.Map[_, _]]) {
+            //                  try {
+            //                    oneKey = k.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap
+            //                  } catch {
+            //                    case e: Exception => { LOG.warn("", e) }
+            //                  }
+            //                }
+            //
+            //                if (oneKey != null) {
+            //                  val bk = oneKey.getOrElse("bk", null)
+            //                  if (bk != null) {
+            //                    val tm = oneKey.getOrElse("tm", "0").toString().toLong
+            //                    val tx = oneKey.getOrElse("tx", "0").toString().toLong
+            //                    val rid = oneKey.getOrElse("rid", "0").toString().toInt
+            //                    loadableKeys += Key(tm, bk.asInstanceOf[List[String]].toArray, tx, rid)
+            //                  }
+            //                }
+            //              })
+            //
+            //              if (loadableKeys.size > 0) {
+            //                try {
+            //                  logger.debug("Loading Keys => Txnid:%d, ContainerName:%s, Keys:%s".format(txnid, contName, loadableKeys.map(k => (k.timePartition, k.bucketKey.mkString("="), k.transactionId, k.rowId)).mkString(",")))
+            //                  envCtxt.ReloadKeys(txnid, contName, loadableKeys.toList)
+            //                } catch {
+            //                  case e: Exception => {
+            //                    logger.error("Failed to reload keys for container:" + contName, e)
+            //                  }
+            //                  case t: Throwable => {
+            //                    logger.error("Failed to reload keys for container:" + contName, t)
+            //                  }
+            //                }
+            //              }
+            //            }
+            //
+            //
+            //          }
+            //        } // else // not handling
+            //
+            //
           })
         }
       }
@@ -1233,7 +1238,7 @@ object KamanjaLeader {
       }
     }
   }
-/*
+  /*
   private def GetEndPartitionsValuesForValidateAdapters: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
     val uniqPartKeysValues = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
 
@@ -1312,12 +1317,12 @@ object KamanjaLeader {
         envCtxt.createZkPathChildrenCacheListener(adaptersStatusPath, false, ParticipentsAdaptersStatus)
         envCtxt.createZkPathListener(engineDistributionZkNodePath, ActionOnAdaptersDistribution)
         envCtxt.createZkPathListener(dataChangeZkNodePath, ActionOnDataChange)
-//        zkAdapterStatusNodeListener = new ZooKeeperListener
-//        zkAdapterStatusNodeListener.CreatePathChildrenCacheListener(zkConnectString, adaptersStatusPath, false, ParticipentsAdaptersStatus, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-//        zkEngineDistributionNodeListener = new ZooKeeperListener
-//        zkEngineDistributionNodeListener.CreateListener(zkConnectString, engineDistributionZkNodePath, ActionOnAdaptersDistribution, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-//        zkDataChangeNodeListener = new ZooKeeperListener
-//        zkDataChangeNodeListener.CreateListener(zkConnectString, dataChangeZkNodePath, ActionOnDataChange, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkAdapterStatusNodeListener = new ZooKeeperListener
+        //        zkAdapterStatusNodeListener.CreatePathChildrenCacheListener(zkConnectString, adaptersStatusPath, false, ParticipentsAdaptersStatus, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkEngineDistributionNodeListener = new ZooKeeperListener
+        //        zkEngineDistributionNodeListener.CreateListener(zkConnectString, engineDistributionZkNodePath, ActionOnAdaptersDistribution, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkDataChangeNodeListener = new ZooKeeperListener
+        //        zkDataChangeNodeListener.CreateListener(zkConnectString, dataChangeZkNodePath, ActionOnDataChange, zkSessionTimeoutMs, zkConnectionTimeoutMs)
         try {
           Thread.sleep(500)
         } catch {
@@ -1422,7 +1427,7 @@ object KamanjaLeader {
                     } else {
                       updatePartsCntr += 1
                     }
-/*
+                    /*
                     if (wait4ValidateCheck > 0) {
                       // Get Partitions keys and values for every M secs
                       if (getValidateAdapCntr >= wait4ValidateCheck) { // for every waitForValidateCheck secs
@@ -1467,8 +1472,8 @@ object KamanjaLeader {
         // Forcing to distribute
         // SetUpdatePartitionsFlag
 
-//          zkLeaderLatch = new ZkLeaderLatch(zkConnectString, engineLeaderZkNodePath, nodeId, EventChangeCallback, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-//        zkLeaderLatch.SelectLeader
+        //          zkLeaderLatch = new ZkLeaderLatch(zkConnectString, engineLeaderZkNodePath, nodeId, EventChangeCallback, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        //        zkLeaderLatch.SelectLeader
         /*
         // Set RE-DISTRIBUTED action in adaptersStatusPath + "/" + nodeId path
         val act = ("action" -> "re-distribute")
@@ -1493,7 +1498,7 @@ object KamanjaLeader {
           zkcForSetData.close
         } catch {
           case e: Throwable => {
-            LOG.warn("KamanjaLeader: unable to close zk connection due to",e )
+            LOG.warn("KamanjaLeader: unable to close zk connection due to", e)
           }
         }
       }
@@ -1508,7 +1513,7 @@ object KamanjaLeader {
         zkcForSetData = CreateClient.createSimple(zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs)
       } catch {
         case e: Throwable => {
-          LOG.warn("KamanjaLeader: unable to create new zk connection due to",e )
+          LOG.warn("KamanjaLeader: unable to create new zk connection due to", e)
         }
       }
     }
@@ -1528,8 +1533,7 @@ object KamanjaLeader {
           if ((zkcForSetData != null)) {
             zkcForSetData.setData().forPath(zkNodePath, data)
             return
-          }
-          else
+          } else
             throw new KamanjaException("Connection to ZK does not exists", null)
         }
       } catch {
@@ -1632,20 +1636,21 @@ object KamanjaLeader {
 
   def Shutdown: Unit = {
     distributionExecutor.shutdown
-//    if (zkLeaderLatch != null)
-//      zkLeaderLatch.Shutdown
-//    zkLeaderLatch = null
-//    if (zkEngineDistributionNodeListener != null)
-//      zkEngineDistributionNodeListener.Shutdown
-//    zkEngineDistributionNodeListener = null
-//    if (zkDataChangeNodeListener != null)
-//      zkDataChangeNodeListener.Shutdown
-//    zkDataChangeNodeListener = null
-//    if (zkAdapterStatusNodeListener != null)
-//      zkAdapterStatusNodeListener.Shutdown
-//    zkAdapterStatusNodeListener = null
+    //    if (zkLeaderLatch != null)
+    //      zkLeaderLatch.Shutdown
+    //    zkLeaderLatch = null
+    //    if (zkEngineDistributionNodeListener != null)
+    //      zkEngineDistributionNodeListener.Shutdown
+    //    zkEngineDistributionNodeListener = null
+    //    if (zkDataChangeNodeListener != null)
+    //      zkDataChangeNodeListener.Shutdown
+    //    zkDataChangeNodeListener = null
+    //    if (zkAdapterStatusNodeListener != null)
+    //      zkAdapterStatusNodeListener.Shutdown
+    //    zkAdapterStatusNodeListener = null
     CloseSetDataZkc
   }
+
 }
 
 
