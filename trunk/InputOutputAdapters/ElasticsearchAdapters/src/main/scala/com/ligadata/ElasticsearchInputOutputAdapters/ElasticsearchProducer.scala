@@ -75,7 +75,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
           if (LOG.isInfoEnabled) LOG.info("Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
           exec = true
           curWaitTm = 5000
-          while (!canConsiderShutdown(considerShutdown) && exec) {
+          while (!canConsiderShutdown && exec) {
             exec = false
             try {
               if (client == null) {
@@ -102,7 +102,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                 val nSecs = curWaitTm / 1000
                 for (i <- 0 until nSecs) {
                   try {
-                    if (!canConsiderShutdown(considerShutdown))
+                    if (!canConsiderShutdown)
                       Thread.sleep(1000)
                   } catch {
                     case e: Throwable => {}
@@ -123,7 +123,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
       if (LOG.isInfoEnabled) LOG.info("About to write %d records".format(allRecsToWrite))
       exec = true
       curWaitTm = 5000
-      while (!canConsiderShutdown(considerShutdown) && exec) {
+      while (!canConsiderShutdown && exec) {
         exec = false
         try {
           if (client == null) {
@@ -137,7 +137,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
               val containerName = kv._1
               val data_list = kv._2
               try {
-                val tableName = toFullTableName(containerName)
+                val tableName = producer.toFullTableName(containerName)
                 var bulkRequest = client.prepareBulk()
                 data_list.foreach({ jsonData =>
                   //added by saleh 15/12/2016
@@ -183,7 +183,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                 val beforeExec = System.currentTimeMillis
                 val allRecsForKey = kv._2.size
                 var recsWritten = allRecsForKey
-                if (!ignoreFinalWrite) {
+                if (!producer.ignoreFinalWrite) {
                   val bulkResponse = bulkRequest.execute().actionGet()
                   // Retrying the failed items
                   if (bulkResponse.hasFailures) {
@@ -207,13 +207,13 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                   }
                 }
 
-                if (logWriteTime) {
+                if (producer.logWriteTime) {
                   val endTm = System.currentTimeMillis
 
                   val timeDiff0 = createdIndexTm - startTm
                   val timeDiff1 = beforeExec - createdIndexTm
                   val timeDiff2 = endTm - beforeExec
-                  logger.warn("TimeTaken for AdapterName:%s, WrittenRecords:%d, FailedRecords:%d, CreatingIndex:%d, TillExecute:%d, OnlyExecute:%d".format(getAdapterName, recsWritten, (allRecsForKey - recsWritten), timeDiff0, timeDiff1, timeDiff2))
+                  LOG.warn("TimeTaken for AdapterName:%s, WrittenRecords:%d, FailedRecords:%d, CreatingIndex:%d, TillExecute:%d, OnlyExecute:%d".format(getAdapterName, recsWritten, (allRecsForKey - recsWritten), timeDiff0, timeDiff1, timeDiff2))
                 }
 
                 allRecsToWrite -= recsWritten
@@ -261,7 +261,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
             val nSecs = curWaitTm / 1000
             for (i <- 0 until nSecs) {
               try {
-                if (!canConsiderShutdown(considerShutdown))
+                if (!canConsiderShutdown)
                   Thread.sleep(1000)
               } catch {
                 case e: Throwable => {}
@@ -334,7 +334,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val refreshPartitionTime = 60 * 1000
   // 60 secs
   var timePartition = System.currentTimeMillis()
-  val sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
+  var sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
   var recsToWrite = 0
   var outStandingWrites = new AtomicInteger(0)
   // For now hard coded to 60secs
@@ -754,7 +754,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     createIndexForOutputAdapter(Array(indexName), indexMapping, false)
   }
 
-  private def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+  def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
     var exp: Throwable = null
     try {
       indexNames.foreach(indexName => {
