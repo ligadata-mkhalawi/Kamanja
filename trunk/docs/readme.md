@@ -6,11 +6,11 @@ The LigaData RST documentation source can be modified by anyone working in the k
 
 ### Install pip if necessary
 
-> sudo easy_install pip
-> /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"  # Install homebrew; this takes a few minutes
-> brew install python
-> brew install pip  # This may not be necessary
-> pip install --upgrade pip  # Upgrade pip to latest version
+  > sudo easy_install pip
+  > /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"  # Install homebrew; this takes a few minutes
+  > brew install python
+  > brew install pip  # This may not be necessary
+  > pip install --upgrade pip  # Upgrade pip to latest version
 
 For more information about installing pip,
 see https://pip.pypa.io/en/stable/installing/#do-i-need-to-install-pip .
@@ -21,7 +21,7 @@ You can view and modify the doc source without installing Sphinx but you will no
 
 To install Sphinx, issue the following command:
 
-> pip install sphinx
+  > pip install sphinx
 
 This requires that Python 2.7 be installed on your system.
 If you are running CentOS or another system that uses a different version of Python,
@@ -76,10 +76,10 @@ Note that, if you are using the list-table directive to create a table,
 you need to add a special line to get code within a cell to wrap properly.
 So the head of a list-table looks like:
 
->   .. list-table::
->      :class: ld-wrap-fixed-table
->      :widths: 20 20 30 30
->      :header-rows: 1
+  >   .. list-table::
+  >      :class: ld-wrap-fixed-table
+  >      :widths: 20 20 30 30
+  >      :header-rows: 1
 
 ## Directory structure
 
