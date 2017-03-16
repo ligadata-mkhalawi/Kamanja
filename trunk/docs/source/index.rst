@@ -43,7 +43,7 @@ How to use this documentation
 - :ref:`Ligapedia<ligapedia-top>` is a set of free-standing articles,
   arranged alphabetically, about terms and concepts
   related to using Kamanja.
-  Articles tell you waht the term means
+  Articles tell you what the term means
   and include references to other documents
   (within the Kamanja doc set and elsewhere)
   that give more information.
