@@ -77,7 +77,7 @@ Command Reference Pages
    :maxdepth: 1
 
    command-ref/ContainerUtility
-   command-ref/CreateQueues
+   command-ref/createqueues
    command-ref/ClusterInstallerDriver
    command-ref/easyInstallKamanja
    command-ref/FileDataConsumer
@@ -89,7 +89,7 @@ Command Reference Pages
    command-ref/kafka-server-start
    command-ref/kafka-topics
    command-ref/kamanja
-   command-ref/KVInit
+   command-ref/KVinit
    command-ref/SetPaths
    command-ref/SimpleKafkaProducer
    command-ref/SimplePmlTestTool
