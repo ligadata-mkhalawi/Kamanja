@@ -47,7 +47,7 @@ For additional instructions, see http://www.sphinx-doc.org/en/1.4.8/tutorial.htm
 To build the docs locally:
 
 ```
-> cd *Kamanja/trunk/docs*
+> cd Kamanja/trunk/docs
 > make html
 ```
 
@@ -57,7 +57,7 @@ or by going to localhost:8081.
 To build the PDF documents locally, do everything above required to build the html docs, plus:
 
 ```
-> pip install rst2pdf # install the PDF building software.
+> pip install rst2pdf              # install the PDF building software.
 > make pdf
 ```
 Note that it takes 3-4 minutes to build all the PDFs.
@@ -71,8 +71,8 @@ rather than waiting for you to run "make html".  To implement this:
 
 - Run the **pip install sphinx-autobuild** command to install the autobuild software.
 - Open a browser window for localhost:8081.
-- Open a separate terminal window in which to run autohtml; navigate to the trunk/docs directory.
-- Run "make autohtml" in this new window.
+- Open a separate terminal window in which to run autohtml; navigate to the *trunk/docs* directory.
+- Run **make autohtml** in this new window.
 - Modify a doc file, write the file, and view the changes immediately in your browser window.
   Note that this requires that the Autoload plug-in be implemented in your browser.
   For Firefox, you can download this from:  https://addons.mozilla.org/en-US/firefox/addon/auto-reload/
