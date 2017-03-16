@@ -22,7 +22,9 @@ You can view and modify the doc source without installing Sphinx but you will no
 
 To install Sphinx, issue the following command:
 
-```> pip install sphinx
+
+```
+> pip install sphinx
 ```
 
 This requires that Python 2.7 be installed on your system.
@@ -44,21 +46,30 @@ For additional instructions, see http://www.sphinx-doc.org/en/1.4.8/tutorial.htm
 
 To build the docs locally:
 
-- Navigate to the *Kamanja/trunk/docs* directory
-- Issue the "make html" command
-- You can view the locally-built HTML files by linking to the file name given by the build
-  or by going to localhost:8081.
+```
+> cd *Kamanja/trunk/docs*
+> make html
+```
+
+You can view the locally-built HTML files by linking to the file name given by the build
+or by going to localhost:8081.
 
 To build the PDF documents locally, do everything above required to build the html docs, plus:
 
-- Run the "pip install rst2pdf" command to install the PDF building software.
-- Run the "make pdf" command to build the PDFs.  Note that it does take 3-4 minutes to build all the PDFs.
-- The PDFs are located in the build/html subdirectory
-  or can be accessed by clicking the link in the local HTML build.
+```
+> pip install rst2pdf # install the PDF building software.
+> make pdf
+```
+Note that it takes 3-4 minutes to build all the PDFs.
+The PDFs are located in the *build/html* subdirectory
+or can be accessed by clicking the link in the local HTML build.
 
-You may like the "autohtml" feature.  This spawns a process that keeps running and automatically rebuilds the HTML docs every time you save a file rather than waiting for you to run "make html".  To implement this:
+You may like the "autohtml" feature.
+This spawns a process that keeps running
+and automatically rebuilds the HTML docs every time you save a file
+rather than waiting for you to run "make html".  To implement this:
 
-- Run the "pip install sphinx-autobuild" command to install the autobuild software.
+- Run the **pip install sphinx-autobuild** command to install the autobuild software.
 - Open a browser window for localhost:8081.
 - Open a separate terminal window in which to run autohtml; navigate to the trunk/docs directory.
 - Run "make autohtml" in this new window.
@@ -78,10 +89,11 @@ Note that, if you are using the list-table directive to create a table,
 you need to add a special line to get code within a cell to wrap properly.
 So the head of a list-table looks like:
 
-```>   .. list-table::
->      :class: ld-wrap-fixed-table
->      :widths: 20 20 30 30
->      :header-rows: 1
+```
+.. list-table::
+:class: ld-wrap-fixed-table
+:widths: 20 20 30 30
+:header-rows: 1
 ```
 
 ## Directory structure
