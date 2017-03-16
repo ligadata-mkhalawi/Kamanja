@@ -352,6 +352,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val ignoreFinalWrite = adapterConfig.otherConfig.getOrElse("IgnoreFinalWrite", "false").toString.trim.toBoolean
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
 
+  private val hostListArr = adapterConfig.hostList.toArray
+
   private var parallelWrites = adapterConfig.otherConfig.getOrElse("ParallelWrites", "1").toString.trim.toInt
   if (parallelWrites < 1)
     parallelWrites = 1
@@ -491,6 +493,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
   }
 
+  private var connectionRandomCntr = 0
+
   def getConnection: TransportClient = {
     try {
       var settings = Settings.settingsBuilder()
@@ -507,8 +511,16 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       settings.build()
       val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build()
 
-      val hostList = adapterConfig.hostList
-      hostList.foreach(values => client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(values._1), values._2.toInt)))
+      if (connectionRandomCntr > 1000000)
+        connectionRandomCntr = 0
+
+      connectionRandomCntr + 1
+      val cntr = connectionRandomCntr
+
+      val host = hostListArr(cntr)
+
+      // Assign only one node in round robin mode
+      client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host._1), host._2.toInt))
 
       return client
     } catch {
