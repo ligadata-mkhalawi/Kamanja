@@ -351,8 +351,13 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   val ignoreFinalWrite = adapterConfig.otherConfig.getOrElse("IgnoreFinalWrite", "false").toString.trim.toBoolean
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
+  var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
 
   private val hostListArr = adapterConfig.hostList.toArray
+  private val allHostsCnt = hostListArr.size
+
+  if (roundRobinNodesCount > allHostsCnt)
+    roundRobinNodesCount = allHostsCnt
 
   private var parallelWrites = adapterConfig.otherConfig.getOrElse("ParallelWrites", "1").toString.trim.toInt
   if (parallelWrites < 1)
@@ -511,16 +516,23 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       settings.build()
       val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build()
 
-      if (connectionRandomCntr > 1000000)
-        connectionRandomCntr = 0
+      var startCntr = 0
+      var hostsCnt = allHostsCnt
 
-      connectionRandomCntr + 1
-      val cntr = connectionRandomCntr
+      if (roundRobinNodesCount > 0) {
+        if (connectionRandomCntr > 1000000)
+          connectionRandomCntr = 0
 
-      val host = hostListArr(cntr)
+        connectionRandomCntr + 1
+        startCntr = connectionRandomCntr
+        hostsCnt = roundRobinNodesCount
+      }
 
-      // Assign only one node in round robin mode
-      client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host._1), host._2.toInt))
+      for (i <- 0 until hostsCnt) {
+        val cntr = (startCntr + i) % allHostsCnt
+        val host = hostListArr(cntr)
+        client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host._1), host._2.toInt))
+      }
 
       return client
     } catch {
