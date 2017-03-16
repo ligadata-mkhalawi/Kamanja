@@ -198,8 +198,9 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                     if (itms.length > 0) {
                       var cntr = itms.length - 1
                       while (cntr >= 0) {
-                        if (itms(cntr).isFailed()) {
+                        if (! itms(cntr).isFailed()) {
                           data_list.remove(cntr)
+                        } else {
                           recsWritten -= 1
                         }
                         cntr -= 1
