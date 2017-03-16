@@ -1,0 +1,42 @@
+{
+    "pageSetup": {
+        "margin-top": "2cm",
+        "margin-bottom": "9mm",
+        "margin-left": "2cm",
+        "margin-right": "2cm",
+        "margin-gutter": "0cm",
+        "spacing-header": "2mm",
+        "spacing-footer": "9mm",
+        "firstTemplate": "coverPage"
+    },
+    "pageTemplates" : {
+        "coverPage": {
+            "frames": [
+                ["0cm", "0cm", "100%", "100%"]
+            ],
+            "showHeader" : false,
+            "showFooter" : false,
+            "marginBottom": "80%",
+            "margin-bottom": "80%"
+        },
+        "cutePage": {
+            "frames": [
+                ["0", "0", "100%", "100%"]
+            ],
+            "showHeader" : false,
+            "showFooter" : true,
+            "background": "source/_images/kamy-pdf-footer.png"
+        }
+    },
+    "styles": {
+        "base": {
+
+        },
+        "contents": {
+           "textColor": "red"
+        },
+        "title": {
+            "fontSize":40
+        }
+    }
+}

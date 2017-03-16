@@ -73,8 +73,52 @@ a:link:active, a:visited:active {
 .wy-menu.wy-menu-vertical ul {
     margin-bottom: 15px;
 }
-.wy-menu-vertical li.current>a span.toctree-expand{
-    display: none;
+
+.wy-menu-vertical li.current>a span.toctree-expand,
+.wy-menu-vertical li.current>a:hover span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l1.current a.current span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l1.current a:hover.current span.toctree-expand{
+    color: white;
+}
+.wy-menu-vertical ul.current li.toctree-l1 a.current span.toctree-expand
+{
+    color:#333030;
+}
+.wy-menu-vertical ul.current li.toctree-l1 a.current:hover span.toctree-expand{
+    color:#4d4949;
+}
+
+.wy-menu-vertical li>a:hover span.toctree-expand,
+.wy-menu-vertical li span.toctree-expand{
+    color: #4d4949;
+}
+.wy-menu-vertical li.toctree-l2.current span.toctree-expand,
+.wy-menu-vertical li.toctree-l2.current a:hover span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l2.current a.current span.toctree-expand,
+.wy-menu-vertical li.toctree-l2 a:hover span.toctree-expand{
+    color: #c7c7c7;
+}
+.wy-menu-vertical ul.current li.toctree-l2 a.current span.toctree-expand{
+    color: #d4d4d4;
+}
+
+.wy-menu-vertical li.current>a span.toctree-expand,
+.wy-menu-vertical li.current>a:hover span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l1.current a.current span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l1.current a:hover.current span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l1 a.current span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l1 a.current:hover span.toctree-expand,
+.wy-menu-vertical li>a:hover span.toctree-expand,
+.wy-menu-vertical li span.toctree-expand,
+.wy-menu-vertical li.toctree-l2.current span.toctree-expand,
+.wy-menu-vertical li.toctree-l2.current a:hover span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l2.current a.current span.toctree-expand,
+.wy-menu-vertical li.toctree-l2 a:hover span.toctree-expand,
+.wy-menu-vertical ul.current li.toctree-l2 a.current span.toctree-expand
+{
+    position: absolute;
+    width:100%;
+    height: 100%;
 }
 .wy-menu-vertical a {
     padding: 0.4045em 1.45em;
@@ -105,4 +149,8 @@ div[itemprop=articleBody] .section h1:first-of-type{
 }
 .ld-nodecoration, a:link.ld-nodecoration {
     text-decoration: none;
+}
+
+.section .caption-text {
+    display:none;
 }

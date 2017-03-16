@@ -35,6 +35,9 @@ node {
     }
     finally {
         // Success or fail, always send email
+	dir('trunk') {
+	    deleteDir()
+	}
         notifyBuild(currentBuild.result)
     }
 }
