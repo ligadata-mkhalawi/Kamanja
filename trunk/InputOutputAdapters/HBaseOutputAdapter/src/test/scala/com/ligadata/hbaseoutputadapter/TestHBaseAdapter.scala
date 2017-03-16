@@ -27,6 +27,8 @@ import org.apache.logging.log4j._
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.Exceptions._
 
+case class ReadResult(key: String,columnFamily: String,columnName: String,columnValue: String);
+
 class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
@@ -48,6 +50,8 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
   private var getCount:scala.collection.mutable.Map[String,Int] = scala.collection.mutable.HashMap()
   private var putCount:scala.collection.mutable.Map[String,Int] = scala.collection.mutable.HashMap()
 
+  private var readResults = new Array[ReadResult](0)
+
   private def RoundDateToSecs(d: Date): Date = {
     var c = Calendar.getInstance()
     if (d == null) {
@@ -68,6 +72,8 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
     logger.info("columnValue  => " + columnValue)
     logger.info("----------------------------------------------------")
     readCount = readCount + 1
+    val rr = new ReadResult(key,columnFamily,columnName,columnValue);
+    readResults = readResults :+ rr
   }
 
   def deleteFile(path: File): Unit = {
@@ -111,19 +117,17 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
 
   describe("Unit Tests To Create a Random Table and do fetch operations") {
 
-    // validate property setup
-    it("Validate api operations") {
+    it("Validate api operations in simple case of columnFamily contains only one column") {
       val containerName = "customer1"
 
       val tableName = hbaseAdapter.toTableName(containerName)
       val columnList = Array("name","address","cellNumber")
 
-      And("Create Random Table ")
+      And("Create Random Table " + containerName)
       noException should be thrownBy {
         hbaseAdapter.createAnyTable(containerName,columnList,"ddl")
       }
 
-      And("Add sample rows to the container")
 
       var keyColumns = Array("name");
       for (i <- 1 to 10) {
@@ -134,31 +138,150 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
 	columnValues = columnValues :+ ("name","name",custName)
 	columnValues = columnValues :+ ("address","address",custAddress)
 	columnValues = columnValues :+ ("cellNumber","cellNumber",custNumber)
-	//columnValues("name") = custName
-	//columnValues("address") = custAddress
-	//columnValues("cellNumber") = custNumber
         noException should be thrownBy {
 	  hbaseAdapter.put(containerName,keyColumns,columnValues);
         }
       }
 
       And("Get the rows that were just added with a fliter applied ")
+      readResults = new Array[ReadResult](0)
       var selectList = Array(("address","address"))
       var filterColumns = new Array[(String,String,String)](0)
       filterColumns = filterColumns :+ ("name","name","customer-1");
-      //filterColumns("cellNumber") = "4256667775";
       noException should be thrownBy {
         hbaseAdapter.get(containerName, selectList, filterColumns, keyColumns,readCallBack _)
       }
 
-      And("Shutdown hbase session")
-      noException should be thrownBy {
-        hbaseAdapter.Shutdown
-      }
+      assert(readResults.length == 1)
+      assert(readResults(0).key.equals("customer-1"))
+      assert(readResults(0).columnFamily.equals("address"))
+      assert(readResults(0).columnName.equals("address"))
+      assert(readResults(0).columnValue.equals("10001,Main St, Redmond WA 98052"))
     }
+
+    it("Validate api operations in case of columnFamily contains more than one column") {
+      val containerName = "customer2"
+
+      val tableName = hbaseAdapter.toTableName(containerName)
+      val columnList = Array("ssid","name","address")
+
+      And("Create Random Table " + containerName)
+      noException should be thrownBy {
+        hbaseAdapter.createAnyTable(containerName,columnList,"ddl")
+      }
+
+      var keyColumns = Array("ssid");
+      for (i <- 1 to 10) {
+	var ssid = "11122333" + i;
+        var firstName = "bill" + i;
+        var lastName = "king" + i;
+        var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
+        var custNumber = "425666777" + i
+	var columnValues = new Array[(String,String,String)](0)
+	columnValues = columnValues :+ ("ssid","ssid",ssid)
+	columnValues = columnValues :+ ("address","streetAddress",custAddress)
+	columnValues = columnValues :+ ("address","cellNumber",custNumber)
+        noException should be thrownBy {
+	  hbaseAdapter.put(containerName,keyColumns,columnValues);
+        }
+	
+	columnValues = new Array[(String,String,String)](0)
+	columnValues = columnValues :+ ("ssid","ssid",ssid)
+	columnValues = columnValues :+ ("name","firstName",firstName)
+	columnValues = columnValues :+ ("name","lastName",lastName)
+        noException should be thrownBy {
+	  hbaseAdapter.put(containerName,keyColumns,columnValues);
+        }
+      }
+
+      And("Get the rows that were just added with a fliter applied ")
+      readResults = new Array[ReadResult](0)
+      var selectList = Array(("address","streetAddress"),("name","lastName"))
+      var filterColumns = new Array[(String,String,String)](0)
+      filterColumns = filterColumns :+ ("ssid","ssid","111223331");
+      noException should be thrownBy {
+        hbaseAdapter.get(containerName, selectList, filterColumns, keyColumns,readCallBack _)
+      }
+
+      assert(readResults.length == 2)
+      assert(readResults(0).key.equals("111223331"))
+
+      assert(readResults(0).columnFamily.equals("address"))
+      assert(readResults(0).columnName.equals("streetAddress"))
+      assert(readResults(0).columnValue.equals("10001,Main St, Redmond WA 98052"))
+
+      assert(readResults(1).columnFamily.equals("name"))
+      assert(readResults(1).columnName.equals("lastName"))
+      assert(readResults(1).columnValue.equals("king1"))
+    }
+
+    it("Validate api operations in case of keyColumnFamily contains more than one column") {
+      val containerName = "customer3"
+
+      val tableName = hbaseAdapter.toTableName(containerName)
+      val columnList = Array("serialNum","ssid","name","address")
+
+      And("Create Random Table " + containerName)
+      noException should be thrownBy {
+        hbaseAdapter.createAnyTable(containerName,columnList,"ddl")
+      }
+
+      var keyColumns = Array("ssid","serialNum");
+      for (i <- 1 to 10) {
+	var ssid = "11122333" + i;
+	var serialNum = i.toString();
+        var firstName = "bill" + i;
+        var lastName = "king" + i;
+        var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
+        var custNumber = "425666777" + i
+	var columnValues = new Array[(String,String,String)](0)
+	columnValues = columnValues :+ ("ssid","ssid",ssid)
+	columnValues = columnValues :+ ("serialNum","serialNum",serialNum)
+	columnValues = columnValues :+ ("address","streetAddress",custAddress)
+	columnValues = columnValues :+ ("address","cellNumber",custNumber)
+        noException should be thrownBy {
+	  hbaseAdapter.put(containerName,keyColumns,columnValues);
+        }
+	
+	columnValues = new Array[(String,String,String)](0)
+	columnValues = columnValues :+ ("ssid","ssid",ssid)
+	columnValues = columnValues :+ ("serialNum","serialNum",serialNum)
+	columnValues = columnValues :+ ("name","firstName",firstName)
+	columnValues = columnValues :+ ("name","lastName",lastName)
+        noException should be thrownBy {
+	  hbaseAdapter.put(containerName,keyColumns,columnValues);
+        }
+      }
+
+      And("Get the rows that were just added with a fliter applied ")
+      readResults = new Array[ReadResult](0)
+      var selectList = Array(("address","streetAddress"),("name","lastName"))
+      var filterColumns = new Array[(String,String,String)](0)
+      filterColumns = filterColumns :+ ("ssid","ssid","111223331");
+      filterColumns = filterColumns :+ ("serialNum","serialNum","1");
+      noException should be thrownBy {
+        hbaseAdapter.get(containerName, selectList, filterColumns, keyColumns,readCallBack _)
+      }
+
+      assert(readResults.length == 2)
+      assert(readResults(0).key.equals("111223331.1"))
+
+      assert(readResults(0).columnFamily.equals("address"))
+      assert(readResults(0).columnName.equals("streetAddress"))
+      assert(readResults(0).columnValue.equals("10001,Main St, Redmond WA 98052"))
+
+      assert(readResults(1).columnFamily.equals("name"))
+      assert(readResults(1).columnName.equals("lastName"))
+      assert(readResults(1).columnValue.equals("king1"))
+    }
+
   }
 
   override def afterAll = {
+    logger.info("Shutdown hbase session")
+    noException should be thrownBy {
+      hbaseAdapter.Shutdown
+    }
     var logFile = new java.io.File("logs")
     if (logFile != null) {
       deleteFile(logFile)

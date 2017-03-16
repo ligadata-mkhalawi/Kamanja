@@ -445,17 +445,25 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
 
 
   private def getCompositeKey(keyColumns: Array[String], columnValues: Array[(String,String,String)]): String = {
-    var keyValue = "";
-    var keyColumnValues = columnValues
-    keyColumns.foreach(x => {
-      keyColumnValues = keyColumnValues.filter(c => c._1.equals(x))
-    });
-    keyColumnValues.foreach( x => {
-      keyValue = keyValue + x._3 + ".";
-    })
-    return keyValue.dropRight(1);
-  }
+    var keyValue:String = "";
+    var keyColumnsFound = false;
+    if ( columnValues.size > 0 ){
+      columnValues.foreach(x => {
+	if( isKeyColumn(x._1,keyColumns) ){
+	  //logger.info("The column %s is included in the compositeKey".format(x._1));
+	  keyValue = keyValue + x._3 + "."
+	  keyColumnsFound = true;
+	}
+      })
+    }
 
+    if( keyColumnsFound ){
+      return keyValue.dropRight(1);
+    }
+    else{
+      return null;
+    }
+  }
 
   def put(containerName: String, keyColumns: Array[String], 
 	  columnValues: Array[(String,String,String)]): Unit = {
@@ -465,7 +473,11 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       relogin
       tableHBase = getTableFromConnection(tableName);
       var keyValue = getCompositeKey(keyColumns,columnValues);
+      //logger.info("KeyValue => %s".format(keyValue));
 
+      if( keyValue == null ){
+        throw CreateDMLException("Failed to save an row in the table " + tableName, new Exception("Key Value can not be null"))
+      }
       // filter key values from given input map of values
       var nonkeyColumnValues = columnValues
       keyColumns.foreach(x => {
@@ -518,24 +530,28 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       relogin
       tableHBase = getTableFromConnection(tableName);
 
+      // The whole approach for compositeKey need to be improved.
+      // if filterColumns contains more than one keyColumn, construct the compositeKey
+      var keyValue = getCompositeKey(keyColumns,filterColumns)
+      //logger.info("KeyValue => %s".format(keyValue));
+
       var scan = new Scan();
       // construct filter maps
       val filters = new java.util.ArrayList[Filter]()
       if ( filterColumns.size > 0 ){
 	filterColumns.foreach(x => {
-	  logger.info("Adding the column %s:%s to the filter".format(x._1,x._2));
-	  if( isKeyColumn(x._1,keyColumns) ){
-	    logger.info("Creating a row filter for the key column %s to the filter".format(x._1));
-	    val filter = new RowFilter(CompareOp.EQUAL,new BinaryComparator(Bytes.toBytes(x._3)));
-	    filters.add(filter);
-	  }
-	  else{
+	  if( ! isKeyColumn(x._1,keyColumns) ){
 	    logger.info("Creating a  filter for the non-key column %s:%s to the filter".format(x._1,x._2));
 	    val filter = new SingleColumnValueFilter(Bytes.toBytes(x._1), Bytes.toBytes(x._2),
 						CompareOp.EQUAL, Bytes.toBytes(x._3))
 	    filters.add(filter);
 	  }
 	})
+	if( keyValue != null ){
+	  logger.info("Creating a row filter for the key column %s to the filter".format(keyValue));
+	  val filter = new RowFilter(CompareOp.EQUAL,new BinaryComparator(Bytes.toBytes(keyValue)));
+	  filters.add(filter);
+	}
 	val filterList = new FilterList(filters);  
 	scan.setFilter(filterList)
       }
@@ -554,9 +570,11 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
 	  val kv = kvit.next()
 	  val q = Bytes.toString(kv.getFamily())
 	  if( selectListByFamily.contains(q) ){
+	    logger.debug("q => " + q);
 	    val selectList = selectListByFamily(q)
+	    logger.debug("selectList => " + selectList);
 	    selectList.foreach(c => {
-	      val colName = c._1
+	      val colName = c._2
 	      val colValue = r.getValue(q.getBytes(),colName.getBytes())
 	      if( colValue != null ){
 		valueList((q,colName)) = Bytes.toString(r.getValue(q.getBytes(),colName.getBytes()))
