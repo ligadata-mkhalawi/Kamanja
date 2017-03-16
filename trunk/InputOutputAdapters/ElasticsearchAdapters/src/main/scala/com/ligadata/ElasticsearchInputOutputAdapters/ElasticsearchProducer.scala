@@ -320,7 +320,6 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val default_outstanding_messages = "2048"
   val max_outstanding_messages = default_outstanding_messages.toString.trim().toInt
   private var commitExecutor: ExecutorService = Executors.newFixedThreadPool(1)
-  private var dataWriteExec = Executors.newFixedThreadPool(1)
   val counterLock = new Object
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
@@ -351,6 +350,11 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   val ignoreFinalWrite = adapterConfig.otherConfig.getOrElse("IgnoreFinalWrite", "false").toString.trim.toBoolean
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
+
+  private var parallelWrites = adapterConfig.otherConfig.getOrElse("ParallelWrites", "1").toString.trim.toInt
+  if (parallelWrites < 1)
+    parallelWrites = 1
+  private var dataWriteExec = Executors.newFixedThreadPool(parallelWrites)
 
   // Getting first transaction. It may get wasted if we don't have any lines to save.
 
@@ -460,7 +464,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     val writerTask = new WriteTask(this, considerShutdown, sendData, recsToWrite, outStandingWrites)
 
     var waitCntr = 0L
-    while (outStandingWrites.get > 1) {
+    while (outStandingWrites.get > parallelWrites) {
       // We already have more than 1 outstanding writes
       try {
         if ((waitCntr % 25) == 0 && LOG.isTraceEnabled) LOG.trace("Waiting to add another write task")
