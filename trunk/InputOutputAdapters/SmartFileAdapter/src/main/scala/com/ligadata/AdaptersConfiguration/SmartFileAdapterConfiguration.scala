@@ -494,7 +494,7 @@ object SmartFileAdapterConfiguration {
     //if no detailedLocations defined, use locations, define them as detailedLocations
     if (monitoringConfig.detailedLocations.length == 0) {
       if (simpleLocations.length > 0) {
-        if (((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)) || !monitoringConfig.isDeleteEnabled) {
+        if (((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)) && !monitoringConfig.isDeleteEnabled) {
           val err = "Not found TargetMoveDir corresponding to locations for Smart File Adapter Config:" + adapterName + " and not enabled Delete"
           throw new KamanjaException(err, null)
         }
