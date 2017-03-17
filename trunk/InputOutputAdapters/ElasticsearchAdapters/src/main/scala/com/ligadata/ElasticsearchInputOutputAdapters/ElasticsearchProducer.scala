@@ -175,7 +175,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                   //added by saleh 15/12/2016
                   val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
                   val md = root.get("metadata")
-                  var index = tableName //  + "_" + (batchId % 3)
+                  var index = tableName
                   var metadata_type = "type1"
                   val metadata = if (md == None) null else md.get.asInstanceOf[Map[String, Any]]
 
