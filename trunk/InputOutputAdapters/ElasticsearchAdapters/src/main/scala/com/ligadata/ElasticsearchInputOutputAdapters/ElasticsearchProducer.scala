@@ -48,8 +48,6 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
     producer.isShuttingDown && considerShutdown
   }
 
-  private def getConnection = producer.getConnection
-
   private val adapterConfig = producer.adapterConfig
   private val LOG = producer.LOG
 
@@ -62,7 +60,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
     //    CheckTableExists(tableName)
     try {
       val startTm = System.currentTimeMillis
-      client = getConnection
+      client = producer.getConnectionFromPool
       connectedTime = System.currentTimeMillis
 
       var exec = true
@@ -80,7 +78,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
             exec = false
             try {
               if (client == null) {
-                client = getConnection
+                client = producer.getConnectionFromPool
                 connectedTime = System.currentTimeMillis
               }
               producer.createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
@@ -89,7 +87,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                 if ((System.currentTimeMillis - connectedTime) > 10000) {
                   try {
                     if (client != null)
-                      client.close
+                      producer.closeConnectionInPool(client)
                   } catch {
                     case e: Throwable => {
                       LOG.error("Failed to close connection", e)
@@ -128,7 +126,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
         exec = false
         try {
           if (client == null) {
-            client = getConnection
+            client = producer.getConnectionFromPool
             connectedTime = System.currentTimeMillis
           }
           var gotException: Throwable = null
@@ -198,7 +196,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                     if (itms.length > 0) {
                       var cntr = itms.length - 1
                       while (cntr >= 0) {
-                        if (! itms(cntr).isFailed()) {
+                        if (!itms(cntr).isFailed()) {
                           data_list.remove(cntr)
                         } else {
                           recsWritten -= 1
@@ -251,7 +249,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
             if ((System.currentTimeMillis - connectedTime) > 10000) {
               try {
                 if (client != null)
-                  client.close
+                  producer.closeConnectionInPool(client)
               } catch {
                 case e: Throwable => {
                   LOG.error("Failed to close connection", e)
@@ -284,7 +282,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
       }
     } finally {
       if (client != null) {
-        client.close
+        producer.returnConnectionToPool(client)
         client = null
       }
     }
@@ -498,9 +496,72 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
   }
 
+  val allConnections = ArrayBuffer[TransportClient]()
+  val connectionPool = ArrayBuffer[TransportClient]()
+
+  def getConnectionFromPool: TransportClient = producer.synchronized {
+    if (connectionPool.size > 0) {
+      val client = connectionPool(0)
+      connectionPool.remove(0)
+      return client
+    }
+
+    val client = getConnection: TransportClient
+    allConnections += client
+    return client
+  }
+
+  def returnConnectionToPool(client: TransportClient): Unit = producer.synchronized {
+    if (client == null) return
+    connectionPool += client
+  }
+
+  def closeConnectionInPool(client: TransportClient): Unit = producer.synchronized {
+    var idx = 0
+    var removed = false
+    try {
+      client.close()
+    } catch {
+      case e: Throwable => {
+        LOG.warn("Failed to close connection", e)
+      }
+    }
+    while (!removed && idx < connectionPool.size) {
+      if (connectionPool(idx) == client) {
+        connectionPool.remove(idx)
+        removed = true
+      }
+      idx += 1
+    }
+
+    idx = 0
+    removed = false
+    while (!removed && idx < allConnections.size) {
+      if (allConnections(idx) == client) {
+        allConnections.remove(idx)
+        removed = true
+      }
+      idx += 1
+    }
+  }
+
+  def closeAllConnectionsInPool: Unit = producer.synchronized {
+    allConnections.foreach(client => {
+      try {
+        client.close()
+      } catch {
+        case e: Throwable => {
+          LOG.warn("Failed to close connection", e)
+        }
+      }
+    })
+    connectionPool.clear
+    allConnections.clear
+  }
+
   private var connectionRandomCntr = 0
 
-  def getConnection: TransportClient = {
+  private def getConnection: TransportClient = {
     try {
       var settings = Settings.settingsBuilder()
       settings.put("cluster.name", adapterConfig.clusterName)
@@ -605,16 +666,18 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     var client: TransportClient = null
     var exp: Throwable = null
     try {
-      client = getConnection
+      client = getConnectionFromPool
       createIndexForOutputAdapter(client, indexNames, indexMapping, onlyNonExistIndices)
     }
     catch {
       case e: Exception => {
         LOG.error("Failed to create Index", e)
+        closeConnectionInPool(client)
+        client = null
       }
     } finally {
       if (client != null) {
-        client.close
+        returnConnectionToPool(client)
       }
     }
   }
@@ -653,7 +716,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     isAboutShutdown = true
     if (dataWriteExec != null) {
       dataWriteExec.shutdown
-      if (! dataWriteExec.awaitTermination(60, TimeUnit.MINUTES)) {
+      if (!dataWriteExec.awaitTermination(60, TimeUnit.MINUTES)) {
         LOG.error(adapterConfig.Name + ": dataWriteExec failed to shutdown. Calling shutdownNow")
         dataWriteExec.shutdownNow
       }
@@ -663,12 +726,15 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     if (commitExecutor != null) {
       commitExecutor.shutdown
-      if (! commitExecutor.awaitTermination(60, TimeUnit.MINUTES)) {
+      if (!commitExecutor.awaitTermination(60, TimeUnit.MINUTES)) {
         LOG.error(adapterConfig.Name + ": commitExecutor failed to shutdown. Calling shutdownNow")
         commitExecutor.shutdownNow
       }
     }
 
     putJsonsWithMetadata(false, false)
+
+    // Closing all connections
+    closeAllConnectionsInPool
   }
 }
