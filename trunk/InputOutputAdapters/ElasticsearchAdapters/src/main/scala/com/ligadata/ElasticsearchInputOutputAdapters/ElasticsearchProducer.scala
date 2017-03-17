@@ -175,7 +175,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                   //added by saleh 15/12/2016
                   val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
                   val md = root.get("metadata")
-                  var index = tableName
+                  var index = tableName //  + "_" + (batchId % 3)
                   var metadata_type = "type1"
                   val metadata = if (md == None) null else md.get.asInstanceOf[Map[String, Any]]
 
@@ -384,6 +384,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
   var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
   val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim
+  // val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim.toInt
 
   private val hostListArr = adapterConfig.hostList.toArray
   private val allHostsCnt = hostListArr.size
@@ -405,6 +406,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
   private val producer = this
+
+  private val poolLock = new Object
 
   def isShuttingDown = isShutdown
 
@@ -534,7 +537,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val allConnections = ArrayBuffer[TransportClient]()
   val connectionPool = ArrayBuffer[TransportClient]()
 
-  def getConnectionFromPool: TransportClient = producer.synchronized {
+  def getConnectionFromPool: TransportClient = poolLock.synchronized {
     if (connectionPool.size > 0) {
       val client = connectionPool(0)
       connectionPool.remove(0)
@@ -546,12 +549,12 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     return client
   }
 
-  def returnConnectionToPool(client: TransportClient): Unit = producer.synchronized {
+  def returnConnectionToPool(client: TransportClient): Unit = poolLock.synchronized {
     if (client == null) return
     connectionPool += client
   }
 
-  def closeConnectionInPool(client: TransportClient): Unit = producer.synchronized {
+  def closeConnectionInPool(client: TransportClient): Unit = poolLock.synchronized {
     var idx = 0
     var removed = false
     try {
@@ -580,7 +583,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
   }
 
-  def closeAllConnectionsInPool: Unit = producer.synchronized {
+  def closeAllConnectionsInPool: Unit = poolLock.synchronized {
     allConnections.foreach(client => {
       try {
         client.close()
