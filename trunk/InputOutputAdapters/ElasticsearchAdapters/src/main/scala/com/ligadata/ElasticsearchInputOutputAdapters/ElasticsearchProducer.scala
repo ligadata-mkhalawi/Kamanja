@@ -23,6 +23,7 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.index.VersionType
 import org.json4s.jackson.Serialization
 import java.util.concurrent.atomic.AtomicInteger
+import java.io.{File, PrintWriter}
 
 
 import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
@@ -41,7 +42,7 @@ object ElasticsearchProducer extends OutputAdapterFactory {
   val LAST_RECOVERY_TIME = "Last_Recovery"
 }
 
-class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boolean, val writeData: scala.collection.mutable.Map[String, ArrayBuffer[String]], writeRecs: Int, var outStandingWrites: AtomicInteger) extends Runnable {
+class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boolean, val writeData: scala.collection.mutable.Map[String, ArrayBuffer[String]], writeRecs: Int, var outStandingWrites: AtomicInteger, val batchId: Long) extends Runnable {
   var allRecsToWrite = writeRecs
 
   private def canConsiderShutdown: Boolean = {
@@ -51,9 +52,40 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
   private val adapterConfig = producer.adapterConfig
   private val LOG = producer.LOG
 
+  private def writeBatchToFile: Unit = {
+    val flDir = producer.batchFileOutputDir
+    if (flDir == null || flDir.length == 0) return
+
+    val flPath = flDir + "/Batch_" + batchId + ".json"
+    var pw: PrintWriter = null
+
+    try {
+      val fl = new File(flPath)
+      pw = new PrintWriter(fl)
+
+      writeData.foreach(kv => {
+        val set = kv._2
+        set.foreach(str => {
+          pw.write(str)
+          pw.write("\n")
+        })
+      })
+    } catch {
+      case e: Throwable => {
+        LOG.warn("Failed to write batch:%d into file:%s".format(batchId, flPath))
+      }
+    } finally {
+      if (pw != null)
+        pw.close
+    }
+  }
+
   private def putJsonsWithMetadataLocal: Unit = {
     if (writeData.size == 0) return
     if (LOG.isDebugEnabled) LOG.debug("Called writer task putJsonsWithMetadataLocal")
+
+    writeBatchToFile
+
     //   containerName: String, data_list: Array[String]
     var client: TransportClient = null
     var connectedTime = 0L
@@ -341,6 +373,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   var sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
   var recsToWrite = 0
   var outStandingWrites = new AtomicInteger(0)
+  var batchIdCntr = 0L
   // For now hard coded to 60secs
   val timeToWriteRecs = adapterConfig.timeToWriteRecsInSec
   val writeRecsBatch = adapterConfig.writeRecsBatch
@@ -350,6 +383,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val ignoreFinalWrite = adapterConfig.otherConfig.getOrElse("IgnoreFinalWrite", "false").toString.trim.toBoolean
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
   var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
+  val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim
 
   private val hostListArr = adapterConfig.hostList.toArray
   private val allHostsCnt = hostListArr.size
@@ -467,7 +501,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   private def putJsonsWithMetadata(considerShutdown: Boolean, canRunOnSeparateThread: Boolean): Unit = producer.synchronized {
     if (sendData.size == 0) return
 
-    val writerTask = new WriteTask(this, considerShutdown, sendData, recsToWrite, outStandingWrites)
+    batchIdCntr += 1
+    val writerTask = new WriteTask(this, considerShutdown, sendData, recsToWrite, outStandingWrites, batchIdCntr)
 
     var waitCntr = 0L
     while (outStandingWrites.get > parallelWrites) {
