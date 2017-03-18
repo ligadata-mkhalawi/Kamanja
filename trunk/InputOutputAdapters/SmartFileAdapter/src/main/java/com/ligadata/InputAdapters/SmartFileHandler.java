@@ -32,6 +32,10 @@ public interface SmartFileHandler {
     boolean isFile() throws KamanjaException;
     boolean isDirectory() throws KamanjaException;
 
+    boolean isArchiveFile();
+
+    String getArchiveFileType();
+
     boolean isAccessible();
 
     boolean mkdirs();

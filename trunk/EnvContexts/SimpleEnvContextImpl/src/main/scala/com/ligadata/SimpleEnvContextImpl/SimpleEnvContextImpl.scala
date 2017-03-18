@@ -1423,7 +1423,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
     var doneSave = false
 
-    while (!doneSave) {
+    if (dataStore == null) {
+      logger.error("Given datastore is null in callSaveData")
+      throw InvalidArgumentException("Given datastore is null in callSaveData", null)
+    }
+
+    while (!doneSave && !isShutdown) {
       try {
         dataStore.put(null, data_list)
         incrementWriteCount
@@ -1446,7 +1451,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
       }
 
-      if (!doneSave) {
+      if (!doneSave && !isShutdown) {
         try {
           logger.error("Failed to save data into datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
@@ -1472,7 +1477,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
     var doneGet = false
 
-    while (!doneGet) {
+    if (dataStore == null) {
+      logger.error("Given datastore is null in callGetData")
+      throw InvalidArgumentException("Given datastore is null in callGetData", null)
+    }
+
+    while (!doneGet && !isShutdown) {
       try {
         dataStore.get(containerName, callbackFunction)
         incrementReadCount
@@ -1499,7 +1509,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
       }
 
-      if (!doneGet) {
+      if (!doneGet && !isShutdown) {
         try {
           logger.error("Failed to get data from datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
@@ -1523,7 +1533,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
     var doneGet = false
 
-    while (!doneGet) {
+    if (dataStore == null) {
+      logger.error("Given datastore is null in callGetData")
+      throw InvalidArgumentException("Given datastore is null in callGetData", null)
+    }
+
+    while (!doneGet && !isShutdown) {
       try {
         dataStore.get(containerName, keys, callbackFunction)
         incrementReadCount
@@ -1550,7 +1565,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
       }
 
-      if (!doneGet) {
+      if (!doneGet && !isShutdown) {
         try {
           logger.error("Failed to get data from datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
@@ -1574,7 +1589,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
     var doneGet = false
 
-    while (!doneGet) {
+    if (dataStore == null) {
+      logger.error("Given datastore is null in callGetData")
+      throw InvalidArgumentException("Given datastore is null in callGetData", null)
+    }
+
+    while (!doneGet && !isShutdown) {
       try {
         dataStore.get(containerName, timeRanges, callbackFunction)
         incrementReadCount
@@ -1601,7 +1621,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
       }
 
-      if (!doneGet) {
+      if (!doneGet && !isShutdown) {
         try {
           logger.error("Failed to get data from datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
@@ -1625,7 +1645,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
     var doneGet = false
 
-    while (!doneGet) {
+    if (dataStore == null) {
+      logger.error("Given datastore is null in callGetData")
+      throw InvalidArgumentException("Given datastore is null in callGetData", null)
+    }
+
+    while (!doneGet && !isShutdown) {
       try {
         dataStore.get(containerName, timeRanges, bucketKeys, callbackFunction)
         incrementReadCount
@@ -1652,7 +1677,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
       }
 
-      if (!doneGet) {
+      if (!doneGet && !isShutdown) {
         try {
           logger.error("Failed to get data from datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
@@ -1676,7 +1701,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
     var doneGet = false
 
-    while (!doneGet) {
+    if (dataStore == null) {
+      logger.error("Given datastore is null in callGetData")
+      throw InvalidArgumentException("Given datastore is null in callGetData", null)
+    }
+
+    while (!doneGet && !isShutdown) {
       try {
         dataStore.get(containerName, bucketKeys, callbackFunction)
         incrementReadCount
@@ -1703,7 +1733,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
       }
 
-      if (!doneGet) {
+      if (!doneGet && !isShutdown) {
         try {
           logger.error("Failed to get data from datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)

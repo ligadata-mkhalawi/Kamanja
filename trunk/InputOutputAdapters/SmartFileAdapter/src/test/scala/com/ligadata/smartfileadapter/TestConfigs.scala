@@ -108,6 +108,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       loc1.msgTags.mkString(",") shouldEqual "emm,$FileName"
       loc1.tagDelimiter shouldEqual "^"
       loc1.isMovingEnabled shouldEqual false
+      loc1.isDeleteEnabled shouldEqual false
 
       val loc2 = conf.monitoringConfig.detailedLocations(1)
       loc2.srcDir shouldEqual "/data/input2"
@@ -120,6 +121,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       loc2.msgTags.mkString(",") shouldEqual "$FileName"
       loc2.tagDelimiter shouldEqual "$$"
       loc2.isMovingEnabled shouldEqual true
+      loc2.isDeleteEnabled shouldEqual true
     }
   }
 
