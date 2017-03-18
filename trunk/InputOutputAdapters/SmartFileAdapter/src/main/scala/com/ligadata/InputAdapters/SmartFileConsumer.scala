@@ -28,7 +28,7 @@ import scala.collection.mutable.{Map, MultiMap, HashMap, ArrayBuffer}
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Byte], relatedChunk: Int)
 
 //case class BufferToChunk(len: Int, payload: Array[Byte], chunkNumber: Int, relatedFileHandler: SmartFileHandler, firstValidOffset: Int, isEof: Boolean, partMap: scala.collection.mutable.Map[Int,Int])
-case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgNumber: Long, msgStartOffset: Long)
+case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgNumber: Long, msgStartOffset: Long, FileSeqNo: Int, childFlName: String)
 
 case class FileStatus(status: Int, offset: Long, createDate: Long)
 
@@ -1050,6 +1050,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
+  def getProcessingQueueItems: Array[GroupProcessingItem] = {
+    var processingArr: Array[String] = null
+    processingQLock.synchronized {
+      processingArr = processingFilesQueue.toArray
+    }
+    processingArr.map(item => createGroupFromProcessingItemJson(item) )
+  }
+
   def addToProcessingQueue(processingItem: String, addToHead: Boolean = false): Unit = {
     if (LOG.isTraceEnabled) LOG.trace("addToProcessingQueue => processingItem:" + processingItem)
     processingQLock.synchronized {
@@ -1109,7 +1117,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       """{"Files":[]}"""
     } else {
       //leave offset management to engine, usually this will be other than zero when calling startProcessing
-      """{"Files":[""" + grp.fileHandlers.map(fl => { """{"Fl":"%s","Off":0}""".format(fl.fileHandler.getFullPath())}).mkString(",") + "]}"
+      """{"Files":[""" + grp.fileHandlers.map(fl => { """{"Fl":"%s","Off":%d}""".format(fl.fileHandler.getFullPath(), fl.offset)}).mkString(",") + "]}"
     }
   }
 
@@ -1276,86 +1284,87 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - no initial files to process")
       return
     }
-    requestQLock.synchronized {
-      var processingQueue = getFileProcessingQueue
-      var requestQueue = getFileRequestsQueue
 
-      //wait to get requests from all threads
-      val maxTrials = 5
-      var trialsCounter = 1
-      while (trialsCounter <= maxTrials && requestQueue.size < adapterConfig.monitoringConfig.consumersCount) {
-        Thread.sleep(1000)
-        requestQueue = getFileRequestsQueue
-        trialsCounter += 1
+    var requestQueue = getFileRequestsQueue
+
+    //wait to get requests from all threads
+    val maxTrials = 5
+    var trialsCounter = 1
+    while (trialsCounter <= maxTrials && requestQueue.size < adapterConfig.monitoringConfig.consumersCount) {
+      Thread.sleep(1000)
+      requestQueue = getFileRequestsQueue
+      trialsCounter += 1
+    }
+
+    val assignedFilesList = ArrayBuffer[String]()
+    //<node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
+    initialFilesToProcess.foreach(fileInfo => {
+      if (assignedFilesList.contains(fileInfo._3)) {
+        if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - Initial files : file ({}) was already assigned", fileInfo._3)
       }
+      else {
+        var requestToAssign: String = ""
+        requestQueue.find(requestStr => {
+          val reqTokens = requestStr.split(":")
+          val participantPathTokens = reqTokens(0).split("/")
+          val nodeId = participantPathTokens(0)
+          val partitionId = participantPathTokens(1).toInt
 
-      val assignedFilesList = ArrayBuffer[String]()
-      //<node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
-      initialFilesToProcess.foreach(fileInfo => {
-        if (assignedFilesList.contains(fileInfo._3)) {
-          if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - Initial files : file ({}) was already assigned", fileInfo._3)
+          fileInfo._1.equals(nodeId) && fileInfo._2 == partitionId
+        }) match {
+          case None => {}
+          case Some(requestStr) => {
+            requestToAssign = requestStr
+          }
+        }
+
+        if (requestToAssign == null || hasPendingFileRequestsInQueue) {
+          if (LOG.isInfoEnabled) LOG.info("Smart File Consumer - has not received a request from Node {}, Partition {} to handle initial file {}. trying to find another partition ",
+              fileInfo._1, fileInfo._2.toString, fileInfo._3)
+          requestToAssign = getNextFileRequestFromQueue
         }
         else {
-          var requestToAssign: String = ""
-          requestQueue.find(requestStr => {
-            val reqTokens = requestStr.split(":")
-            val participantPathTokens = reqTokens(0).split("/")
-            val nodeId = participantPathTokens(0)
-            val partitionId = participantPathTokens(1).toInt
-
-            fileInfo._1.equals(nodeId) && fileInfo._2 == partitionId
-          }) match {
-            case None => {}
-            case Some(requestStr) => {
-              requestToAssign = requestStr
-            }
-          }
-
-          if (requestToAssign == null || requestToAssign.length == 0) {
-            if (LOG.isInfoEnabled) LOG.info("Smart File Consumer - has not received a request from Node {}, Partition {} to handle initial file {}. trying to find another partition ",
-              fileInfo._1, fileInfo._2.toString, fileInfo._3)
-            val requestQueue = getFileRequestsQueue
-            if (requestQueue.length > 0) {
-              requestToAssign = requestQueue.head
-              removeFromRequestQueue(requestToAssign)
-            }
-            else {
-              if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - could not find any partition ready to handle initial file {}.",
-                fileInfo._3)
-            }
-          }
-
-          if (requestToAssign != null && requestToAssign.length > 0) {
-            //LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignInitialFiles")
-            val fileToProcessFullPath = fileInfo._3
-
-            removeFromRequestQueue(requestToAssign) //remove the current request
-
-            val reqTokens = requestToAssign.split(":")
-            if (reqTokens.length >= 2) {
-              val fileAssignmentKeyPath = reqTokens(1)
-              val participantPathTokens = reqTokens(0).split("/")
-              if (participantPathTokens.length >= 2) {
-                val nodeId = participantPathTokens(0)
-                val partitionId = participantPathTokens(1).toInt
-
-                assignedFilesList.append(fileToProcessFullPath)
-
-                val newProcessingItem = createProcessingItemJsonFromGroup(nodeId.toInt, partitionId.toInt, List[String](fileToProcessFullPath))
-                addToProcessingQueue(newProcessingItem) //add to processing queue
-
-                val offset = fileInfo._4
-                val data = createProcessingJsonDataFromFileAndOffset(fileToProcessFullPath, offset)
-                if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
-                  ") to Node " + nodeId + ", partition Id=" + partitionId + ", data:" + data + ", newProcessingItem:" + newProcessingItem)
-                envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
-              }
-            }
-          }
+          if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - could not find any partition ready to handle initial file {}.",
+            fileInfo._3)
         }
-      })
-      initialFilesHandled = true
-    }
+
+        if (requestToAssign != null && requestToAssign.length > 0) {
+          //LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignInitialFiles")
+          val fileToProcessFullPath = fileInfo._3
+
+          removeFromRequestQueue(requestToAssign) //remove the current request
+
+          val reqTokens = requestToAssign.split(":")
+          if (reqTokens.length >= 2) {
+            val fileAssignmentKeyPath = reqTokens(1)
+            val participantPathTokens = reqTokens(0).split("/")
+            if (participantPathTokens.length >= 2) {
+              val nodeId = participantPathTokens(0)
+              val partitionId = participantPathTokens(1).toInt
+
+              assignedFilesList.append(fileToProcessFullPath)
+
+              val newProcessingItem = createProcessingItemJsonFromGroup(nodeId.toInt, partitionId.toInt, List[String](fileToProcessFullPath))
+              addToProcessingQueue(newProcessingItem) //add to processing queue
+
+              val offset = fileInfo._4
+              val data = createProcessingJsonDataFromFileAndOffset(fileToProcessFullPath, offset)
+              if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
+                ") to Node " + nodeId + ", partition Id=" + partitionId + ", data:" + data + ", newProcessingItem:" + newProcessingItem)
+              envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
+            }
+          }
+        } else {
+          // BUGBUG:: For now we are handling this as single file is single group
+          val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileInfo._3, false)
+          val locationInfo = getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
+          val components = MonitorUtils.getFileComponents(fileHandler.getFullPath, locationInfo)
+          val grp = new EnqueuedGroupHandler(Array(new EnqueuedFileHandler(fileHandler, fileInfo._4, fileHandler.lastModified(fileInfo._3), locationInfo, components)))
+          monitorController.enQGroup(grp)
+        }
+      }
+    })
+    initialFilesHandled = true
   }
 
   //leader
@@ -2096,6 +2105,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     uniqueVal.Offset = offset
     uniqueVal.FileName = fileName
+    uniqueVal.ChildFlName = smartMessage.childFlName
+    uniqueVal.FileSeqNo = smartMessage.FileSeqNo
     //val dontSendOutputToOutputAdap = uniqueVal.Offset <= uniqueRecordValue
 
     if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}. uniqueKey={}, uniqueVal={}, smartFileConsumerContext.execThread={},smartFileConsumerContext={}",

@@ -38,6 +38,21 @@ class HdfsFileHandler extends SmartFileHandler {
 
   private var fileType : String = null
 
+  private var isArchFile: Boolean = false
+  private var archFileType: String = null
+
+  private def resolveArchiveFileInfo: Unit = {
+    if (monitoringConfig.hasHandleArchiveFileExtensions) {
+      val typ = SmartFileHandlerFactory.getArchiveFileType(fileFullPath, monitoringConfig.handleArchiveFileExtensions)
+      isArchFile = (typ != null && !typ.isEmpty)
+      archFileType = typ
+    }
+  }
+
+  override def isArchiveFile(): Boolean = isArchFile
+
+  override def getArchiveFileType(): String = archFileType
+
   def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig) {
     this()
 
@@ -46,11 +61,13 @@ class HdfsFileHandler extends SmartFileHandler {
     fileFullPath = fullPath
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
     hdFileSystem = FileSystem.newInstance(hdfsConfig)
+    resolveArchiveFileInfo
   }
 
   def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
     this(fullPath, connectionConf, monitoringConfig)
     isBinary = isBin
+    resolveArchiveFileInfo
   }
 
   /*def this(fullPath : String, fs : FileSystem){
@@ -104,7 +121,7 @@ class HdfsFileHandler extends SmartFileHandler {
   def openForRead(): InputStream = {
     try {
       val is = getDefaultInputStream()
-      if (!isBinary) {
+      if (!isBinary && !isArchFile) {
         fileType = CompressionUtil.getFileType(this, getFullPath, null)
         val asIs = if(monitoringConfig == null) true else monitoringConfig.considerUnknownFileTypesAsIs
         in = CompressionUtil.getProperInputStream(is, fileType, asIs)

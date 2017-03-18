@@ -564,13 +564,13 @@ class MonitorController {
     allEnqueuedGrps.foreach(g => {
       excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
     })
-    /*
-    //BUGBUG:: Get all processing files and add them in exclude list
-        val allProcessingGrps = getAllEnqueuedGroups
-        allProcessingGrps.foreach(g => {
-          excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
-        })
-  */
+
+    val allProcessingGrps = parentSmartFileConsumer.getProcessingQueueItems
+    allProcessingGrps.foreach(g => {
+      if (g.Files != None) {
+        excludeFlsSet ++= g.Files.get
+      }
+    })
 
     if (isFirstScan && initialFiles != null) {
       excludeFlsSet ++= initialFiles
@@ -584,9 +584,19 @@ class MonitorController {
       if (groupsInfo != null) {
         if (logger.isDebugEnabled) logger.debug("Found groupInfo")
         currentAllChilds.groupBy(fl => {
-          val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
           val parent = if (fl.parent != null) fl.parent else ""
-          (parent, extractFileFromPattern(groupsInfo, flName))
+          //BUGBUG:: For now Archive files does not participate as groups. Each file becomes a group. Fix it later if we want to make ArchiveFiles as groups
+          var foundArchiveFile = false
+          if (adapterConfig.monitoringConfig.hasHandleArchiveFileExtensions) {
+            val flTyp = SmartFileHandlerFactory.getArchiveFileType(fl.path, adapterConfig.monitoringConfig.handleArchiveFileExtensions)
+            foundArchiveFile = (flTyp != null && !flTyp.isEmpty)
+          }
+          if (foundArchiveFile) {
+            (parent, fl.path)
+          } else {
+            val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
+            (parent, extractFileFromPattern(groupsInfo, flName))
+          }
         }).values.toArray
       }
       else {
@@ -623,7 +633,7 @@ class MonitorController {
               if (!enqueuedBufferedFiles.contains(filePath)) {
                 val isValid = MonitorUtils.isValidFile(adapterConfig.Name,
                   monitoringThreadsFileHandlers(currentThreadId), filePath, currentFileLocationInfo, ignoredFiles,
-                  false, adapterConfig.monitoringConfig.checkFileTypes)
+                  false, adapterConfig.monitoringConfig.checkFileTypes, adapterConfig.monitoringConfig)
                 fixIgnoredFiles()
 
                 if (isValid)
@@ -706,7 +716,7 @@ class MonitorController {
 */
 
   
-  private def enQGroup(grp: EnqueuedGroupHandler): Unit = {
+  def enQGroup(grp: EnqueuedGroupHandler): Unit = {
     if (grp == null) return
     groupQLock.synchronized {
       groupQ += grp

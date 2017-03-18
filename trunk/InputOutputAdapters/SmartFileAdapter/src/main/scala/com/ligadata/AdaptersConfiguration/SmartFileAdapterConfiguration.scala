@@ -101,6 +101,11 @@ class FileAdapterMonitoringConfig {
   var dirMonitoringDepth : Int = 0
 
   var filesGroupsInfoJsonString: String = null
+
+  var entireFileInArchiveAsOneMessage = false
+  var handleArchiveFileExtensions: Map[String, Array[String]] = null
+  def hasHandleArchiveFileExtensions = (handleArchiveFileExtensions != null && !handleArchiveFileExtensions.isEmpty)
+  var otherConfig = Map[String, Any]()
 }
 
 class Padding {
@@ -342,6 +347,8 @@ object SmartFileAdapterConfiguration {
       throw new KamanjaException(err, null)
     }
 
+    var otherConfig = scala.collection.mutable.Map[String, Any]()
+
     val monConf = adapCfgValues.get("MonitoringConfig").get.asInstanceOf[Map[String, Any]]
     //val monConfValues = monConf.values.asInstanceOf[Map[String, String]]
     monConf.foreach(kv => {
@@ -368,6 +375,9 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
         monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("EntireFileInArchiveAsOneMessage") == 0) {
+        monitoringConfig.entireFileInArchiveAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
       }
       else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
         monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
@@ -482,10 +492,40 @@ object SmartFileAdapterConfiguration {
         })
 
         monitoringConfig.detailedLocations = locationsInfoBuffer.toArray
+      } else if (kv._1.compareToIgnoreCase("HandleArchiveFileExtensions") == 0) {
+        if (kv._2.isInstanceOf[Map[String, Any]]) {
+          val map = kv._2.asInstanceOf[Map[String, Any]]
+          val validMap = scala.collection.mutable.Map[String, Array[String]]()
+          map.foreach(mapKV => {
+            if (mapKV._1 != null) {
+              val key = mapKV._1.toLowerCase
+              if (mapKV._2 != null) {
+                if (mapKV._2.isInstanceOf[Array[String]]) {
+                  validMap(key) = mapKV._2.asInstanceOf[Array[String]]
+                } else if (mapKV._2.isInstanceOf[List[String]]) {
+                  validMap(key) = mapKV._2.asInstanceOf[List[String]].toArray
+                } else if (mapKV._2.isInstanceOf[String]) {
+                  validMap(key) = Array[String](mapKV._2.toString)
+                } else {
+                  logger.error("In HandleArchiveFileExtensions type %s value is not Array or List".format(key))
+                }
+              } else {
+                logger.error("In HandleArchiveFileExtensions type %s value is null".format(key))
+              }
+            }
+          })
+          if (! validMap.isEmpty) {
+            monitoringConfig.handleArchiveFileExtensions = validMap.toMap
+          }
+        } else {
+          logger.error("HandleArchiveFileExtensions found, but is not of type Map[String, Any]")
+        }
+      } else {
+        otherConfig(kv._1) = kv._2
       }
-
     })
 
+    monitoringConfig.otherConfig = otherConfig.toMap
 
     // Disabling delete in case MOVE & DELETE enabled
     if (monitoringConfig.isMovingEnabled && monitoringConfig.isDeleteEnabled)
@@ -691,11 +731,13 @@ class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   }
 }
 
-case class SmartFileRecData(Version: Int, FileName: String, Offset: Option[Long])
+case class SmartFileRecData(Version: Int, FileName: String, Offset: Option[Long], ChildFlName: Option[String], FileSeqNo: Option[Int])
 
 class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   val Version: Int = 1
   var FileName: String = _
+  var ChildFlName: String = "" // This is used in case of Archive file. This will be archive file name
+  var FileSeqNo: Int = 0 // This is used in case of Archive file. This will be file entry number with in archive
   var Offset: Long = -1 // Offset of next message in the file
 
   override def Serialize: String = {
@@ -703,7 +745,9 @@ class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
     val json =
       ("Version" -> Version) ~
         ("Offset" -> Offset) ~
-        ("FileName" -> FileName)
+        ("FileName" -> FileName) ~
+        ("ChildFlName" -> ChildFlName) ~
+        ("FileSeqNo" -> FileSeqNo)
     compact(render(json))
   }
 
@@ -712,8 +756,10 @@ class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
     implicit val jsonFormats: Formats = DefaultFormats
     val recData = parse(key).extract[SmartFileRecData]
     if (recData.Version == Version) {
-      Offset = recData.Offset.get
+      Offset = if (recData.Offset != None) recData.Offset.get else 0L
       FileName = recData.FileName
+      ChildFlName = if (recData.ChildFlName != None) recData.ChildFlName.get else ""
+      FileSeqNo = if (recData.FileSeqNo != None) recData.FileSeqNo.get else 0
     }
     // else { } // Not yet handling other versions
   }
