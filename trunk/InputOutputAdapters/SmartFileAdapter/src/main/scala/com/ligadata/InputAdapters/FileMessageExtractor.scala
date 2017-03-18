@@ -422,6 +422,9 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   }
 
   private def readArchiveFile(fileHandler: SmartFileHandler, consumerContext: SmartFileConsumerContext, startOffset: Long, byteBuffer: Array[Byte]): Unit = {
+    if (logger.isWarnEnabled) logger.warn("Reading data from archive file {} , on Node {} , PartitionId {}",
+      fileHandler.getFullPath, consumerContext.nodeId, consumerContext.partitionId.toString)
+
     var in: ArchiveInputStream = null
     try {
       var typ = fileHandler.getArchiveFileType
@@ -464,7 +467,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           throw new Exception("Handling only ZIP/TAR files. Given file:" + fileHandler.getFullPath + " is not ZIP/TAR")
         }
 
-      val skipFls = startOffset % archiveFileOffsetMask
+      val skipFls = startOffset / archiveFileOffsetMask
       var fileId = 0
       var entry = in.getNextEntry
       while (entry != null && !processingInterrupted) {
@@ -482,8 +485,9 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             var readlen = 0
             currentMsgNum = 0
             globalOffset = fileId * archiveFileOffsetMask
+
             if (!adapterConfig.monitoringConfig.entireFileInArchiveAsOneMessage) {
-              val skipOff = if (fileId == skipFls) (startOffset / archiveFileOffsetMask) else 0L
+              val skipOff = if (fileId == skipFls) (startOffset % archiveFileOffsetMask) else 0L
 
               // Read Data till skip offset
               if (skipOff > 0) {
@@ -607,7 +611,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       val sz = fileHandlers.size
       var idx = 0
       var exp: Throwable = null
-      while (idx < sz && exp != null && !processingInterrupted) {
+      while (idx < sz && exp == null && !processingInterrupted) {
         try {
           readArchiveFile(fileHandlers(idx), consumerContext: SmartFileConsumerContext, startOffsets(idx), byteBuffer)
         } catch {
