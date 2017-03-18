@@ -568,8 +568,25 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                               }
                               moveExecutor.execute(moveThread)
                               handledInnMoveThread = true
-                            }
-                            else if (!processingFiles.isEmpty) {
+                            } else if (procFileLocationInfo.isDeleteEnabled) {
+                              var deleted = true
+
+                              processingFiles.foreach(fl => {
+                                val d = deleteFile(fl)
+                                if (!d)
+                                  deleted = d
+                              })
+
+                              if (deleted && !isShutdown) {
+                                monitorController.markFileAsProcessed(processingFiles)
+                                //remove the file from processing queue
+                                val valueInProcessingQueue = createProcessingItemJsonFromGroup(processingNodeId.toInt, processingThreadId.toInt, processingFiles)
+                                if (!isShutdown) {
+                                  removeFromProcessingQueue(valueInProcessingQueue)
+                                  if (LOG.isInfoEnabled) LOG.info("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
+                                }
+                              }
+                            } else if (!processingFiles.isEmpty) {
                               if (logger.isInfoEnabled) logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter {}",
                                 processingFiles.mkString(","), procFileParentDir, adapterConfig.Name)
 
@@ -1672,6 +1689,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
+  def deleteFile(originalFilePath: String): Boolean = {
+    var isFileDeleted = false
+    try {
+      val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
+      isFileDeleted = deleteFile(smartFileHandler)
+    } catch {
+      case e: Throwable => {
+        LOG.error("Failed to delete file", e)
+      }
+    }
+    isFileDeleted
+  }
+
   //after a file is changed, move it into targetMoveDir
   def moveFile(originalFilePath: String): Boolean = {
     var isFileMoved = false
@@ -1729,6 +1759,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       else targetMoveDirBase
 
     (targetMoveDir, fileStruct(fileStruct.size - 1))
+  }
+
+  def deleteFile(fileHandler: SmartFileHandler): Boolean = {
+    val originalFilePath = fileHandler.getFullPath
+    fileHandler.deleteFile(originalFilePath)
   }
 
   def moveFile(fileHandler: SmartFileHandler): Boolean = {
@@ -2213,9 +2248,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       })
     }
 
-    //clear start info path
-    val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId
-    envContext.setListenerCacheKey(SendStartInfoToLeaderPath, "")
+    if (clusterStatus != null) {
+      //clear start info path
+      val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId
+      envContext.setListenerCacheKey(SendStartInfoToLeaderPath, "")
+    }
 
     if (allNodesStartInfo != null)
       allNodesStartInfo.clear()
