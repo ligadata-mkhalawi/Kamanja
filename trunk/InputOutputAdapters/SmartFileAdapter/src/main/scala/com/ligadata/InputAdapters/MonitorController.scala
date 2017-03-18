@@ -564,13 +564,13 @@ class MonitorController {
     allEnqueuedGrps.foreach(g => {
       excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
     })
-    /*
-    //BUGBUG:: Get all processing files and add them in exclude list
-        val allProcessingGrps = getAllEnqueuedGroups
-        allProcessingGrps.foreach(g => {
-          excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
-        })
-  */
+
+    val allProcessingGrps = parentSmartFileConsumer.getProcessingQueueItems
+    allProcessingGrps.foreach(g => {
+      if (g.Files != None) {
+        excludeFlsSet ++= g.Files.get
+      }
+    })
 
     if (isFirstScan && initialFiles != null) {
       excludeFlsSet ++= initialFiles
