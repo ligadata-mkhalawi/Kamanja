@@ -38,13 +38,16 @@ class HdfsFileHandler extends SmartFileHandler {
 
   private var fileType : String = null
 
-  private val (isArchFile, archFileType) =
+  private var isArchFile: Boolean = false
+  private var archFileType: String = null
+
+  private def resolveArchiveFileInfo: Unit = {
     if (monitoringConfig.hasHandleArchiveFileExtensions) {
       val typ = SmartFileHandlerFactory.getArchiveFileType(fileFullPath, monitoringConfig.handleArchiveFileExtensions)
-      ((typ != null && !typ.isEmpty), typ)
-    } else {
-      (false, null)
+      isArchFile = (typ != null && !typ.isEmpty)
+      archFileType = typ
     }
+  }
 
   override def isArchiveFile(): Boolean = isArchFile
 
@@ -58,11 +61,13 @@ class HdfsFileHandler extends SmartFileHandler {
     fileFullPath = fullPath
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
     hdFileSystem = FileSystem.newInstance(hdfsConfig)
+    resolveArchiveFileInfo
   }
 
   def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
     this(fullPath, connectionConf, monitoringConfig)
     isBinary = isBin
+    resolveArchiveFileInfo
   }
 
   /*def this(fullPath : String, fs : FileSystem){

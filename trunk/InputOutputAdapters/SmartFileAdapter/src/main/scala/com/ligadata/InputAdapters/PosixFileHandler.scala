@@ -43,13 +43,16 @@ class PosixFileHandler extends SmartFileHandler{
   private var monitoringConfig: FileAdapterMonitoringConfig = null
   private var fileType : String = null
 
-  private val (isArchFile, archFileType) =
+  private var isArchFile: Boolean = false
+  private var archFileType: String = null
+
+  private def resolveArchiveFileInfo: Unit = {
     if (monitoringConfig.hasHandleArchiveFileExtensions) {
       val typ = SmartFileHandlerFactory.getArchiveFileType(fileFullPath, monitoringConfig.handleArchiveFileExtensions)
-      ((typ != null && !typ.isEmpty), typ)
-    } else {
-      (false, null)
+      isArchFile = (typ != null && !typ.isEmpty)
+      archFileType = typ
     }
+  }
 
   override def isArchiveFile(): Boolean = isArchFile
 
@@ -59,11 +62,13 @@ class PosixFileHandler extends SmartFileHandler{
     this()
     fileFullPath = fullPath
     this.monitoringConfig = monitoringConfig
+    resolveArchiveFileInfo
   }
 
   def this(fullPath : String, monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
     this(fullPath, monitoringConfig)
     isBinary = isBin
+    resolveArchiveFileInfo
   }
 
   def getSimplifiedFullPath : String = {
