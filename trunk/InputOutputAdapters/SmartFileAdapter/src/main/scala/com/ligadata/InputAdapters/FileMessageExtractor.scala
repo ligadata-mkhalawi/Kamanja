@@ -465,7 +465,6 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         }
 
       val skipFls = startOffset % archiveFileOffsetMask
-      val skipOff = startOffset / archiveFileOffsetMask
       var fileId = 0
       var entry = in.getNextEntry
       while (entry != null && !processingInterrupted) {
@@ -484,6 +483,25 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             currentMsgNum = 0
             globalOffset = fileId * archiveFileOffsetMask
             if (!adapterConfig.monitoringConfig.entireFileInArchiveAsOneMessage) {
+              val skipOff = if (fileId == skipFls) (startOffset / archiveFileOffsetMask) else 0L
+
+              // Read Data till skip offset
+              if (skipOff > 0) {
+                globalOffset += skipOff
+                var remSkip = skipOff.toInt
+                var maxRead = if (remSkip < maxlen) remSkip else maxlen
+                var len = in.read(byteBuffer, 0, maxRead)
+                // BUGBUG:: Not handled processingInterrupted here
+                while (len > 0 && remSkip > 0) {
+                  remSkip -= len
+                  maxRead = if (remSkip < maxlen) remSkip else maxlen
+                  if (maxRead > 0)
+                    len = in.read(byteBuffer, 0, maxRead)
+                  else
+                    len = 0
+                }
+              }
+
               var len = in.read(byteBuffer, readlen, maxlen - readlen - 1)
               while (len > 0 && !processingInterrupted) {
                 totalRead += len

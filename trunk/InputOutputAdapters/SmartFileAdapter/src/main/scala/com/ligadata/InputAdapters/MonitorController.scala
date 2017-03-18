@@ -586,8 +586,11 @@ class MonitorController {
         currentAllChilds.groupBy(fl => {
           val parent = if (fl.parent != null) fl.parent else ""
           //BUGBUG:: For now Archive files does not participate as groups. Each file becomes a group. Fix it later if we want to make ArchiveFiles as groups
-          var foundArchiveFile = adapterConfig.monitoringConfig.hasHandleArchiveFileExtensions &&
-            SmartFileHandlerFactory.isArchiveFile(fl.path, adapterConfig.monitoringConfig.allHandleArchiveFileExtensions)
+          var foundArchiveFile = false
+          if (adapterConfig.monitoringConfig.hasHandleArchiveFileExtensions) {
+            val flTyp = SmartFileHandlerFactory.getArchiveFileType(fl.path, adapterConfig.monitoringConfig.handleArchiveFileExtensions)
+            foundArchiveFile = (flTyp != null && !flTyp.isEmpty)
+          }
           if (foundArchiveFile) {
             (parent, fl.path)
           } else {
