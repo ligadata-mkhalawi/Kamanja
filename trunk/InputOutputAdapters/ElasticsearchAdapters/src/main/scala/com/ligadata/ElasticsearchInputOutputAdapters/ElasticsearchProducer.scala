@@ -22,9 +22,11 @@ import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.index.VersionType
 import org.json4s.jackson.Serialization
+import java.util.concurrent.atomic.AtomicInteger
+import java.io.{File, PrintWriter}
 
 
-import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
 import scala.collection.mutable.ArrayBuffer
 import org.json.JSONObject
 import org.elasticsearch.shield.ShieldPlugin
@@ -40,8 +42,299 @@ object ElasticsearchProducer extends OutputAdapterFactory {
   val LAST_RECOVERY_TIME = "Last_Recovery"
 }
 
+class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boolean, val writeData: scala.collection.mutable.Map[String, ArrayBuffer[String]], writeRecs: Int, var outStandingWrites: AtomicInteger, val batchId: Long) extends Runnable {
+  var allRecsToWrite = writeRecs
+
+  private def canConsiderShutdown: Boolean = {
+    producer.isShuttingDown && considerShutdown
+  }
+
+  private val adapterConfig = producer.adapterConfig
+  private val LOG = producer.LOG
+
+  private def writeBatchToFile: Unit = {
+    val flDir = producer.batchFileOutputDir
+    if (flDir == null || flDir.length == 0) return
+
+    val flPath = flDir + "/Batch_" + batchId + ".json"
+    var pw: PrintWriter = null
+
+    try {
+      val fl = new File(flPath)
+      pw = new PrintWriter(fl)
+
+      writeData.foreach(kv => {
+        val set = kv._2
+        set.foreach(str => {
+          pw.write(str)
+          pw.write("\n")
+        })
+      })
+    } catch {
+      case e: Throwable => {
+        LOG.warn("Failed to write batch:%d into file:%s".format(batchId, flPath))
+      }
+    } finally {
+      if (pw != null)
+        pw.close
+    }
+  }
+
+  private def putJsonsWithMetadataLocal: Unit = {
+    if (writeData.size == 0) return
+    if (LOG.isDebugEnabled) LOG.debug("Called writer task putJsonsWithMetadataLocal")
+
+    writeBatchToFile
+
+    //   containerName: String, data_list: Array[String]
+    var client: TransportClient = null
+    var connectedTime = 0L
+    //    CheckTableExists(tableName)
+    try {
+      val startTm = System.currentTimeMillis
+      client = producer.getConnectionFromPool
+      connectedTime = System.currentTimeMillis
+
+      var exec = true
+      var curWaitTm = 5000
+
+      // BUGBUG:: Do we need to do every time?
+      // check if we need to cteate the indexMapping beforehand.
+      if (!producer.flagindex) {
+        if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
+          val allKeys = writeData.map(kv => kv._1).toArray
+          if (LOG.isInfoEnabled) LOG.info("Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
+          exec = true
+          curWaitTm = 5000
+          while (!canConsiderShutdown && exec) {
+            exec = false
+            try {
+              if (client == null) {
+                client = producer.getConnectionFromPool
+                connectedTime = System.currentTimeMillis
+              }
+              producer.createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
+            } catch {
+              case e: Throwable => {
+                if ((System.currentTimeMillis - connectedTime) > 10000) {
+                  try {
+                    if (client != null)
+                      producer.closeConnectionInPool(client)
+                  } catch {
+                    case e: Throwable => {
+                      LOG.error("Failed to close connection", e)
+                    }
+                  }
+                  client = null
+                  connectedTime = 0L
+                }
+                exec = true
+                LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
+                val nSecs = curWaitTm / 1000
+                for (i <- 0 until nSecs) {
+                  try {
+                    if (!canConsiderShutdown)
+                      Thread.sleep(1000)
+                  } catch {
+                    case e: Throwable => {}
+                  }
+                }
+                curWaitTm = curWaitTm * 2
+                if (curWaitTm > 60000)
+                  curWaitTm = 60000
+              }
+            }
+          }
+        }
+        producer.flagindex = true
+      }
+
+      val createdIndexTm = System.currentTimeMillis
+
+      if (LOG.isInfoEnabled) LOG.info("About to write %d records".format(allRecsToWrite))
+      exec = true
+      curWaitTm = 5000
+      while (!canConsiderShutdown && exec) {
+        exec = false
+        try {
+          if (client == null) {
+            client = producer.getConnectionFromPool
+            connectedTime = System.currentTimeMillis
+          }
+          var gotException: Throwable = null
+          var addedKeys = ArrayBuffer[String]()
+          writeData.foreach(kv => {
+            if (gotException == null) {
+              val containerName = kv._1
+              val data_list = kv._2
+              var addedReq = 0
+              try {
+                val tableName = producer.toFullTableName(containerName)
+                var bulkRequest = client.prepareBulk()
+                data_list.foreach({ jsonData =>
+                  //added by saleh 15/12/2016
+                  val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
+                  val md = root.get("metadata")
+                  var index = tableName
+                  var metadata_type = "type1"
+                  val metadata = if (md == None) null else md.get.asInstanceOf[Map[String, Any]]
+
+                  if (md != None) {
+                    val idx = metadata.get("index")
+                    val _type = metadata.get("_type")
+                    if (idx != None) {
+                      val s = idx.get.toString.trim
+                      if (s.length > 0)
+                        index = idx.get.toString
+                    }
+                    if (_type != None) {
+                      val s = _type.get.toString.trim
+                      if (s.length > 0)
+                        metadata_type = _type.get.toString
+                    }
+                  }
+
+                  val bulk = client.prepareIndex(index, metadata_type)
+
+                  if (md != None) {
+                    val id = metadata.get("id")
+                    val ver = metadata.get("version")
+                    if (id != None) {
+                      val s = id.get.toString.trim
+                      if (s.length > 0)
+                        bulk.setId(id.get.toString)
+                    }
+                    if (ver != None)
+                      bulk.setVersionType(VersionType.FORCE).setVersion(ver.get.toString.toLong)
+                  }
+                  bulk.setSource(jsonData)
+                  bulkRequest.add(bulk)
+                  addedReq += 1
+                })
+
+                if (LOG.isDebugEnabled) LOG.debug("Executing bulk indexing...")
+                val beforeExec = System.currentTimeMillis
+                val allRecsForKey = kv._2.size
+                var recsWritten = allRecsForKey
+                if (addedReq > 0 && !producer.ignoreFinalWrite) {
+                  val bulkResponse = bulkRequest.execute().actionGet()
+                  // Retrying the failed items
+                  if (bulkResponse.hasFailures) {
+                    if (LOG.isWarnEnabled) {
+                      LOG.warn("Going to retry failed messages for Adapter:" + producer.getAdapterName + "\n" + bulkResponse.buildFailureMessage())
+                    }
+                    val itms = bulkResponse.getItems()
+                    // BUGBUG:: If we have autogenerated ids, this may cause duplicates if any ack timeout, etc happens but really inserted the data.
+                    if (itms.length > 0) {
+                      var cntr = itms.length - 1
+                      while (cntr >= 0) {
+                        if (!itms(cntr).isFailed()) {
+                          data_list.remove(cntr)
+                        } else {
+                          recsWritten -= 1
+                        }
+                        cntr -= 1
+                      }
+                      if (recsWritten != allRecsForKey)
+                        exec = true
+                    }
+                  }
+                }
+
+                if (producer.logWriteTime) {
+                  val endTm = System.currentTimeMillis
+
+                  val timeDiff0 = createdIndexTm - startTm
+                  val timeDiff1 = beforeExec - createdIndexTm
+                  val timeDiff2 = endTm - beforeExec
+                  LOG.warn("TimeTaken for AdapterName:%s, WrittenRecords:%d, FailedRecords:%d, CreatingIndex:%d, TillExecute:%d, OnlyExecute:%d".format(producer.getAdapterName, recsWritten, (allRecsForKey - recsWritten), timeDiff0, timeDiff1, timeDiff2))
+                }
+
+                allRecsToWrite -= recsWritten
+                if (recsWritten == allRecsForKey) {
+                  kv._2.clear
+                  addedKeys += containerName
+                } else {
+                  // Already removed which are successfully written
+                }
+              } catch {
+                case e: Throwable => {
+                  LOG.error("Failed to add data to index:" + containerName, e)
+                  gotException = e
+                }
+              }
+            }
+          })
+
+          addedKeys.foreach(key => {
+            writeData.remove(key)
+          })
+
+          if (gotException != null) {
+            throw gotException
+          }
+          // No Exceptions and everything is written
+          if (writeData.size == 0)
+            allRecsToWrite = 0
+        } catch {
+          case e: Throwable => {
+            if ((System.currentTimeMillis - connectedTime) > 10000) {
+              try {
+                if (client != null)
+                  producer.closeConnectionInPool(client)
+              } catch {
+                case e: Throwable => {
+                  LOG.error("Failed to close connection", e)
+                }
+              }
+              connectedTime = 0L
+              client = null
+            }
+            exec = true
+            LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
+            val nSecs = curWaitTm / 1000
+            for (i <- 0 until nSecs) {
+              try {
+                if (!canConsiderShutdown)
+                  Thread.sleep(1000)
+              } catch {
+                case e: Throwable => {}
+              }
+            }
+            curWaitTm = curWaitTm * 2
+            if (curWaitTm > 60000)
+              curWaitTm = 60000
+          }
+        }
+      }
+    }
+    catch {
+      case e: Exception => {
+        LOG.error("Failed to save an object in the table", e)
+      }
+    } finally {
+      if (client != null) {
+        producer.returnConnectionToPool(client)
+        client = null
+      }
+    }
+  }
+
+  def putJsonsWithMetadata: Unit = {
+    if (LOG.isDebugEnabled) LOG.debug("Called writer task putJsonsWithMetadata.")
+    putJsonsWithMetadataLocal
+    outStandingWrites.decrementAndGet()
+    if (LOG.isDebugEnabled) LOG.debug("Done writer task putJsonsWithMetadata")
+  }
+
+  override def run(): Unit = {
+    if (LOG.isDebugEnabled) LOG.debug("Called writer task run, which calls putJsonsWithMetadata")
+    putJsonsWithMetadata
+  }
+}
+
 class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
-  private[this] val LOG = LogManager.getLogger(getClass);
+  val LOG = LogManager.getLogger(getClass);
   private val nodeId = if (nodeContext == null || nodeContext.getEnvCtxt() == null) "1" else nodeContext.getEnvCtxt().getNodeId()
   private val FAIL_WAIT = 2000
   private var numOfRetries = 0
@@ -51,6 +344,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
   private var isShutdown = false
+  private var isAboutShutdown = false
   private var isHeartBeating = false
   private var isInError = false
   private var msgCount = 0
@@ -60,7 +354,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val counterLock = new Object
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
-  private val adapterConfig = ElasticsearchAdapterConfiguration.getAdapterConfig(inputConfig, "output")
+  val adapterConfig = ElasticsearchAdapterConfiguration.getAdapterConfig(inputConfig, "output")
   Thread.currentThread().setContextClassLoader(tempContext);
   val elaticsearchutil: ElasticsearchUtility = new ElasticsearchUtility
   private val kvManagerLoader = new KamanjaLoaderInfo
@@ -70,23 +364,38 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   //  producer = hbaseutil.getConnection()
   //  hbaseutil.setConnection(producer)
   //  hbaseutil.initilizeVariable(adapterConfig)
-  var transId: Long = 0
   val key = Category + "/" + adapterConfig.Name + "/evtCnt"
   val randomPartitionCntr = new java.util.Random
   var partitionsGetTm = System.currentTimeMillis
   val refreshPartitionTime = 60 * 1000
   // 60 secs
   var timePartition = System.currentTimeMillis()
-  var transService = new com.ligadata.transactions.SimpleTransService
-  val sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
+  var sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
   var recsToWrite = 0
+  var outStandingWrites = new AtomicInteger(0)
+  var batchIdCntr = 0L
   // For now hard coded to 60secs
   val timeToWriteRecs = adapterConfig.timeToWriteRecsInSec
   val writeRecsBatch = adapterConfig.writeRecsBatch
   var nextWrite = System.currentTimeMillis + timeToWriteRecs
   var flagindex = false
-  transService.init(1)
-  transId = transService.getNextTransId
+
+  val ignoreFinalWrite = adapterConfig.otherConfig.getOrElse("IgnoreFinalWrite", "false").toString.trim.toBoolean
+  val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
+  var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
+  val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim
+  // val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim.toInt
+
+  private val hostListArr = adapterConfig.hostList.toArray
+  private val allHostsCnt = hostListArr.size
+
+  if (roundRobinNodesCount > allHostsCnt)
+    roundRobinNodesCount = allHostsCnt
+
+  private var parallelWrites = adapterConfig.otherConfig.getOrElse("ParallelWrites", "1").toString.trim.toInt
+  if (parallelWrites < 1)
+    parallelWrites = 1
+  private var dataWriteExec = Executors.newFixedThreadPool(parallelWrites)
 
   // Getting first transaction. It may get wasted if we don't have any lines to save.
 
@@ -98,6 +407,10 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   private val producer = this
 
+  private val poolLock = new Object
+
+  def isShuttingDown = isShutdown
+
   // Start the heartbeat.
   commitExecutor.execute(new Runnable() {
     override def run(): Unit = {
@@ -108,7 +421,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
             producer.synchronized {
               if (IsTimeToWrite(dt)) {
                 if (LOG.isInfoEnabled) LOG.info("Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
-                putJsonsWithMetadata(true)
+                putJsonsWithMetadata(true, true)
                 nextWrite = System.currentTimeMillis + timeToWriteRecs
               }
             }
@@ -162,15 +475,15 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       producer.synchronized {
         if (IsTimeToWrite(dt)) {
           if (LOG.isInfoEnabled) LOG.info("Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
-          putJsonsWithMetadata(true)
+          putJsonsWithMetadata(true, true)
           nextWrite = System.currentTimeMillis + timeToWriteRecs
         }
       }
     }
 
     // Sanity checks
-    if (isShutdown) {
-      val szMsg = adapterConfig.Name + " Elasticsearch Adapter: Adapter is not available for processing"
+    if (isShutdown || isAboutShutdown) {
+      val szMsg = adapterConfig.Name + " Elasticsearch Adapter: Adapter is not available for processing. Adapter is shutting down"
       LOG.error(szMsg)
       throw new Exception(szMsg)
     }
@@ -188,185 +501,103 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     metrics("MessagesProcessed").asInstanceOf[AtomicLong].addAndGet(strDataRecords.size)
   }
 
-  private def canConsiderShutdown(considerShutdown: Boolean): Boolean = {
-    isShutdown && considerShutdown
-  }
-
-  private def putJsonsWithMetadata(considerShutdown: Boolean): Unit = producer.synchronized {
+  private def putJsonsWithMetadata(considerShutdown: Boolean, canRunOnSeparateThread: Boolean): Unit = producer.synchronized {
     if (sendData.size == 0) return
-    //   containerName: String, data_list: Array[String]
-    var client: TransportClient = null
-    var connectedTime = 0L
-    //    CheckTableExists(tableName)
-    try {
-      client = getConnection
-      connectedTime = System.currentTimeMillis
 
-      var exec = true
-      var curWaitTm = 5000
+    batchIdCntr += 1
+    val writerTask = new WriteTask(this, considerShutdown, sendData, recsToWrite, outStandingWrites, batchIdCntr)
 
-      // BUGBUG:: Do we need to do every time?
-      // check if we need to cteate the indexMapping beforehand.
-      if (!flagindex) {
-        if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
-          val allKeys = sendData.map(kv => kv._1).toArray
-          if (LOG.isInfoEnabled) LOG.info("Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
-          exec = true
-          curWaitTm = 5000
-          while (!canConsiderShutdown(considerShutdown) && exec) {
-            exec = false
-            try {
-              if (client == null) {
-                client = getConnection
-                connectedTime = System.currentTimeMillis
-              }
-              createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
-            } catch {
-              case e: Throwable => {
-                if ((System.currentTimeMillis - connectedTime) > 10000) {
-                  try {
-                    if (client != null)
-                      client.close
-                  } catch {
-                    case e: Throwable => {
-                      LOG.error("Failed to close connection", e)
-                    }
-                  }
-                  client = null
-                  connectedTime = 0L
-                }
-                exec = true
-                LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
-                val nSecs = curWaitTm / 1000
-                for (i <- 0 until nSecs) {
-                  try {
-                    if (!canConsiderShutdown(considerShutdown))
-                      Thread.sleep(1000)
-                  } catch {
-                    case e: Throwable => {}
-                  }
-                }
-                curWaitTm = curWaitTm * 2
-                if (curWaitTm > 60000)
-                  curWaitTm = 60000
-              }
-            }
-          }
-        }
-        flagindex = true
+    var waitCntr = 0L
+    while (outStandingWrites.get > parallelWrites) {
+      // We already have more than 1 outstanding writes
+      try {
+        if ((waitCntr % 25) == 0 && LOG.isTraceEnabled) LOG.trace("Waiting to add another write task")
+        Thread.sleep(10) // Sleeping only 10ms and check
+      } catch {
+        case e: Throwable => {}
       }
-
-      if (LOG.isInfoEnabled) LOG.info("About to write %d records".format(recsToWrite))
-      exec = true
-      curWaitTm = 5000
-      while (!canConsiderShutdown(considerShutdown) && exec) {
-        exec = false
-        try {
-          if (client == null) {
-            client = getConnection
-            connectedTime = System.currentTimeMillis
-          }
-          var gotException: Throwable = null
-          var addedKeys = ArrayBuffer[String]()
-          sendData.foreach(kv => {
-            if (gotException == null) {
-              val containerName = kv._1
-              val data_list = kv._2
-              try {
-                val tableName = toFullTableName(containerName)
-                var bulkRequest = client.prepareBulk()
-                data_list.foreach({ jsonData =>
-                  //added by saleh 15/12/2016
-                  val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
-                  //if (root.get("metadata") != None) {
-                  val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
-
-                  val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
-                  val metadata_type = if (metadata.get("_type") == None || metadata.get("_type").get.toString.trim.length == 0) "type1" else metadata.get("_type").get.toString
-
-                  val bulk = client.prepareIndex(index, metadata_type)
-
-                  if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
-                  if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
-
-                  //}
-                  bulk.setSource(jsonData)
-                  bulkRequest.add(bulk)
-                })
-                if (LOG.isDebugEnabled) LOG.debug("Executing bulk indexing...")
-                val bulkResponse = bulkRequest.execute().actionGet()
-
-                // BUGBUG:: If we have errors do we treat this data is added ???????
-                //added by saleh 15/12/2016
-                if (bulkResponse.hasFailures && LOG.isWarnEnabled) {
-                  LOG.warn(bulkResponse.buildFailureMessage())
-                }
-                recsToWrite -= kv._2.size
-                kv._2.clear
-                addedKeys += containerName
-              } catch {
-                case e: Throwable => {
-                  LOG.error("Failed to add data to index:" + containerName, e)
-                  gotException = e
-                }
-              }
-            }
-          })
-          addedKeys.foreach(key => {
-            sendData.remove(key)
-          })
-          if (gotException != null) {
-            throw gotException
-          }
-          // No Exceptions and everything is written
-          if (sendData.size == 0)
-            recsToWrite = 0
-        } catch {
-          case e: Throwable => {
-            if ((System.currentTimeMillis - connectedTime) > 10000) {
-              try {
-                if (client != null)
-                  client.close
-              } catch {
-                case e: Throwable => {
-                  LOG.error("Failed to close connection", e)
-                }
-              }
-              connectedTime = 0L
-              client = null
-            }
-            exec = true
-            LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
-            val nSecs = curWaitTm / 1000
-            for (i <- 0 until nSecs) {
-              try {
-                if (!canConsiderShutdown(considerShutdown))
-                  Thread.sleep(1000)
-              } catch {
-                case e: Throwable => {}
-              }
-            }
-            curWaitTm = curWaitTm * 2
-            if (curWaitTm > 60000)
-              curWaitTm = 60000
-          }
-        }
-      }
-    }
-    catch {
-      case e: Exception => {
-        LOG.error("Failed to save an object in the table", e)
-      }
-    } finally {
-      if (client != null) {
-        client.close
-        client = null
-      }
+      waitCntr += 1
     }
 
-    if (client != null)
-      client.close
+    outStandingWrites.incrementAndGet()
+
+    if (canRunOnSeparateThread) {
+      dataWriteExec.execute(writerTask)
+      if (LOG.isTraceEnabled) LOG.trace("WriteTask added")
+      sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
+      recsToWrite = 0
+    } else {
+      writerTask.putJsonsWithMetadata
+      if (LOG.isTraceEnabled) LOG.trace("WriteTask executed")
+      sendData.clear()
+      recsToWrite = 0
+    }
   }
+
+  val allConnections = ArrayBuffer[TransportClient]()
+  val connectionPool = ArrayBuffer[TransportClient]()
+
+  def getConnectionFromPool: TransportClient = poolLock.synchronized {
+    if (connectionPool.size > 0) {
+      val client = connectionPool(0)
+      connectionPool.remove(0)
+      return client
+    }
+
+    val client = getConnection: TransportClient
+    allConnections += client
+    return client
+  }
+
+  def returnConnectionToPool(client: TransportClient): Unit = poolLock.synchronized {
+    if (client == null) return
+    connectionPool += client
+  }
+
+  def closeConnectionInPool(client: TransportClient): Unit = poolLock.synchronized {
+    var idx = 0
+    var removed = false
+    try {
+      client.close()
+    } catch {
+      case e: Throwable => {
+        LOG.warn("Failed to close connection", e)
+      }
+    }
+    while (!removed && idx < connectionPool.size) {
+      if (connectionPool(idx) == client) {
+        connectionPool.remove(idx)
+        removed = true
+      }
+      idx += 1
+    }
+
+    idx = 0
+    removed = false
+    while (!removed && idx < allConnections.size) {
+      if (allConnections(idx) == client) {
+        allConnections.remove(idx)
+        removed = true
+      }
+      idx += 1
+    }
+  }
+
+  def closeAllConnectionsInPool: Unit = poolLock.synchronized {
+    allConnections.foreach(client => {
+      try {
+        client.close()
+      } catch {
+        case e: Throwable => {
+          LOG.warn("Failed to close connection", e)
+        }
+      }
+    })
+    connectionPool.clear
+    allConnections.clear
+  }
+
+  private var connectionRandomCntr = 0
 
   private def getConnection: TransportClient = {
     try {
@@ -384,8 +615,23 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       settings.build()
       val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build()
 
-      val hostList = adapterConfig.hostList
-      hostList.foreach(values => client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(values._1), values._2.toInt)))
+      var startCntr = 0
+      var hostsCnt = allHostsCnt
+
+      if (roundRobinNodesCount > 0) {
+        if (connectionRandomCntr > 1000000)
+          connectionRandomCntr = 0
+
+        connectionRandomCntr + 1
+        startCntr = connectionRandomCntr
+        hostsCnt = roundRobinNodesCount
+      }
+
+      for (i <- 0 until hostsCnt) {
+        val cntr = (startCntr + i) % allHostsCnt
+        val host = hostListArr(cntr)
+        client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host._1), host._2.toInt))
+      }
 
       return client
     } catch {
@@ -405,11 +651,11 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     (adapterConfig.schemaName + "." + containerName).toLowerCase()
   }
 
-  private def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
+  def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
     createIndexForOutputAdapter(Array(indexName), indexMapping, false)
   }
 
-  private def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+  def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
     var exp: Throwable = null
     try {
       indexNames.foreach(indexName => {
@@ -458,16 +704,18 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     var client: TransportClient = null
     var exp: Throwable = null
     try {
-      client = getConnection
+      client = getConnectionFromPool
       createIndexForOutputAdapter(client, indexNames, indexMapping, onlyNonExistIndices)
     }
     catch {
       case e: Exception => {
         LOG.error("Failed to create Index", e)
+        closeConnectionInPool(client)
+        client = null
       }
     } finally {
       if (client != null) {
-        client.close
+        returnConnectionToPool(client)
       }
     }
   }
@@ -501,14 +749,30 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   }
 
   override def Shutdown(): Unit = {
-
     if (LOG.isWarnEnabled) LOG.warn(adapterConfig.Name + " Shutdown detected")
+
+    isAboutShutdown = true
+    if (dataWriteExec != null) {
+      dataWriteExec.shutdown
+      if (!dataWriteExec.awaitTermination(60, TimeUnit.MINUTES)) {
+        LOG.error(adapterConfig.Name + ": dataWriteExec failed to shutdown. Calling shutdownNow")
+        dataWriteExec.shutdownNow
+      }
+    }
 
     isShutdown = true
 
-    if (commitExecutor != null)
-      commitExecutor.shutdownNow
+    if (commitExecutor != null) {
+      commitExecutor.shutdown
+      if (!commitExecutor.awaitTermination(60, TimeUnit.MINUTES)) {
+        LOG.error(adapterConfig.Name + ": commitExecutor failed to shutdown. Calling shutdownNow")
+        commitExecutor.shutdownNow
+      }
+    }
 
-    putJsonsWithMetadata(false)
+    putJsonsWithMetadata(false, false)
+
+    // Closing all connections
+    closeAllConnectionsInPool
   }
 }
