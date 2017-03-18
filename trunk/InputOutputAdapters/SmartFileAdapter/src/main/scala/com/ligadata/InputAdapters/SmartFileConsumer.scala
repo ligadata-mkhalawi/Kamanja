@@ -1109,7 +1109,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       """{"Files":[]}"""
     } else {
       //leave offset management to engine, usually this will be other than zero when calling startProcessing
-      """{"Files":[""" + grp.fileHandlers.map(fl => { """{"Fl":"%s","Off":0}""".format(fl.fileHandler.getFullPath())}).mkString(",") + "]}"
+      """{"Files":[""" + grp.fileHandlers.map(fl => { """{"Fl":"%s","Off":%d}""".format(fl.fileHandler.getFullPath(), fl.offset)}).mkString(",") + "]}"
     }
   }
 
@@ -1351,6 +1351,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
               }
             }
+          } else {
+            // BUGBUG:: For now we are handling this as single file is single group
+            val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileInfo._3, false)
+            val locationInfo = getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
+            val components = MonitorUtils.getFileComponents(fileHandler.getFullPath, locationInfo)
+            val grp = new EnqueuedGroupHandler(Array(new EnqueuedFileHandler(fileHandler, fileInfo._4, fileHandler.lastModified(fileInfo._3), locationInfo, components)))
+            monitorController.enQGroup(grp)
           }
         }
       })

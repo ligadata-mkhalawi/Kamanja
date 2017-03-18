@@ -716,7 +716,7 @@ class MonitorController {
 */
 
   
-  private def enQGroup(grp: EnqueuedGroupHandler): Unit = {
+  def enQGroup(grp: EnqueuedGroupHandler): Unit = {
     if (grp == null) return
     groupQLock.synchronized {
       groupQ += grp
