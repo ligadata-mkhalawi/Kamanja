@@ -43,6 +43,18 @@ class PosixFileHandler extends SmartFileHandler{
   private var monitoringConfig: FileAdapterMonitoringConfig = null
   private var fileType : String = null
 
+  private val (isArchFile, archFileType) =
+    if (monitoringConfig.hasHandleArchiveFileExtensions) {
+      val typ = SmartFileHandlerFactory.getArchiveFileType(fileFullPath, monitoringConfig.handleArchiveFileExtensions)
+      ((typ != null && !typ.isEmpty), typ)
+    } else {
+      (false, null)
+    }
+
+  override def isArchiveFile(): Boolean = isArchFile
+
+  override def getArchiveFileType(): String = archFileType
+
   def this(fullPath : String, monitoringConfig: FileAdapterMonitoringConfig){
     this()
     fileFullPath = fullPath
@@ -86,7 +98,7 @@ class PosixFileHandler extends SmartFileHandler{
   def openForRead(): InputStream = {
     /*try {
       val is = getDefaultInputStream()
-      if (!isBinary) {
+      if (!isBinary && !isArchFile) {
         fileType = CompressionUtil.getFileType(this, null)
         in = CompressionUtil.getProperInputStream(is, fileType)
         //bufferedReader = new BufferedReader(in)
@@ -120,7 +132,7 @@ class PosixFileHandler extends SmartFileHandler{
 
       if(ftype == null || ftype.length == 0){
         //get file type
-        if (!isBinary) {
+        if (!isBinary && !isArchFile) {
           fileType = CompressionUtil.getFileType(this, getFullPath, null)
           in = CompressionUtil.getProperInputStream(is, fileType, asIs)
         } else {

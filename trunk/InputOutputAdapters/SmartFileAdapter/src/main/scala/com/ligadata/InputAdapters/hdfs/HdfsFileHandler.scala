@@ -38,6 +38,18 @@ class HdfsFileHandler extends SmartFileHandler {
 
   private var fileType : String = null
 
+  private val (isArchFile, archFileType) =
+    if (monitoringConfig.hasHandleArchiveFileExtensions) {
+      val typ = SmartFileHandlerFactory.getArchiveFileType(fileFullPath, monitoringConfig.handleArchiveFileExtensions)
+      ((typ != null && !typ.isEmpty), typ)
+    } else {
+      (false, null)
+    }
+
+  override def isArchiveFile(): Boolean = isArchFile
+
+  override def getArchiveFileType(): String = archFileType
+
   def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig) {
     this()
 
@@ -104,7 +116,7 @@ class HdfsFileHandler extends SmartFileHandler {
   def openForRead(): InputStream = {
     try {
       val is = getDefaultInputStream()
-      if (!isBinary) {
+      if (!isBinary && !isArchFile) {
         fileType = CompressionUtil.getFileType(this, getFullPath, null)
         val asIs = if(monitoringConfig == null) true else monitoringConfig.considerUnknownFileTypesAsIs
         in = CompressionUtil.getProperInputStream(is, fileType, asIs)

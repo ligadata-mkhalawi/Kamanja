@@ -584,9 +584,16 @@ class MonitorController {
       if (groupsInfo != null) {
         if (logger.isDebugEnabled) logger.debug("Found groupInfo")
         currentAllChilds.groupBy(fl => {
-          val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
           val parent = if (fl.parent != null) fl.parent else ""
-          (parent, extractFileFromPattern(groupsInfo, flName))
+          //BUGBUG:: For now Archive files does not participate as groups. Each file becomes a group. Fix it later if we want to make ArchiveFiles as groups
+          var foundArchiveFile = adapterConfig.monitoringConfig.hasHandleArchiveFileExtensions &&
+            SmartFileHandlerFactory.isArchiveFile(fl.path, adapterConfig.monitoringConfig.allHandleArchiveFileExtensions)
+          if (foundArchiveFile) {
+            (parent, fl.path)
+          } else {
+            val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
+            (parent, extractFileFromPattern(groupsInfo, flName))
+          }
         }).values.toArray
       }
       else {
@@ -623,7 +630,7 @@ class MonitorController {
               if (!enqueuedBufferedFiles.contains(filePath)) {
                 val isValid = MonitorUtils.isValidFile(adapterConfig.Name,
                   monitoringThreadsFileHandlers(currentThreadId), filePath, currentFileLocationInfo, ignoredFiles,
-                  false, adapterConfig.monitoringConfig.checkFileTypes)
+                  false, adapterConfig.monitoringConfig.checkFileTypes, adapterConfig.monitoringConfig)
                 fixIgnoredFiles()
 
                 if (isValid)

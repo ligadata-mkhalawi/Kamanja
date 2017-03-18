@@ -28,7 +28,7 @@ import scala.collection.mutable.{Map, MultiMap, HashMap, ArrayBuffer}
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Byte], relatedChunk: Int)
 
 //case class BufferToChunk(len: Int, payload: Array[Byte], chunkNumber: Int, relatedFileHandler: SmartFileHandler, firstValidOffset: Int, isEof: Boolean, partMap: scala.collection.mutable.Map[Int,Int])
-case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgNumber: Long, msgStartOffset: Long)
+case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgNumber: Long, msgStartOffset: Long, FileSeqNo: Int, childFlName: String)
 
 case class FileStatus(status: Int, offset: Long, createDate: Long)
 
@@ -2096,6 +2096,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     uniqueVal.Offset = offset
     uniqueVal.FileName = fileName
+    uniqueVal.ChildFlName = smartMessage.childFlName
+    uniqueVal.FileSeqNo = smartMessage.FileSeqNo
     //val dontSendOutputToOutputAdap = uniqueVal.Offset <= uniqueRecordValue
 
     if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}. uniqueKey={}, uniqueVal={}, smartFileConsumerContext.execThread={},smartFileConsumerContext={}",

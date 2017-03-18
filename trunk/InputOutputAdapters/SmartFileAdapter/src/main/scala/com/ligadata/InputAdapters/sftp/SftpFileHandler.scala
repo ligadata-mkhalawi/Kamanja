@@ -64,6 +64,18 @@ class SftpFileHandler extends SmartFileHandler{
 
   private var fileType : String = null
 
+  private val (isArchFile, archFileType) =
+    if (monitoringConfig.hasHandleArchiveFileExtensions) {
+      val typ = SmartFileHandlerFactory.getArchiveFileType(remoteFullPath, monitoringConfig.handleArchiveFileExtensions)
+      ((typ != null && !typ.isEmpty), typ)
+    } else {
+      (false, null)
+    }
+
+  override def isArchiveFile(): Boolean = isArchFile
+
+  override def getArchiveFileType(): String = archFileType
+
   def this(adapterName : String, path : String, connectionConfig : FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig){
     this()
     this.remoteFullPath = path
@@ -177,7 +189,7 @@ class SftpFileHandler extends SmartFileHandler{
       getNewSession()
 
       val is = getDefaultInputStream()
-      if (!isBinary) {
+      if (!isBinary && !isArchFile) {
         fileType = CompressionUtil.getFileType(this, getFullPath, null)
         val asIs = if(monitoringConfig == null) true else monitoringConfig.considerUnknownFileTypesAsIs
         in = CompressionUtil.getProperInputStream(is, fileType, asIs)

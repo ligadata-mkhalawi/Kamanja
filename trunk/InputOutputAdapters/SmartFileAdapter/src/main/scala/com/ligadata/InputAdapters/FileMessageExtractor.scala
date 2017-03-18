@@ -1,13 +1,20 @@
 package com.ligadata.InputAdapters
 
 import java.io.IOException
+
 import com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration
+import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.Utils.Utils
 import org.apache.logging.log4j.LogManager
+
 import scala.util.control.Breaks._
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.codec.binary.Base64
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
+import org.apache.commons.compress.archivers.ArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 
 /**
   *
@@ -49,6 +56,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   private var finished = false
   private var processingInterrupted = false
   private var isFileCorrupted = false
+
+  private val archiveFileOffsetMask = 1000000000000L
 
   private var fileProcessingStartTs: Long = 0L
   private var fileProcessingStartTime: String = ""
@@ -111,10 +120,15 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       val extractorThread = new Runnable() {
         override def run(): Unit = {
           try {
-            if (adapterConfig.monitoringConfig.entireFileAsOneMessage)
+            if (adapterConfig.monitoringConfig.hasHandleArchiveFileExtensions && fileHandlers.size == 1 && fileHandlers(0).isArchiveFile) {
+              // BUGBUG:: For now we are expecting only one file in file group
+              readArchiveFiles()
+            } else if (adapterConfig.monitoringConfig.entireFileAsOneMessage) {
               readWholeFiles()
-            else
+            }
+            else {
               readBytesChunksFromFiles()
+            }
           } catch {
             case e: Throwable => {
               logger.error("", e)
@@ -287,7 +301,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                 len += readlen
 
                 //e.g we have 1024, but 1000 is consumeByte
-                val consumedBytes = extractMessages(fileHandler, consumerContext, byteBuffer, readlen)
+                val consumedBytes = extractMessages(fileHandler, consumerContext, byteBuffer, readlen, 0, null)
                 if (consumedBytes < readlen) {
                   val remainigBytes = readlen - consumedBytes
                   val newByteBuffer = new Array[Byte](maxlen)
@@ -319,7 +333,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           else {
             currentMsgNum += 1
             val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
-            val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, currentMsgNum, globalOffset)
+            val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, currentMsgNum, globalOffset, 0, null)
             messageFoundCallback(smartFileMessage, consumerContext)
           }
         }
@@ -407,6 +421,203 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
   }
 
+  private def readArchiveFile(fileHandler: SmartFileHandler, consumerContext: SmartFileConsumerContext, startOffset: Long, byteBuffer: Array[Byte]): Unit = {
+    var in: ArchiveInputStream = null
+    try {
+      var typ = fileHandler.getArchiveFileType
+      if (typ == null)
+        typ = ""
+      val isTarFile = typ.equalsIgnoreCase("tar")
+      val isZipFile = typ.equalsIgnoreCase("zip")
+      if ( (! isTarFile) && (! isZipFile)) {
+        throw new KamanjaException("Archive %s yet handled for file %s".format(typ, fileHandler.getFullPath), null)
+      }
+
+      val wholeFileBuf = ArrayBuffer[Byte]()
+
+      // BUGBUG:: For now we are not taking any encoding. May be later we will support
+      val encoding: String = null
+
+      val is = fileHandler.openForRead()
+
+      in =
+        if (isTarFile) {
+          val fileType = CompressionUtil.getFileType(fileHandler, fileHandler.getFullPath, null)
+          val isCompressedTarFile = fileType.equalsIgnoreCase(FileType.GZIP)
+          if (isCompressedTarFile) {
+            if (encoding != null && encoding.trim.length > 0)
+              new TarArchiveInputStream(new GzipCompressorInputStream(is), encoding)
+            else
+              new TarArchiveInputStream(new GzipCompressorInputStream(is))
+          } else {
+            if (encoding != null && encoding.trim.length > 0)
+              new TarArchiveInputStream(is, encoding)
+            else
+              new TarArchiveInputStream(is)
+          }
+        } else if (isZipFile) {
+          if (encoding != null && encoding.trim.length > 0)
+            new ZipArchiveInputStream(is, encoding)
+          else
+            new ZipArchiveInputStream(is)
+        } else {
+          throw new Exception("Handling only ZIP/TAR files. Given file:" + fileHandler.getFullPath + " is not ZIP/TAR")
+        }
+
+      val skipFls = startOffset % archiveFileOffsetMask
+      val skipOff = startOffset / archiveFileOffsetMask
+      var fileId = 0
+      var entry = in.getNextEntry
+      while (entry != null && !processingInterrupted) {
+        if (Thread.currentThread().isInterrupted || parentExecutor == null || parentExecutor.isShutdown || parentExecutor.isTerminated) {
+          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+        }
+
+        if (fileId >= skipFls) {
+          val name: String = entry.getName
+          if (!entry.isDirectory) {
+            val childFlName = entry.getName
+            // Read bytes from file in TAR
+            var totalRead = 0
+            var readlen = 0
+            currentMsgNum = 0
+            globalOffset = fileId * archiveFileOffsetMask
+            if (!adapterConfig.monitoringConfig.entireFileInArchiveAsOneMessage) {
+              var len = in.read(byteBuffer, readlen, maxlen - readlen - 1)
+              while (len > 0 && !processingInterrupted) {
+                totalRead += len
+                readlen += len
+
+                if (Thread.currentThread().isInterrupted || parentExecutor == null || parentExecutor.isShutdown || parentExecutor.isTerminated) {
+                  if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+                  processingInterrupted = true
+                }
+
+                if (!processingInterrupted) {
+                  val consumedBytes = extractMessages(fileHandler, consumerContext, byteBuffer, readlen, fileId, childFlName)
+                  for (i <- 0 to readlen - consumedBytes) {
+                    byteBuffer(i) = byteBuffer(consumedBytes + i)
+                  }
+
+                  readlen = readlen - consumedBytes
+                  if (Thread.currentThread().isInterrupted || parentExecutor == null || parentExecutor.isShutdown || parentExecutor.isTerminated) {
+                    if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+                    processingInterrupted = true
+                  }
+                }
+
+                if (processingInterrupted)
+                  len = -1
+                else
+                  len = in.read(byteBuffer, readlen, maxlen - readlen - 1)
+              }
+
+              if (readlen > 0 && !processingInterrupted) {
+                val lastMsg: Array[Byte] = byteBuffer.slice(0, readlen)
+                if (lastMsg.length == 1 && lastMsg(0).asInstanceOf[Char] == message_separator) {
+
+                }
+                else {
+                  currentMsgNum += 1
+                  val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
+                  val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, currentMsgNum, globalOffset, fileId, childFlName)
+                  messageFoundCallback(smartFileMessage, consumerContext)
+                }
+              }
+            } else {
+              wholeFileBuf.clear
+              var len = in.read(byteBuffer)
+              while (len > 0 && !processingInterrupted) {
+                totalRead += len
+
+                if (Thread.currentThread().isInterrupted || parentExecutor == null || parentExecutor.isShutdown || parentExecutor.isTerminated) {
+                  if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+                  processingInterrupted = true
+                }
+
+                if (!processingInterrupted) {
+                  for (i <- 0 until len) {
+                    wholeFileBuf += byteBuffer(i)
+                  }
+
+                  if (Thread.currentThread().isInterrupted || parentExecutor == null || parentExecutor.isShutdown || parentExecutor.isTerminated) {
+                    if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+                    processingInterrupted = true
+                  }
+                }
+
+                if (processingInterrupted)
+                  len = -1
+                else
+                  len = in.read(byteBuffer, readlen, maxlen - readlen - 1)
+              }
+
+              if (wholeFileBuf.size > 0 && !processingInterrupted) {
+                val smartFileMessage = new SmartFileMessage(wholeFileBuf.toArray, globalOffset, fileHandler, 0, globalOffset, fileId, childFlName)
+                messageFoundCallback(smartFileMessage, consumerContext)
+              }
+            }
+          }
+        }
+
+        if (!processingInterrupted)
+          entry = in.getNextEntry
+        else
+          entry = null
+        fileId += 1
+      }
+
+    } catch {
+      case e: Throwable => {
+        logger.error("Failed to read archive file:" + fileHandler.getFullPath, e)
+        throw e
+      }
+    } finally {
+      if (in != null)
+        in.close()
+      fileHandler.close()
+    }
+  }
+
+  private def readArchiveFiles(): Unit = {
+    try {
+      val byteBuffer = new Array[Byte](maxlen)
+      if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from archive files {} , on Node {} , PartitionId {}",
+        fileHandlers.map(fh => fh.getFullPath).mkString(","), consumerContext.nodeId, consumerContext.partitionId.toString)
+
+      val sz = fileHandlers.size
+      var idx = 0
+      var exp: Throwable = null
+      while (idx < sz && exp != null && !processingInterrupted) {
+        try {
+          readArchiveFile(fileHandlers(idx), consumerContext: SmartFileConsumerContext, startOffsets(idx), byteBuffer)
+        } catch {
+          case e: Throwable => {
+            logger.error("Failed to read archive files", e)
+            exp = e
+          }
+        }
+        idx += 1
+      }
+
+      if (exp != null)
+        throw exp
+      if (processingInterrupted)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
+      else
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
+    } catch {
+      case e: Throwable => {
+        logger.error("Failed to read archive files", e)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+        throw e
+      }
+    } finally {
+      shutdownThreads()
+    }
+  }
+
   def readWholeFiles(): Unit = {
     try {
       if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from files {} , on Node {} , PartitionId {}",
@@ -433,7 +644,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         attachmentsJson.append("}")
       }
 
-      val smartFileMessage = new SmartFileMessage(attachmentsJson.toString.getBytes(), 0, fileHandlers(0), 0, 0)
+      val smartFileMessage = new SmartFileMessage(attachmentsJson.toString.getBytes(), 0, fileHandlers(0), 0, 0, 0, null)
       messageFoundCallback(smartFileMessage, consumerContext)
       // here we are really finished
       sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
@@ -474,7 +685,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     }
   }
 
-  private def extractMessages(fileHandler: SmartFileHandler, consumerContext: SmartFileConsumerContext, chunk: Array[Byte], len: Int): Int = {
+  private def extractMessages(fileHandler: SmartFileHandler, consumerContext: SmartFileConsumerContext, chunk: Array[Byte], len: Int, fileId: Int, childFlName: String): Int = {
     var indx = 0
     var prevIndx = indx
 
@@ -510,7 +721,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
             //println(">>>>>>>>>>>>>msg found:" + new String(newMsg))
 
-            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, currentMsgNum, globalOffset)
+            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, currentMsgNum, globalOffset, fileId, childFlName)
             messageFoundCallback(smartFileMessage, consumerContext)
 
             //}
