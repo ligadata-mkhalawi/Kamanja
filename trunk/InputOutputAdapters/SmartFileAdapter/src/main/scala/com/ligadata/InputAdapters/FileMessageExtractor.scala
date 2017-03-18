@@ -442,6 +442,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       val encoding: String = null
 
       val is = fileHandler.openForRead()
+      val hasOffset = startOffset  > 0
 
       in =
         if (isTarFile) {
@@ -467,7 +468,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           throw new Exception("Handling only ZIP/TAR files. Given file:" + fileHandler.getFullPath + " is not ZIP/TAR")
         }
 
-      val skipFls = startOffset / archiveFileOffsetMask
+      val skipFls = if (hasOffset) startOffset / archiveFileOffsetMask else 0L
       var fileId = 0
       var entry = in.getNextEntry
       while (entry != null && !processingInterrupted) {
@@ -475,6 +476,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
           processingInterrupted = true
         }
+
+        fileId += 1
 
         if (fileId >= skipFls) {
           val name: String = entry.getName
@@ -487,7 +490,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             globalOffset = fileId * archiveFileOffsetMask
 
             if (!adapterConfig.monitoringConfig.entireFileInArchiveAsOneMessage) {
-              val skipOff = if (fileId == skipFls) (startOffset % archiveFileOffsetMask) else 0L
+              val skipOff = if (fileId == skipFls && hasOffset) (startOffset % archiveFileOffsetMask) else 0L
 
               // Read Data till skip offset
               if (skipOff > 0) {
@@ -547,7 +550,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                   messageFoundCallback(smartFileMessage, consumerContext)
                 }
               }
-            } else {
+            } else if ((!hasOffset) || fileId > skipFls){
               wholeFileBuf.clear
               var len = in.read(byteBuffer)
               while (len > 0 && !processingInterrupted) {
@@ -587,7 +590,6 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           entry = in.getNextEntry
         else
           entry = null
-        fileId += 1
       }
 
     } catch {
