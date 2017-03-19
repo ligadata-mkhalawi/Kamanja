@@ -394,7 +394,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
   var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
   val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim
-  val hasBatchFileOutputDir = if (batchFileOutputDir != null && !batchFileOutputDir.isEmpty)
+  val hasBatchFileOutputDir = (batchFileOutputDir != null && !batchFileOutputDir.isEmpty)
 
   private val hostListArr = adapterConfig.hostList.toArray
   private val allHostsCnt = hostListArr.size
