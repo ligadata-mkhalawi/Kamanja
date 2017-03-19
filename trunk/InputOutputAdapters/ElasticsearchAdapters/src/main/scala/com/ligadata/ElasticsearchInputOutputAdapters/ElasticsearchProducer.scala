@@ -84,7 +84,8 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
     if (writeData.size == 0) return
     if (LOG.isDebugEnabled) LOG.debug("Called writer task putJsonsWithMetadataLocal")
 
-    writeBatchToFile
+    if (producer.hasBatchFileOutputDir)
+      writeBatchToFile
 
     //   containerName: String, data_list: Array[String]
     var client: TransportClient = null
@@ -309,7 +310,7 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
       }
     }
     catch {
-      case e: Exception => {
+      case e: Throwable => {
         LOG.error("Failed to save an object in the table", e)
       }
     } finally {
@@ -322,8 +323,17 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
 
   def putJsonsWithMetadata: Unit = {
     if (LOG.isDebugEnabled) LOG.debug("Called writer task putJsonsWithMetadata.")
-    putJsonsWithMetadataLocal
-    outStandingWrites.decrementAndGet()
+    try {
+      putJsonsWithMetadataLocal
+    } catch {
+      case e: Throwable => {
+        LOG.warn("Got Exception", e)
+      }
+    } finally {
+      val cnt = outStandingWrites.decrementAndGet()
+      if (LOG.isTraceEnabled) LOG.trace("After write task done, counter:" + cnt)
+    }
+
     if (LOG.isDebugEnabled) LOG.debug("Done writer task putJsonsWithMetadata")
   }
 
@@ -384,7 +394,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val logWriteTime = adapterConfig.otherConfig.getOrElse("LogWriteTime", "false").toString.trim.toBoolean
   var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
   val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim
-  // val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim.toInt
+  val hasBatchFileOutputDir = if (batchFileOutputDir != null && !batchFileOutputDir.isEmpty)
 
   private val hostListArr = adapterConfig.hostList.toArray
   private val allHostsCnt = hostListArr.size
@@ -511,7 +521,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     while (outStandingWrites.get > parallelWrites) {
       // We already have more than 1 outstanding writes
       try {
-        if ((waitCntr % 25) == 0 && LOG.isTraceEnabled) LOG.trace("Waiting to add another write task")
+        if ((waitCntr % 50) == 0 && LOG.isDebugEnabled) LOG.debug("Waiting to add another write task. outStandingWrites:%d > parallelWrites:%d. Waiting Counter:%d".format(outStandingWrites.get, parallelWrites, waitCntr))
         Thread.sleep(10) // Sleeping only 10ms and check
       } catch {
         case e: Throwable => {}
@@ -519,7 +529,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       waitCntr += 1
     }
 
-    outStandingWrites.incrementAndGet()
+    val cnt = outStandingWrites.incrementAndGet()
+    if (logger.isTraceEnabled) logger.trace("After adding new write task, counter:" + cnt)
 
     if (canRunOnSeparateThread) {
       dataWriteExec.execute(writerTask)
