@@ -35,7 +35,7 @@ class MonitorController {
     commonFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
   }
 
-  val NOT_RECOVERY_SITUATION = -1
+  val NOT_RECOVERY_SITUATION = 0 // Non recover situation is making 0 offset instead of -1
 
   private var adapterConfig: SmartFileAdapterConfiguration = null
   private var newFileDetectedCallback: () => Unit = null
