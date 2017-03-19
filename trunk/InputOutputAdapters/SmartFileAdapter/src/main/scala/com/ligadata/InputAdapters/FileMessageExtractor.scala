@@ -203,7 +203,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       var lengthToRead: Int = 0
       do {
         lengthToRead = Math.min(maxlen, startOffset - totalReadLen).toInt
-        curReadLen = fileHandler.read(byteBuffer, 0, lengthToRead)
+        if(lengthToRead > 0)
+          curReadLen = fileHandler.read(byteBuffer, 0, lengthToRead)
         if (curReadLen > 0)
           totalReadLen += curReadLen
         if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - reading {} bytes from file {} but got only {} bytes",
