@@ -479,6 +479,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
         fileId += 1
 
+        if (logger.isTraceEnabled) logger.trace("Started reading file/directory %s of size %d in archive file %s".format(entry.getName, entry.getSize, fileHandler.getFullPath))
+
         if (fileId >= skipFls) {
           val name: String = entry.getName
           if (!entry.isDirectory) {
@@ -510,6 +512,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
               }
 
               var len = in.read(byteBuffer, readlen, maxlen - readlen - 1)
+              if (logger.isTraceEnabled) logger.trace("Read %d bytes from file %s of size %d in archive file %s".format(len, entry.getName, entry.getSize, fileHandler.getFullPath))
+
               while (len > 0 && !processingInterrupted) {
                 totalRead += len
                 readlen += len
@@ -536,6 +540,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                   len = -1
                 else
                   len = in.read(byteBuffer, readlen, maxlen - readlen - 1)
+                if (logger.isTraceEnabled) logger.trace("Read %d bytes from file %s of size %d in archive file %s".format(len, entry.getName, entry.getSize, fileHandler.getFullPath))
               }
 
               if (readlen > 0 && !processingInterrupted) {
