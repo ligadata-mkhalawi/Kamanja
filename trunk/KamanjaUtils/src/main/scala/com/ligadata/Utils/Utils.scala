@@ -23,6 +23,7 @@ import java.util.Properties
 import java.util.zip.GZIPInputStream
 import java.nio.file.{ Paths, Files }
 import java.util.jar.JarInputStream
+import scala.actors.threadpool.{ExecutorService , TimeUnit => STimeUnit}
 import com.ligadata.Exceptions.StackTrace
 
 import scala.util.control.Breaks._
@@ -284,5 +285,28 @@ object Utils {
       // else Valid file
     })
     nonExistsJars.toSet
+  }
+
+  def shutdownAndAwaitTermination(pool : ExecutorService, id : String, waitInMs : Long) : Unit = {
+    pool.shutdown(); // Disable new tasks from being submitted
+    try {
+      // Wait a while for existing tasks to terminate
+      if (!pool.awaitTermination(waitInMs, STimeUnit.MILLISECONDS)) {
+        pool.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if (!pool.awaitTermination(waitInMs, STimeUnit.MILLISECONDS)) {
+          logger.warn("Pool did not terminate " + id);
+          //Thread.currentThread().interrupt()
+        }
+      }
+    } catch  {
+      case ie : InterruptedException => {
+        logger.info("InterruptedException for " + id, ie)
+        // (Re-)Cancel if current thread also interrupted
+        pool.shutdownNow();
+
+        //Thread.currentThread().interrupt()
+      }
+    }
   }
 }

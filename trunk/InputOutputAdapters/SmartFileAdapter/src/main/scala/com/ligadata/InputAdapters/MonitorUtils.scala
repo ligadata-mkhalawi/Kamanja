@@ -129,18 +129,6 @@ object MonitorUtils {
     finalParentDir
   }
 
-  def shutdownAndAwaitTermination(pool : ExecutorService, id : String) : Unit = {
-    try {
-      if(!pool.isShutdown){
-        pool.shutdown() // Disable new tasks from being submitted
-        pool.awaitTermination(1, STimeUnit.DAYS) //giving a very short time may cuz the thread to interrupt
-      }
-    } catch {
-      case ie: InterruptedException => {
-        logger.error("InterruptedException for " + id, ie)
-      }
-    }
-  }
 
   def isPatternMatch(name : String, regex : String): Boolean ={
     val pattern = regex.r

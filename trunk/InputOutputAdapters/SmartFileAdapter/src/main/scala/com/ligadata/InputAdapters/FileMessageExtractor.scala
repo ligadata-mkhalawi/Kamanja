@@ -117,10 +117,10 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       extractExecutor.execute(extractorThread)
 
       logger.debug("File message Extractor - shutting down updatExecutor")
-      MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
+      Utils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator",3600000)
 
       logger.debug("File message Extractor - shutting down extractExecutor")
-      MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
+      Utils.shutdownAndAwaitTermination(extractExecutor, "file message extractor",3600000)
     }
   }
 
