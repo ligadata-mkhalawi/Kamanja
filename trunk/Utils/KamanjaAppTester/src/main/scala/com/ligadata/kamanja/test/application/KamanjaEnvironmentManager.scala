@@ -122,8 +122,8 @@ object KamanjaEnvironmentManager {
 
       typeString.toLowerCase match {
         case "input" | "output" => {
-          val dependencyJars: List[String] = adapter("DependencyJars").asInstanceOf[List[String]]
           val className: String = adapter("ClassName").toString
+          val dependencyJars: List[String] = adapter("DependencyJars").asInstanceOf[List[String]]
           val adapterSpecificCfg = parse(adapter("AdapterSpecificCfg").toString).extract[Map[String, String]]
           val jarName = adapter("JarName").toString
           var adapterType: AdapterType = null
@@ -140,7 +140,7 @@ object KamanjaEnvironmentManager {
           val fieldDelimiter = adapter.getOrElse("FieldDelimiter", "").toString
           val valueDelimiter = adapter.getOrElse("ValueDelimiter", "").toString
 
-          if(className.toLowerCase.contains("kafka")) {
+          if(className.toLowerCase.contains("kamanjakafkaconsumer")) {
             val hostList = adapterSpecificCfg("HostList").toString
             val topicName = adapterSpecificCfg("TopicName").toString
             adapterList :+= new KafkaAdapterConfig(name, adapterType, associatedMessage, keyValueDelimiter,

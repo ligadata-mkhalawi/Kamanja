@@ -67,11 +67,7 @@ class KafkaAdapterBuilder {
   private var valueDelimiter: String = _
   private var className: String = _
   private var jarName: String = s"kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
-  private var dependencyJars: List[String] =
-    List(s"kafka-clients-0.10.0.1.jar",
-      s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-      s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar")
+  private var dependencyJars: List[String] = List(s"kafka-clients-0.10.0.1.jar")
   private var adapterSpecificConfig: KafkaAdapterSpecificConfig = _
   private var tenantId: String = _
 
