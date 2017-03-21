@@ -304,8 +304,8 @@ object Utils {
         logger.error("InterruptedException for " + id, ie)
         // (Re-)Cancel if current thread also interrupted
         pool.shutdownNow();
-
-        //Thread.currentThread().interrupt()
+        // Preserve interrupt status
+        Thread.currentThread().interrupt()
       }
     }
   }
