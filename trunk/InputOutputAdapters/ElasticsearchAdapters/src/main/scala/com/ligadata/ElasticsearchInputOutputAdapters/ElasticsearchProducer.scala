@@ -155,8 +155,10 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
       if (LOG.isInfoEnabled) LOG.info("About to write %d records".format(allRecsToWrite))
       exec = true
       curWaitTm = 5000
+      var retryCntr = 0
       while (!canConsiderShutdown && exec) {
         exec = false
+        retryCntr += 1
         try {
           if (client == null) {
             client = producer.getConnectionFromPool
@@ -229,7 +231,22 @@ class WriteTask(val producer: ElasticsearchProducer, val considerShutdown: Boole
                     if (itms.length > 0) {
                       var cntr = itms.length - 1
                       while (cntr >= 0) {
-                        if (!itms(cntr).isFailed()) {
+                        var isFailed = itms(cntr).isFailed()
+                        if (isFailed) {
+                          val failure = itms(cntr).getFailure()
+                          if (failure != null && failure.getCause != null) {
+                            val cause = failure.getCause
+                            val msg = cause.getMessage
+                            if (retryCntr >= producer.maxRetriesForIllegalArgumentException && cause.isInstanceOf[java.lang.IllegalArgumentException] &&
+                              msg.contains("Document contains at least one immense term in field")) {
+                              LOG.error("Ignoring non recoverable error java.lang.IllegalArgumentException with message:" + msg)
+                              isFailed = false
+                            }
+                          } else {
+                            isFailed = false
+                          }
+                        }
+                        if (!isFailed) {
                           data_list.remove(cntr)
                         } else {
                           recsWritten -= 1
@@ -395,6 +412,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   var roundRobinNodesCount = adapterConfig.otherConfig.getOrElse("RoundRobinNodesCount", "0").toString.trim.toInt
   val batchFileOutputDir = adapterConfig.otherConfig.getOrElse("BatchFileOutputDir", "").toString.trim
   val hasBatchFileOutputDir = (batchFileOutputDir != null && !batchFileOutputDir.isEmpty)
+  val maxRetriesForIllegalArgumentException = adapterConfig.otherConfig.getOrElse("MaxRetriesForIllegalArgumentException", "3").toString.trim.toInt
 
   private val hostListArr = adapterConfig.hostList.toArray
   private val allHostsCnt = hostListArr.size
