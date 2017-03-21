@@ -214,16 +214,32 @@ class MonitorController {
       val dirMonitorThread = new Runnable() {
         override def run() = {
           try {
+            var cntr = 0L
+            val adapName = if (adapterConfig.Name  != null) adapterConfig.Name else ""
 
             while (keepMontoringBufferingFiles && !isShutdown) {
-              if (logger.isDebugEnabled) logger.debug("waitingGroupsToProcessCount={}, dirCheckThreshold={}",
-                waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              cntr += 1
+              if (cntr > 1000000000L)
+                cntr -= 1000000000L
+
+              if (logger.isDebugEnabled) {
+                logger.debug("adapterName={} waitingGroupsToProcessCount={}, dirCheckThreshold={}",
+                  adapName, waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              } else if (logger.isWarnEnabled && ((cntr % 1000) ==  0)) {
+                logger.warn("adapterName={} waitingGroupsToProcessCount={}, dirCheckThreshold={}",
+                  adapName, waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              }
 
               //start/stop listing folders contents based on current number of waiting files compared to a threshold
               if (adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
                 waitingGroupsToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold) {
 
-                if (logger.isInfoEnabled) logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                if (logger.isInfoEnabled) {
+                  logger.info("Smart File Monitor - too many files already in process queue for adapter:{}. monitoring thread {} is sleeping for {} ms", adapName, currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                } else if (logger.isWarnEnabled && ((cntr % 1000) ==  0)) {
+                  logger.warn("Smart File Monitor - too many files already in process queue for adapter:{}. monitoring thread {} is sleeping for {} ms", adapName, currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                }
+
                 try {
                   Thread.sleep(monitoringConf.waitingTimeMS)
                 }
@@ -237,6 +253,11 @@ class MonitorController {
                   val location = dirQueuedInfo._1
                   val isFirstScan = dirQueuedInfo._3
                   val srcDir = location.srcDir
+
+                  if (logger.isWarnEnabled && ((cntr % 1000) ==  0)) {
+                    logger.warn("adapterName={} waitingGroupsToProcessCount={}, dirCheckThreshold={} monitorDir={}",
+                      adapName, waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString, srcDir)
+                  }
 
                   if (keepMontoringBufferingFiles && !isShutdown)
                     monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan, groupsInfo)
