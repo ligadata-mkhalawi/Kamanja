@@ -82,6 +82,8 @@ scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 //  )
 //}
 
+libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
+
 coverageMinimum := 80
 
 coverageFailOnMinimum := false
