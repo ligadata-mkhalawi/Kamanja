@@ -32,8 +32,9 @@ import MediaTypes._
 import org.apache.logging.log4j._
 import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
-import com.ligadata.dataaccessapi.HBaseDataAccessAdapter
-import com.ligadata.dataaccessapi.DataContainerDef
+import com.ligadata.dataaccessapi.KafkaDataAccessAdapter
+import com.ligadata.dataaccessapi.{DataContainerDef, AttributeDef, AttributeGroupDef}
+import com.ligadata.kamanja.metadata._
 
 class MetadataAPIServiceActor extends Actor with MetadataAPIService {
 
@@ -42,7 +43,7 @@ class MetadataAPIServiceActor extends Actor with MetadataAPIService {
   def receive = runRoute(metadataAPIRoute)
 }
 
-class DataApiResult(var status:String, var statusCode:String, var statusDescription:String, var resultCount:Int, var result: Array[Map[String, Any]])
+class DataApiResult(var status:String, var statusCode:String, var statusDescription:String, var resultCount:Option[Int], var result: Option[Array[Map[String, Any]]])
 
 trait MetadataAPIService extends HttpService {
 
@@ -61,10 +62,10 @@ trait MetadataAPIService extends HttpService {
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
-  val daasApi = HBaseDataAccessAdapter.api
+  val daasApi = KafkaDataAccessAdapter.api
   implicit val formats = Serialization.formats(NoTypeHints)
     
-  val dataContainers: Map[String, DataContainerDef] = daasApi.getDataContainerDefinitionsV1 
+  val dataContainers: Map[String, DataContainerDef] = getDataContainerDefinitions
   //Map("customer" -> Map("userdata" -> List("HS_Make", "HS_Model")))
 
   val metadataAPIRoute = respondWithMediaType(MediaTypes.`application/json`) {
@@ -114,30 +115,20 @@ trait MetadataAPIService extends HttpService {
 		                  requestContext => processGetObjectRequest(toknRoute(0).toLowerCase, toknRoute(1).toLowerCase, requestContext, user, password, role)
 		             	}
                       }
-                    }
-
+                    }~
                     pathPrefix("data") {
                       pathEndOrSingleSlash {
-                        complete("Daas Api")
+                        complete(write(new DataApiResult("success" , "0", "Containers in DaaS API", Some(1), Some(Array(dataContainers)))))
                       } ~
                       pathPrefix(dataContainers) { dcDef =>
-                        val dcFullName = dcDef.fullContainerName
                         pathEndOrSingleSlash {
-                          parameter("UID") { uid =>
-                            val res = daasApi.get(dcFullName, dcDef.attributes, Array(uid))
-                            if(res.length > 0)
-                              complete(write(new DataApiResult("success", "0", "Sucessfully retrived result", res.length, res)))
-                            else
-                              complete(write(new DataApiResult("success", "1000", "No data found", 0, res)))
+                          parameterMap { params =>
+                            requestContext => processGetDataRequest(params, dcDef, dcDef.attributes, requestContext, userId, password, role)
                           }
                         } ~
                         pathPrefix(dcDef.attributeGroups) { agDef =>
-                          parameter("UID") { uid =>
-                            val res = daasApi.get(dcFullName, agDef.attributes, Array(uid))
-                            if(res.length > 0)
-                              complete(write(new DataApiResult("success", "0", "Sucessfully retrived result", res.length, res)))
-                            else
-                              complete(write(new DataApiResult("success", "1000", "No data found", 0, res)))
+                          parameterMap { params =>
+                            requestContext => processGetDataRequest(params, dcDef, agDef.attributes, requestContext, userId, password, role)
                           }
                         }
                       }
@@ -588,4 +579,63 @@ trait MetadataAPIService extends HttpService {
     val apiArgJson = JsonSerializer.SerializeApiArgListToJson(mdArgList)
     apiArgJson
   }
-}
+
+  private def processGetDataRequest(params: Map[String, String], dcDef: DataContainerDef, attr: Array[AttributeDef], rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
+    try {
+      val missing = dcDef.key.filter(k => !params.contains(k))
+      if (missing != null && missing.length > 0)
+        rContext.complete(400, write(new DataApiResult("error", "9002", "Missing key " + missing.mkString(","), None, None)))
+      else {
+        val key = dcDef.key.map(k => params.getOrElse(k, null))
+
+        val fields = params.getOrElse("fields", "").toLowerCase.split(",")
+        val projectList = if (fields.length == 0) attr else attr.filter(a => fields.contains(a.name))
+        val filter = params.getOrElse("filter", null)
+
+        daasApi.retrieve(dcDef.fullContainerName, projectList, key, filter, rContext, (ctx, result, status) => {
+          val context = ctx.asInstanceOf[RequestContext]
+          //val res = result.asInstanceOf[Map[String, Any]]
+          if(status == "1000")
+            context.complete(result.asInstanceOf[String])
+          else
+            context.complete(500, result.asInstanceOf[String])
+        })
+      }
+    } catch {
+      case e: Throwable => {
+        logger.error("Error processing request: " + e.getMessage, e)
+        rContext.complete(500, write(new DataApiResult("error", "9000", "Internal Error: " + e.getMessage, None, None)))
+      }
+    }
+  }
+  
+  private def getDataContainerDefinitions(): Map[String, DataContainerDef] = {
+    val results = scala.collection.mutable.Map[String, DataContainerDef]()
+    try {
+      val contDefs = MdMgr.mdMgr.Containers(true, true)
+      contDefs match {
+        case None =>
+          //None
+          logger.debug("No Containers found ")
+        case Some(cs) =>
+          cs.foreach(c => {
+            val containerDef = c.cType.asInstanceOf[ContainerTypeDef]
+            val attribs =
+              if (containerDef.IsFixed) {
+                containerDef.asInstanceOf[StructTypeDef].memberDefs.toList
+              } else {
+                containerDef.asInstanceOf[MappedMsgTypeDef].attrMap.map(kv => kv._2).toList
+              }
+
+            val attributes = attribs.map(a => new AttributeDef(a.name, a.typeDef.Name))
+            c.cType.partitionKey
+            results.put(c.name, new DataContainerDef(c.name, c.FullName, attributes.toArray, Map[String, AttributeGroupDef](), c.cType.partitionKey))
+          })
+      }
+    } catch {
+      case e: Throwable => logger.error("Error retrieving container definitions ", e)
+    }
+    return results.toMap
+  }
+}  
+

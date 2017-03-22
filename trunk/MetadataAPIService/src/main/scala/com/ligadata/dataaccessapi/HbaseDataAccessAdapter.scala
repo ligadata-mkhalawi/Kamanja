@@ -38,7 +38,10 @@ import org.apache.hadoop.hbase.client.{ BufferedMutator, BufferedMutatorParams, 
 import org.apache.hadoop.hbase._
 
 import org.json4s._
-import org.json4s.jackson.JsonMethods._
+import org.json4s.JsonDSL._
+import org.json4s.native.JsonMethods._
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization._
 import com.ligadata.Exceptions._
 import com.ligadata.Utils.{ KamanjaLoaderInfo }
 import com.ligadata.KvBase.{ Key, TimeRange, Value }
@@ -52,6 +55,7 @@ class HBaseDataAccessAdapter(val configJson: String) extends DataAccessAPI {
   val adapterConfig = if (configJson != null) configJson.trim else ""
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
+  implicit val formats = DefaultFormats
 
   private var msg: String = ""
 
@@ -235,7 +239,22 @@ class HBaseDataAccessAdapter(val configJson: String) extends DataAccessAPI {
     return null
   }
 
-  override def get(fullContainerName: String, select: Array[AttributeDef], keys: Array[String]): Array[Map[String, Any]] = {
+  override def retrieve(fullContainerName: String, select : Array[AttributeDef], keys: Array[String], filter: String, context: Any, callback: (Any, Any, String) => Unit) = {
+    try { 
+      val result = get(fullContainerName, select, keys) 
+//      val resJson = compact(render(("status" -> "success") ~ ("statusCode" -> "1000") ~ ("statusDescription" -> "") ~ ("resultCount" -> result.length) ~ ("result" -> result)))
+      val resJson = write(Map("status" -> "success", "statusCode" -> "1000", "statusDescription" -> "", "resultCount" -> result.length, "result" -> result))
+      callback(context, resJson, "1000")
+    } catch { 
+      case e: Exception => {
+        val resJson = write(Map("status" -> "error", "statusCode" -> "9000", "statusDescription" -> e.getMessage))
+        callback(context, resJson, "9000")
+      }
+    }
+
+  }
+
+  def get(fullContainerName: String, select: Array[AttributeDef], keys: Array[String]): Array[Map[String, Any]] = {
     var tableName = toTableName(fullContainerName)
     var tableHBase: Table = null
     try {
@@ -319,7 +338,7 @@ class HBaseDataAccessAdapter(val configJson: String) extends DataAccessAPI {
           attributeGroups.put(grpName, new AttributeGroupDef(grpName, grpAttr.toArray))
         })
 
-        results.put(name, new DataContainerDef(name, fullName, attributes.toArray, attributeGroups.toMap))
+        results.put(name, new DataContainerDef(name, fullName, attributes.toArray, attributeGroups.toMap, null))
       })
       results.toMap
     } catch {
@@ -369,7 +388,7 @@ class HBaseDataAccessAdapter(val configJson: String) extends DataAccessAPI {
           }
         })
 
-        results.put(name, new DataContainerDef(name, fullName, attributes.toArray, attributeGroups.toMap))
+        results.put(name, new DataContainerDef(name, fullName, attributes.toArray, attributeGroups.toMap, null))
       })
       results.toMap
     } catch {

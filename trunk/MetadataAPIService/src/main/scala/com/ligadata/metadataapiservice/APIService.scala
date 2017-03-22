@@ -38,7 +38,7 @@ import spray.can.server.ServerSettings
 import scala.util.control.Breaks._
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaVersion.KamanjaVersion
-import com.ligadata.dataaccessapi.HBaseDataAccessAdapter
+import com.ligadata.dataaccessapi.KafkaDataAccessAdapter
 
 // $COVERAGE-OFF$
 class APIService extends LigadataSSLConfiguration with Runnable{
@@ -100,7 +100,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
 
     APIInit.Shutdown(0)
     MetadataAPIImpl.shutdown
-    HBaseDataAccessAdapter.Shutdown
+    KafkaDataAccessAdapter.Shutdown
     //System.exit(0)
   }
 
@@ -202,9 +202,9 @@ class APIService extends LigadataSSLConfiguration with Runnable{
         logger.debug("API Properties => " + MetadataAPIImpl.GetMetadataAPIConfig)
 
         //val daasConfig = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DataStore")
-        val daasConfig = loadConfigs.getProperty("datastore")
-        logger.warn("Starting Data Access API using data store : " + daasConfig)
-        HBaseDataAccessAdapter.Init(daasConfig)
+        val daasConfig = loadConfigs.getProperty("daasconfig")
+        logger.warn("Starting Data Access API using configuration : " + daasConfig)
+        KafkaDataAccessAdapter.Init(daasConfig)
 
         // We will allow access to this web service from all the servers on the PORT # defined in the config file
         val serviceHost = "0.0.0.0"
