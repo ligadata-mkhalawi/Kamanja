@@ -275,6 +275,16 @@ class TestHBaseAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
       assert(readResults(1).columnValue.equals("king1"))
     }
 
+
+    it("Validate truncateContainer") {
+      val containerName = "customer3"
+      noException should be thrownBy {
+	var containerList = new Array[String](0)
+	containerList = containerList :+ containerName
+	hbaseAdapter.TruncateContainer(containerList)
+      }
+    }
+
   }
 
   override def afterAll = {
