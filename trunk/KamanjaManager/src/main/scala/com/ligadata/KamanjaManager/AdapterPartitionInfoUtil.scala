@@ -31,14 +31,14 @@ object AdapterPartitionInfoUtil {
   val backupfile4 = "/adapterinfo_bkup4.json"
   val backupfile5 = "/adapterinfo_bkup5.json"
 
-  def generateAdapterInfoJson(adapterinfoMap: scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]], nodeId: String): String = {
+  def generateAdapterInfoJson(adapterinfoMap: scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]], nodeId: String, nodestarttime: Long): String = {
     var adapterInfoString: String = ""
     var counter = 0
     setGuid(System.currentTimeMillis())
 
     val json = ("uuid" -> guid) ~
       ("uniquecounter" -> increment) ~
-      ("nodestarttime" -> System.currentTimeMillis()) ~
+      ("nodestarttime" -> nodestarttime) ~
       ("nodeid" -> nodeId) ~
       ("adapterinfo" -> adapterinfoMap.map(adapinfo =>
         ("adaptername" -> adapinfo._1) ~
@@ -48,8 +48,13 @@ object AdapterPartitionInfoUtil {
 
     adapterInfoString = compact(render(json))
 
+    if (adapterinfoMap != null && adapterinfoMap.size > 0) {
+      adapterinfoMap.foreach(adapInfo => {
+        println("2 adapInfo._1" + adapInfo._1)
+        println(adapInfo._2.map(a => println("2key values: " + a.key + " : " + a.keyValue)))
+      })
+    }
     adapterInfoString
-
   }
 
   private def setGuid(curTime: Long) {
@@ -76,13 +81,17 @@ object AdapterPartitionInfoUtil {
     }
   }
 
-  /* read to local map from local drive */
+  /*  read to local map from local drive 
   def readfromFile(nodeId: String, localDriveLocation: String, adapPartitionMap: scala.collection.mutable.Map[String, String]) = {
     //  get the file from local drive
     //  add to the map
+    var location: String = ""
     var adapterpartitioninfo: String = ""
-
-    val fileStr = localDriveLocation + "/" + nodeId + file
+    if (!localDriveLocation.endsWith("/"))
+      location = localDriveLocation + "/"
+    else
+      location = localDriveLocation
+    val fileStr = location + nodeId + file
     println("fileStr" + fileStr)
     if (fileExist(fileStr)) {
       adapterpartitioninfo = readFile(fileStr)
@@ -101,7 +110,25 @@ object AdapterPartitionInfoUtil {
           }
         })
       }
-    } else println("file do not exists")
+    } else println("file do not exists")   
+  }*/
+
+  /* read to local map from local drive */
+  def readfromFile(nodeId: String, localDriveLocation: String): String = {
+    //  get the file from local drive
+    //  add to the map
+    var location: String = ""
+    var adapterpartitioninfo: String = ""
+    if (!localDriveLocation.endsWith("/"))
+      location = localDriveLocation + "/"
+    else
+      location = localDriveLocation
+    val fileStr = location + nodeId + file
+    println("fileStr" + fileStr)
+    if (fileExist(fileStr)) {
+      adapterpartitioninfo = readFile(fileStr)
+    }
+    return adapterpartitioninfo
   }
 
   def readFile(filePath: String): String = { //This method used to read a whole file (from header && pmml)

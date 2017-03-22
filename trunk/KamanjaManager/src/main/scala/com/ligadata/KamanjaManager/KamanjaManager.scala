@@ -284,6 +284,11 @@ class KamanjaManager extends Observer {
   private var msgChangedCntr: Long = 0
   private var msg2TenantId = scala.collection.immutable.Map[String, String]()
   private var msg2TentIdResolvedCntr: Long = -1
+  private var nodestarttime: Long = System.currentTimeMillis()
+  var adapInfoMap = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
+  var adapInfoMapFRomStorage = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
+  var adapInfoMapFromLeader = scala.collection.immutable.Map[String, Array[(String, String)]]()
+  var actionOnAdaptersMap: ActionOnAdaptersMap = null
 
   def incrAdapterChangedCntr(): Unit = {
     adapterChangedCntr += 1
@@ -386,6 +391,8 @@ class KamanjaManager extends Observer {
   //key is node id, value is (partition id, file name, offset, ignoreFirstMsg)
   private val allPartitions = scala.collection.mutable.Map[String, String]()
   private val consolidatedPartitions = scala.collection.mutable.Map[String, String]()
+  var condolidatedAdapterInfoMap = Map[String, Array[(String, String)]]()
+
   var sendAdapterPartitionInfo = "data/node"
   var consolidatedPartitionInfo = "/adapterinfo/consolidate/"
   private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
@@ -397,27 +404,10 @@ class KamanjaManager extends Observer {
       // Not really waiting for termination
     }
 
-    if (execCtxtsAdapterInfoPool != null) {
-      execCtxtsAdapterInfoPool.shutdownNow()
-      // Not really waiting for termination
-    }
-
-    KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(sendAdapterPartitionInfo, collectAdapterPartitionInfo) // listen to start info
-
-    KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(consolidatedPartitionInfo, collectConsolidatedAdapterPartitionInfo) // listen to start info
-
     execCtxtsCommitPartitionOffsetPool = scala.actors.threadpool.Executors.newFixedThreadPool(1)
-    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2)
 
     // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
-
-      //read to local map from local drive
-      //for now hard code location path
-      val nodeid = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
-      val localDriveLocation = "/data/node/"
-      AdapterPartitionInfoUtil.readfromFile(nodeid, localDriveLocation, allPartitions)
-
       execCtxtsCommitPartitionOffsetPool.execute(new Runnable() {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
@@ -453,9 +443,71 @@ class KamanjaManager extends Observer {
           }
         }
       })
+    }
+  }
 
-      var adapInfoMap = scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]()
-      var keyvalues = ArrayBuffer[AdapterPartKeyValues]()
+  def ReadAdapterPartitionInfo(actionOnAdaptersMap: ActionOnAdaptersMap) = {
+    // get the adapterpartion keyvalues from database and store in adapterparitions
+    try {
+      if (actionOnAdaptersMap.action.toLowerCase().trim().equals("distribute")) {
+
+      }
+
+    } catch {
+      case e: Exception => LOG.error("ReadAdapterPartitionInfo" + e.getMessage)
+    }
+
+  }
+  //move create listener, to up
+  //read 
+
+  def CosolidateAdapterParitionInfo() = {
+    try {
+      val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+      //  KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(consolidatedPartitionInfo, collectConsolidatedAdapterPartitionInfo) // listen to start info
+
+      val ConsolidatedAdapterInfo = consolidatedPartitionInfo + "/" + nodeId
+      KamanjaMetadata.gNodeContext.getEnvCtxt().setListenerCacheKey(ConsolidatedAdapterInfo, consolidatedPartitionInfo) // => Goes to Leader
+      try {
+        Thread.sleep(1000)
+      } catch {
+        case e: Throwable => {}
+      }
+
+      val adapterJson = AdapterPartitionInfoUtil.consolidatingAdapterInfo(consolidatedPartitions)
+      allPartitions(nodeId) = adapterJson
+    } catch {
+      case e: Exception => LOG.debug("CosolidateAdapterParitionInfo " + e.getMessage)
+    }
+  }
+
+  def ReadFromLocalDrive(): String = {
+    var adapterJsonFromlocalDrive: String = ""
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+      //read to local map from local drive
+      val nodeid = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+      val localDriveLocation = KamanjaConfiguration.adapterInfoWriteLocation
+      adapterJsonFromlocalDrive = AdapterPartitionInfoUtil.readfromFile(nodeid, localDriveLocation) //allPartitions)
+    }
+    adapterJsonFromlocalDrive
+  }
+
+  def PostAdapterParitionInfoToLocalDrive(): Unit = synchronized {
+    if (LOG.isDebugEnabled()) LOG.debug("Called PostAdapterParitionInfoToLocalDrive")
+
+    if (execCtxtsAdapterInfoPool != null) {
+      execCtxtsAdapterInfoPool.shutdownNow()
+      // Not really waiting for termination
+    }
+    var adapInfoMaplocal = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
+
+    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2)
+
+    // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+
+      //read to local map from local drive
+      //for now hard code location path
 
       val postAdapterInfoSvc = new Runnable() {
         override def run() {
@@ -463,7 +515,7 @@ class KamanjaManager extends Observer {
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
           while (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated) {
             try {
-              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
+              Thread.sleep(1000) // Sleeping 1000ms more than given interval
             } catch {
               case e: Throwable => {}
             }
@@ -471,20 +523,62 @@ class KamanjaManager extends Observer {
               val envCtxts = GetEnvCtxts
               if (LOG.isDebugEnabled()) LOG.debug("Running execCtxtsAdapterInfo for " + envCtxts.length + " envCtxts")
               var idx = 0
+              //keyvalues.clear()
               while (idx < envCtxts.length && !tp.isShutdown) {
                 try {
+                  if (idx == 0) {
+                    adapInfoMaplocal.clear()
+                    println("0000000000000!")
+                  }
+                  var keyvalues = scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]()
+
                   val (adapterName, key, keyValue) = envCtxts(idx).GetAdapterPartitionKVInfo
-                  if (adapInfoMap.contains(adapterName)) keyvalues = adapInfoMap(adapterName)
-                  keyvalues += new AdapterPartKeyValues(key, keyValue)
-                  adapInfoMap(adapterName) = keyvalues
-                  keyvalues.clear()
-                  println("aadapInfoMap: " + adapInfoMap)
+                  if (adapterName != null && key != null && keyValue != null) {
+
+                    println("adapterName:key:value :" + adapterName + ":" + key + ":" + keyValue)
+                    if (adapInfoMaplocal.contains(adapterName.trim)) {
+                      println("11111111111111111111111111!")
+                      val kv = adapInfoMaplocal(adapterName)
+
+                      println("2222222222222222!" + kv)
+                      if (kv != null && kv.size > 0) {
+                        println("33333333333333333!")
+                        println("1111========================!")
+
+                        kv.foreach(a => {
+                          if (a != null && a.isInstanceOf[AdapterPartKeyValues]) {
+                            keyvalues += a
+                            println("44444444444!")
+                          }
+                          println("222========================!")
+                        })
+                        println("55555555555555555!")
+                        keyvalues.foreach { kv => { println("kv 1 " + kv.key + ": " + kv.keyValue) } }
+                      }
+                    }
+                    keyvalues += new AdapterPartKeyValues(key, keyValue)
+                    keyvalues.foreach { kv => { println("kv 2 " + kv.key + ": " + kv.keyValue) } }
+
+                    adapInfoMaplocal(adapterName.trim) = keyvalues
+                    println("adapInfoMaplocal(adapterName): " + adapInfoMaplocal(adapterName))
+                    println("adapInfoMaplocal 1 : " + adapInfoMaplocal)
+                    println("adapInfoMaplocal: " + adapInfoMaplocal)
+                  }
                 } catch {
                   case e: Throwable => {
                     LOG.error("Failed to commit partitions offsets", e)
                   }
                 }
                 idx += 1
+              }
+              if (adapInfoMaplocal != null && adapInfoMaplocal.size > 0) {
+                adapInfoMaplocal.foreach(adapInfo => {
+                  if (adapInfoMap.contains(adapInfo._1)) {
+                    if (adapInfo._2 != null && adapInfo._2.size > 0) {
+                      adapInfoMap(adapInfo._1) = adapInfo._2
+                    }
+                  }
+                })
               }
               postAdapterPartitionsInfoToNodes(adapInfoMap)
             }
@@ -500,33 +594,25 @@ class KamanjaManager extends Observer {
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
           while (!tp.isShutdown) {
             try {
-              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
+              Thread.sleep(1000) // Sleeping 1000ms more than given interval
             } catch {
               case e: Throwable => {}
             }
             if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
-              val envCtxts = GetEnvCtxts
-              if (LOG.isDebugEnabled()) LOG.debug("Running execCtxtsAdapterInfo for " + envCtxts.length + " envCtxts")
-              var idx = 0
-              while (idx < envCtxts.length && !tp.isShutdown) {
+              while (!tp.isShutdown) {
                 try {
                   writeAdapPartitionInfoToNodes(allPartitions)
-
                 } catch {
                   case e: Throwable => {
                     LOG.error("Failed to commit partitions offsets", e)
                   }
                 }
-                idx += 1
               }
             }
           }
         }
       }
       execCtxtsAdapterInfoPool.execute(writeAdapterInfoSvc)
-      val ConsolidatedAdapterInfo = consolidatedPartitionInfo + "/" + nodeid
-      KamanjaMetadata.gNodeContext.getEnvCtxt().setListenerCacheKey(ConsolidatedAdapterInfo, consolidatedPartitionInfo) // => Goes to Leader
-
     }
   }
 
@@ -1052,8 +1138,24 @@ class KamanjaManager extends Observer {
             retval = false
           }
         }
-        if (retval)
+        if (retval) {
+          println("Kamanja Managaer RecreateExecCtxtsCommitPartitionOffsetPool start ")
+          KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(consolidatedPartitionInfo, collectConsolidatedAdapterPartitionInfo) // listen to start info
+          KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(sendAdapterPartitionInfo, collectAdapterPartitionInfo) // listen to start info
+
+          //read the adapter paritioninfo from database
+          ReadAdapterPartitionInfo(actionOnAdaptersMap)
+
+          CosolidateAdapterParitionInfo()
+
+          //read from local drive  and copy to cosolidated map 
+
+          PostAdapterParitionInfoToLocalDrive
+
           RecreateExecCtxtsCommitPartitionOffsetPool()
+          println("Kamanja Manager RecreateExecCtxtsCommitPartitionOffsetPool end ")
+
+        }
       }
     } catch {
       case e: Exception => {
@@ -1524,17 +1626,24 @@ class KamanjaManager extends Observer {
     }
   }
 
-  def postAdapterPartitionsInfoToNodes(adapterInfoArr: scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]): Unit = {
+  def postAdapterPartitionsInfoToNodes(adapterInfoMap: scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]): Unit = {
     val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
     println("postAdapterPartitionsInfoToNodes=========nodeId=================== " + nodeId)
+    if (adapterInfoMap != null && adapterInfoMap.size > 0) {
+      adapterInfoMap.foreach(adapInfo => {
+        println(adapInfo._1)
+        println(adapInfo._2.map(a => println("key values: " + a.key + " : " + a.keyValue)))
+      })
+    }
 
-    adapterJson = AdapterPartitionInfoUtil.generateAdapterInfoJson(adapterInfoArr, nodeId)
+    adapterJson = AdapterPartitionInfoUtil.generateAdapterInfoJson(adapterInfoMap, nodeId, nodestarttime)
 
     println("postAdapterPartitionsInfoToNodes=========adapterJson=================== " + adapterJson)
 
     // do this very x millisecs 
+    val postAdapterInfoTime = KamanjaConfiguration.postAdapterInfoTime
 
-    Thread.sleep(1000) // Get the value from CLusterConfig
+    Thread.sleep(postAdapterInfoTime) // Get the value from CLusterConfig
 
     val SendAdapterInfo = sendAdapterPartitionInfo + "/" + nodeId
     println("postAdapterPartitionsInfoToNodes=========SendAdapterInfo=================== " + SendAdapterInfo)
@@ -1583,13 +1692,12 @@ class KamanjaManager extends Observer {
     LOG.debug("Kamanja Manager - ", eventPath, eventPathData)
     val pathTokens = eventPath.split("/")
     val sendingNodeId = pathTokens(pathTokens.length - 1)
-    val consolidatedAdapterJson = AdapterPartitionInfoUtil.consolidatingAdapterInfo(allPartitions)
+    val consolidatedAdapterJson = ReadFromLocalDrive ///
 
     println("collectConsolidatedAdapterPartitionInfo=========sendingNodeId=================== " + sendingNodeId)
     println("collectConsolidatedAdapterPartitionInfo=========eventType=================== " + eventType)
     println("collectConsolidatedAdapterPartitionInfo=========eventPath=================== " + eventPath)
     println("collectConsolidatedAdapterPartitionInfo=========eventPathData=================== " + eventPathData)
-    println("collectConsolidatedAdapterPartitionInfo=========adapterJson=================== " + consolidatedAdapterJson)
 
     try {
       lock.writeLock().lock()
@@ -1604,7 +1712,6 @@ class KamanjaManager extends Observer {
         println("collectConsolidatedAdapterPartitionInfo=========value=================== " + kv._2)
       })
     } else println("collectConsolidatedAdapterPartitionInfo=========consolidatedPartitions=================== " + consolidatedPartitions)
-
   }
 
   def writeAdapPartitionInfoToNodes(allPartitions: scala.collection.mutable.Map[String, String]) = {
@@ -1613,9 +1720,8 @@ class KamanjaManager extends Observer {
       if (allPartitions != null && allPartitions.size > 0) {
         //get the node local drive location
         //do this every y millisecs
-
-        val y = "2000"
-        Thread.sleep(2000)
+        val writeAdapterInfoTime = KamanjaConfiguration.writeAdaterInfoTime
+        Thread.sleep(writeAdapterInfoTime)
         val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
         var nodepath = "/data/node/"
         if (nodepath != null && nodepath.length() > 0) {
@@ -1650,13 +1756,22 @@ class KamanjaManager extends Observer {
               arrJValue += parse(adapinfoKV._2)
           })
           AdapterPartitionInfoUtil.takeBackUpAndWriteToFile(arrJValue, nodeadapterInfoPath)
-
         }
       }
     } catch {
       case e: Exception => LOG.error("Kamanja Manager - Write AdapterPartitionInfo to File" + e.getMessage)
     }
+  }
 
+  def readConsolidatedParitionsInfo() = {
+
+    try {
+      ///
+      ///
+
+    } catch {
+      case e: Exception => LOG.error("Error occured during reading" + e.getMessage)
+    }
   }
 
 }
@@ -1704,6 +1819,7 @@ object KamanjaManager {
         KamanjaConfiguration.shutdown = true // Setting the global shutdown
       }
     })
+    println("Kamanja Manager Started")
     val kmResult = instance.run(args)
     if (kmResult != 0) {
       LOG.error(s"KAMANJA-MANAGER: Kamanja shutdown with error code $kmResult")
