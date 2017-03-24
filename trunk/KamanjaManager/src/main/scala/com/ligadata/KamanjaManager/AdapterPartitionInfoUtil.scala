@@ -13,13 +13,15 @@ import scala.io.Source._
 
 case class AdapterPartKeyValues(var key: String, var keyValue: String)
 
+case class PartitionKeyValuesInfo(var nodeid: String, var uuid: String, var nodestarttime: Long, var uniquecounter: Long, var keyvalues: Array[(String, String)])
+
 object AdapterPartitionInfoUtil {
   private[this] val LOG = LogManager.getLogger(getClass);
   private var guid: String = ""
   private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
 
-  private var counter = 0
-  private def increment = {
+  private var counter: Long = 0
+  def increment = {
     counter = counter + 1;
     counter
   }
@@ -31,12 +33,10 @@ object AdapterPartitionInfoUtil {
   val backupfile4 = "/adapterinfo_bkup4.json"
   val backupfile5 = "/adapterinfo_bkup5.json"
 
-  def generateAdapterInfoJson(adapterinfoMap: scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]], nodeId: String, nodestarttime: Long): String = {
+  def generateAdapterInfoJson_Old(uuid: String, nodeId: String, nodestarttime: Long, adapterinfoMap: scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]): String = {
     var adapterInfoString: String = ""
-    var counter = 0
-    setGuid(System.currentTimeMillis())
 
-    val json = ("uuid" -> guid) ~
+    val json = ("uuid" -> uuid) ~
       ("uniquecounter" -> increment) ~
       ("nodestarttime" -> nodestarttime) ~
       ("nodeid" -> nodeId) ~
@@ -57,9 +57,25 @@ object AdapterPartitionInfoUtil {
     adapterInfoString
   }
 
-  private def setGuid(curTime: Long) {
-    guid = UUID.randomUUID().toString
+  def generateAdapterInfoJson(paritionKeyValues: PartitionKeyValuesInfo): String = {
+    var adapterInfoString: String = ""
+    val guid = setGuid(System.currentTimeMillis())
 
+    val json = ("uuid" -> paritionKeyValues.uuid) ~
+      ("uniquecounter" -> paritionKeyValues.uniquecounter) ~
+      ("nodestarttime" -> paritionKeyValues.nodestarttime) ~
+      ("nodeid" -> paritionKeyValues.nodeid) ~
+      ("keyvalues" -> paritionKeyValues.keyvalues.toList.map(kv =>
+        ("key" -> kv._1) ~
+          ("value" -> kv._2)));
+
+    adapterInfoString = compact(render(json))
+    adapterInfoString
+  }
+
+  def setGuid(curTime: Long): String = {
+    guid = UUID.randomUUID().toString
+    return guid
   }
 
   def writeToFile(allPartitions: scala.collection.mutable.ArrayBuffer[JValue], nodeadapterInfoPath: String): Unit = {
