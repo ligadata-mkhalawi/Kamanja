@@ -1,12 +1,14 @@
 package com.ligadata.InputAdapters
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io.IOException
 
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
 import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.Utils.Utils
 import org.apache.logging.log4j.LogManager
 
-import scala.actors.threadpool.{Executors, ExecutorService}
+import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -215,9 +217,10 @@ class MonitorController {
 
 
     keepMontoringBufferingFiles = false
-    if (monitorsExecutorService != null)
-      monitorsExecutorService.shutdownNow()
-    monitorsExecutorService = null
+    if (monitorsExecutorService != null){
+      Utils.shutdownAndAwaitTermination(monitorsExecutorService,"MonitorController thread",3600000)
+      monitorsExecutorService = null
+    }
 
     if (monitoringThreadsFileHandlers != null) {
       monitoringThreadsFileHandlers.foreach(handler => {

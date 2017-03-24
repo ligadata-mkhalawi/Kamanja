@@ -1,5 +1,6 @@
 package com.ligadata.InputAdapters
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -1940,9 +1941,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       MonitorUtils.adaptersSessions.clear()
     }
 
-    if (participantsFilesAssignmentExecutor != null)
-      participantsFilesAssignmentExecutor.shutdownNow()
-    participantsFilesAssignmentExecutor = null
+    if (participantsFilesAssignmentExecutor != null) {
+      Utils.shutdownAndAwaitTermination(participantsFilesAssignmentExecutor,"participantsFilesAssignmentExecutor thread",3600000)
+      participantsFilesAssignmentExecutor = null
+    }
 
     isShutdown = false
     _leaderCallbackRequests.clear
@@ -2158,9 +2160,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     initialized = false
     isShutdown = true
 
-    if (participantsFilesAssignmentExecutor != null)
-      participantsFilesAssignmentExecutor.shutdownNow()
-    participantsFilesAssignmentExecutor = null
+    if (participantsFilesAssignmentExecutor != null){
+      Utils.shutdownAndAwaitTermination(participantsFilesAssignmentExecutor,"participantsFilesAssignmentExecutor thread",3600000)
+      participantsFilesAssignmentExecutor = null
+    }
 
     _leaderCallbackRequests.clear
     _fileAssignmentsCallbackRequests.clear
@@ -2173,7 +2176,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (leaderExecutor != null) {
       LOG.warn("shutting down adapter - {} . stopping leaderExecutor", adapterConfig.Name)
       keepCheckingStatus = false
-      MonitorUtils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor")
+      Utils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor",3600000)
       leaderExecutor = null
     }
 
@@ -2289,7 +2292,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //Thread.sleep(adapterConfig.monitoringConfig.waitingTimeMS)
 
     if (participantExecutor != null)
-      MonitorUtils.shutdownAndAwaitTermination(participantExecutor, "Participant Executor")
+      Utils.shutdownAndAwaitTermination(participantExecutor, "Participant Executor",3600000)
 
     LOG.debug("Smart File Adapter - Shutdown Complete")
     //participantExecutor = null

@@ -17,22 +17,28 @@
 
 package com.ligadata.kafkaInputOutputAdapters_v8
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import com.ligadata.AdaptersConfiguration._
 import com.ligadata.InputOutputAdapterInfo._
 import kafka.api._
 import kafka.common.TopicAndPartition
 import org.json4s.jackson.Serialization
+
 import scala.actors.threadpool._
-import scala.actors.threadpool.{ExecutorService, TimeUnit, Executors}
+import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
 import scala.util.control.Breaks._
 import kafka.consumer.SimpleConsumer
-import java.net.{ InetAddress }
+import java.net.InetAddress
+
 import org.apache.logging.log4j.{LogManager, Logger}
+
 import scala.collection.mutable.Map
 import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
-import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
+import com.ligadata.KamanjaBase.{DataDelimiters, NodeContext}
 import com.ligadata.HeartBeat.{MonitorComponentInfo, Monitorable}
 import java.util.concurrent.atomic.AtomicLong
+
+import com.ligadata.Utils.Utils
 
 case class ExceptionInfo (Last_Failure: String, Last_Recovery: String)
 
@@ -916,7 +922,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
 
     // Give the threads to gracefully stop their reading cycles, and then execute them with extreme prejudice.
     Thread.sleep(qc.noDataSleepTimeInMs + 1)
-    readExecutor.shutdownNow
+    Utils.shutdownAndAwaitTermination(readExecutor,"KAFKA_ADAPTER read thread",3600000)
     while (readExecutor.isTerminated == false) {
       Thread.sleep(100)
     }
