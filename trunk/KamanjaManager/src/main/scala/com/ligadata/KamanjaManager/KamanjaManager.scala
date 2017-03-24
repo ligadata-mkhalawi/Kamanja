@@ -133,7 +133,7 @@ object KamanjaConfiguration {
   var commitOffsetsTimeInterval = 0
 
   var postAdapterInfoTime = 0
-  var writeAdaterInfoTime = 0
+  var writeAdapterInfoTime = 0
   var adapterInfoWriteLocation = ""
 
   var shutdown = false
@@ -167,7 +167,7 @@ object KamanjaConfiguration {
     commitOffsetsTimeInterval = 0
 
     postAdapterInfoTime = 0
-    writeAdaterInfoTime = 0
+    writeAdapterInfoTime = 0
     adapterInfoWriteLocation = ""
 
     shutdown = false
@@ -866,9 +866,9 @@ class KamanjaManager extends Observer {
       }
 
       try {
-        val writeAdaterInfoTime = loadConfigs.getProperty("WriteAdaterInfoTime".toLowerCase, "0").replace("\"", "").trim.toInt
-        if (writeAdaterInfoTime > 0) {
-          KamanjaConfiguration.writeAdaterInfoTime = writeAdaterInfoTime
+        val writeAdapterInfoTime = loadConfigs.getProperty("WriteAdapterInfoTime".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (writeAdapterInfoTime > 0) {
+          KamanjaConfiguration.writeAdapterInfoTime = writeAdapterInfoTime
         }
       } catch {
         case e: Exception => {
@@ -1008,13 +1008,15 @@ class KamanjaManager extends Observer {
           }
         }
       }
-      if (KamanjaConfiguration.writeAdaterInfoTime == 0) {
+      println("postAdapterInfoTime  ==========" + KamanjaConfiguration.postAdapterInfoTime)
+
+      if (KamanjaConfiguration.writeAdapterInfoTime == 0) {
         try {
-          val writeAdaterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdaterInfoTime").replace("\"", "").trim
-          if (!writeAdaterInfoTimeStr.isEmpty) {
-            val writeAdaterInfoTime = writeAdaterInfoTimeStr.toInt
-            if (writeAdaterInfoTime > 0)
-              KamanjaConfiguration.writeAdaterInfoTime = writeAdaterInfoTime
+          val writeAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdapterInfoTime").replace("\"", "").trim
+          if (!writeAdapterInfoTimeStr.isEmpty) {
+            val writeAdapterInfoTime = writeAdapterInfoTimeStr.toInt
+            if (writeAdapterInfoTime > 0)
+              KamanjaConfiguration.writeAdapterInfoTime = writeAdapterInfoTime
           }
         } catch {
           case e: Exception => {
@@ -1022,13 +1024,13 @@ class KamanjaManager extends Observer {
           }
         }
       }
-      if (KamanjaConfiguration.writeAdaterInfoTime == 0) {
+      if (KamanjaConfiguration.writeAdapterInfoTime == 0) {
         try {
-          val writeAdaterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdaterInfoTime".toLowerCase).replace("\"", "").trim
-          if (!writeAdaterInfoTimeStr.isEmpty) {
-            val writeAdaterInfoTime = writeAdaterInfoTimeStr.toInt
-            if (writeAdaterInfoTime > 0)
-              KamanjaConfiguration.writeAdaterInfoTime = writeAdaterInfoTime
+          val writeAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdapterInfoTime".toLowerCase).replace("\"", "").trim
+          if (!writeAdapterInfoTimeStr.isEmpty) {
+            val writeAdapterInfoTime = writeAdapterInfoTimeStr.toInt
+            if (writeAdapterInfoTime > 0)
+              KamanjaConfiguration.writeAdapterInfoTime = writeAdapterInfoTime
           }
         } catch {
           case e: Exception => {
@@ -1656,6 +1658,9 @@ class KamanjaManager extends Observer {
       //logger.debug("Parsed the json : " + apiResultJson)
       val partitionKeyValues = json.extract[PartitionKeyValuesInfo]
 
+      println("collectAdapterPartitionInfo=========json=================== " + json)
+      println("collectAdapterPartitionInfo=========partitionKeyValues=================== " + partitionKeyValues.nodeid)
+
       try {
         lock.writeLock().lock()
 
@@ -1777,7 +1782,7 @@ class KamanjaManager extends Observer {
       if (allPartitions != null && allPartitions.size > 0) {
         //get the node local drive location
         //do this every y millisecs
-        val writeAdapterInfoTime = KamanjaConfiguration.writeAdaterInfoTime
+        val writeAdapterInfoTime = KamanjaConfiguration.writeAdapterInfoTime
         Thread.sleep(writeAdapterInfoTime)
         val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
         var nodepath = "/data/node/"
