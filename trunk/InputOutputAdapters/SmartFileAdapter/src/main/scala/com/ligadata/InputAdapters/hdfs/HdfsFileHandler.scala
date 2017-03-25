@@ -325,10 +325,13 @@ class HdfsFileHandler extends SmartFileHandler {
   private def makeFileEntry(fileStatus: FileStatus, parentfolder: String): MonitoredFile = {
 
     val lastReportedSize = fileStatus.getLen
-    val path = fileStatus.getPath.toString
     val lastModificationTime = fileStatus.getModificationTime
     val isDirectory = fileStatus.isDirectory
+
+    //since base dir does not have protocol, let all subdirs be similar
+    val path = if(isDirectory) HdfsUtility.getFilePathNoProtocol(fileStatus.getPath.toString) else fileStatus.getPath.toString
     MonitoredFile(path, parentfolder, lastModificationTime, lastReportedSize, isDirectory, !isDirectory)
+
   }
 
   def listDirectFiles(path : String) :  (Array[MonitoredFile], Array[MonitoredFile]) = {
