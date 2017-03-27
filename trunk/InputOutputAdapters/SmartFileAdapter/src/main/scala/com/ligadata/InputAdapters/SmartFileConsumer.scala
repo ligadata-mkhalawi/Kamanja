@@ -891,22 +891,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def hasPendingFileRequestsInQueue: Boolean = {
     requestQLock.synchronized {
       (!fileRequestsQueue.isEmpty)
-      /*
-      val cacheData = envContext.getConfigFromClusterCache(File_Requests_Cache_Key)
-      if (cacheData != null) {
-        val cacheDataStr = new String(cacheData)
-        if (cacheDataStr.trim.length == 0) {
-          false
-        }
-        else {
-          true
-        }
-      }
-      else {
-        LOG.debug("Smart File Consumer - file request queue from cache is null")
-        false
-      }
-      */
     }
   }
 
@@ -914,25 +898,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def getFileRequestsQueue: Array[String] = {
     requestQLock.synchronized {
       fileRequestsQueue.toArray
-      /*
-      val cacheData = envContext.getConfigFromClusterCache(File_Requests_Cache_Key)
-      if (cacheData != null) {
-        val cacheDataStr = new String(cacheData)
-        if (cacheDataStr.trim.length == 0) {
-          LOG.debug("Smart File Consumer - file request queue from cache is empty")
-          List()
-        }
-        else {
-          LOG.debug("Smart File Consumer - file request queue from cache is {}", cacheDataStr)
-          val tokens = cacheDataStr.split("\\|")
-          tokens.toList
-        }
-      }
-      else {
-        LOG.debug("Smart File Consumer - file request queue from cache is null")
-        List()
-      }
-      */
     }
   }
 
@@ -952,49 +917,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         fileRequestsQueue.prepend(request)
       else
         fileRequestsQueue.append(request)
-
-
-      /*
-      val currentRequests = getFileRequestsQueue
-
-      val cacheData =
-        if (addToHead)
-          (List(request) ::: currentRequests).mkString("|")
-        else
-          (currentRequests ::: List(request)).mkString("|")
-
-      LOG.debug("Smart File Consumer - adding ({}) to request queue", request)
-      LOG.debug("Smart File Consumer - saving request queue. key={}, value={}", File_Requests_Cache_Key,
-        if (cacheData.length == 0) "(empty)" else cacheData)
-
-      envContext.saveConfigInClusterCache(File_Requests_Cache_Key, cacheData.getBytes)
-*/
     }
   }
 
   def removeFromRequestQueue(request: String): Unit = {
     requestQLock.synchronized {
       fileRequestsQueue -= request
-      /*
-      val currentRequests = getFileRequestsQueue
-      val cacheData = (currentRequests diff List(request)).mkString("|")
-
-      LOG.debug("Smart File Consumer - removing ({}) from request queue", request)
-      LOG.debug("Smart File Consumer - saving request queue. key={}, value={}", File_Requests_Cache_Key,
-        if (cacheData.length == 0) "(empty)" else cacheData)
-
-      envContext.saveConfigInClusterCache(File_Requests_Cache_Key, cacheData.getBytes)
-*/
     }
   }
 
   def clearRequestQueue(): Unit = {
     requestQLock.synchronized {
       fileRequestsQueue.clear
-      /*
-      val cacheData = ""
-      envContext.saveConfigInClusterCache(File_Requests_Cache_Key, cacheData.getBytes)
-      */
     }
   }
 
@@ -1002,29 +936,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def getFileProcessingQueue: Array[String] = {
     processingQLock.synchronized {
       return processingFilesQueue.toArray
-      /*
-      val cacheData = envContext.getConfigFromClusterCache(File_Processing_Cache_Key)
-
-      if (cacheData != null) {
-        val cacheDataStr = new String(cacheData)
-        //LOG.debug("Smart File Consumer - processing queue str len = "+cacheDataStr.length)
-        //LOG.debug("Smart File Consumer - processing queue characters: "+ cacheDataStr.map(c=> (c.toInt)).toArray.mkString(","))
-
-        if (cacheDataStr.trim.length == 0) {
-          LOG.debug("Smart File Consumer - file processing queue from cache is empty")
-          List()
-        }
-        else {
-          LOG.debug("Smart File Consumer - file processing queue from cache is {}", cacheDataStr)
-          val tokens = cacheDataStr.split("\\|")
-          tokens.toList
-        }
-      }
-      else {
-        LOG.debug("Smart File Consumer - file processing queue from cache is null")
-        List()
-      }
-      */
     }
   }
 
@@ -1041,17 +952,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val tokens = item.split(":")
         if (tokens.length >= 2) tokens.tail.mkString(":").equals(file) else false
       })
-      /*
-      val processingQueue = getFileProcessingQueue
-      if (processingQueue == null || processingQueue.length == 0)
-        return false
-      else {
-        processingQueue.exists(item => {
-          val tokens = item.split(":")
-          if (tokens.length >= 2) tokens(1).equals(file) else false
-        })
-      }
-      */
     }
   }
 
@@ -1068,24 +968,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         }
         else false
       })
-      /*
-      val processingQueue = getFileProcessingQueue
-      if (processingQueue == null || processingQueue.length == 0)
-        return false
-      else {
-        processingQueue.exists(item => {
-          val tokens = item.split(":")
-          if (tokens.length >= 2) {
-            val pTokens = tokens(0).split("/")
-            if (pTokens.length >= 2) {
-              pTokens(pTokens.length - 1) == partitionId.toString
-            }
-            else false
-          }
-          else false
-        })
-      }
-      */
     }
   }
 
@@ -1097,24 +979,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         processingFilesQueue.prepend(processingItem)
       else
         processingFilesQueue.append(processingItem)
-
-      //      processingFilesQStartTime(processingItem) = System.currentTimeMillis
-
-      /*
-            val currentProcesses = getFileProcessingQueue
-
-            val cacheData =
-              if (addToHead)
-                (List(processingItem) ::: currentProcesses).mkString("|")
-              else
-                (currentProcesses ::: List(processingItem)).mkString("|")
-
-            LOG.debug("Smart File Consumer - adding ({}) to processing queue", processingItem)
-            LOG.debug("Smart File Consumer - saving processing queue. key={}, value={}", File_Requests_Cache_Key,
-              if (cacheData.length == 0) "(empty)" else cacheData)
-
-            envContext.saveConfigInClusterCache(File_Processing_Cache_Key, cacheData.getBytes)
-      */
     }
   }
 
