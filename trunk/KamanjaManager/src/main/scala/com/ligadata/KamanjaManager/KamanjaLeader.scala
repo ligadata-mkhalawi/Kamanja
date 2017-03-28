@@ -53,6 +53,9 @@ object KamanjaLeader {
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val lock = new Object()
   private[this] val lock1 = new Object()
+  private[this] var newClusterStatus = ClusterStatus("", false, "", null)
+  private[this] var newClusterStatusChangedTime = 0L
+  private[this] var newClusterStatusCopiedTime = 0L
   private[this] var clusterStatus = ClusterStatus("", false, "", null)
 //  private[this] var zkLeaderLatch: ZkLeaderLatch = _
   private[this] var nodeId: String = _
@@ -88,7 +91,10 @@ object KamanjaLeader {
   private val MAX_ZK_RETRIES = 1
 
   def Reset: Unit = {
+    newClusterStatus = ClusterStatus("", false, "", null)
     clusterStatus = ClusterStatus("", false, "", null)
+    newClusterStatusChangedTime = 0L
+    newClusterStatusCopiedTime = 0L
 //    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
@@ -197,7 +203,7 @@ object KamanjaLeader {
     try {
       val evntPthData = if (eventPathData != null) (new String(eventPathData)) else "{}"
       val extractedNode = ZKPaths.getNodeFromPath(eventPath)
-      LOG.info("UpdatePartitionsNodeData => eventType: %s, eventPath: %s, eventPathData: %s, Extracted Node:%s".format(eventType, eventPath, evntPthData, extractedNode))
+      LOG.warn("UpdatePartitionsNodeData => eventType: %s, eventPath: %s, eventPathData: %s, Extracted Node:%s".format(eventType, eventPath, evntPthData, extractedNode))
 
       if (eventType.compareToIgnoreCase("CHILD_UPDATED") == 0) {
         if (curParticipents(extractedNode)) { // If this node is one of the participent, then work on this, otherwise ignore
@@ -489,8 +495,57 @@ object KamanjaLeader {
     allPartitionsToValidate.toMap
   }
 
+  private def SetModifiedClusterStatus(cs: ClusterStatus): Unit = lock1.synchronized {
+    newClusterStatus = cs
+    newClusterStatusChangedTime = System.currentTimeMillis
+    logger.warn("SetModifiedClusterStatus - Got updatePartitionsFlag. Waiting for distribution")
+  }
+
+  private val waitTmBeforeRedistribute = 15000
+  private def copyClusterStatusIfNeeded: Unit = lock1.synchronized {
+    val newDistribution =
+      if (newClusterStatusCopiedTime == 0 && newClusterStatusChangedTime > 0) {
+        logger.warn("First time - Copy ClusterStatus")
+        true
+      }
+      else {
+        val curTm = System.currentTimeMillis
+        var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < curTm))
+        if (canCopyClusterStatus) {
+          logger.warn("Found canCopyClusterStatus as true. newClusterStatusCopiedTime:%d < newClusterStatusChangedTime:%d, CurrentTime:%d".format(newClusterStatusCopiedTime, newClusterStatusChangedTime, curTm))
+          // Check whether ClusterStatus is really changed?
+          val curParticipents = if (clusterStatus.participantsNodeIds != null) clusterStatus.participantsNodeIds.toArray else Array[String]()
+          val newParticipents = if (newClusterStatus.participantsNodeIds != null) newClusterStatus.participantsNodeIds.toArray else Array[String]()
+          val curParticipentsSet = curParticipents.toSet
+          val newParticipentsSet = newParticipents.toSet
+          val diff1 = curParticipentsSet -- newParticipentsSet
+          val diff2 = newParticipentsSet -- curParticipentsSet
+          canCopyClusterStatus =
+            (clusterStatus.leaderNodeId != newClusterStatus.leaderNodeId ||
+              // clusterStatus.nodeId != newClusterStatus.nodeId ||
+              curParticipents.size != newParticipents.size ||
+              diff1.size > 0 || diff2.size > 0)
+          if (! canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
+            // Resetting newClusterStatusCopiedTime from newClusterStatusChangedTime. Because no need to change ClusterStatus/ClusterDistribution
+            logger.warn("Found canCopyClusterStatus as true, but there is no real change in ClusterStatus.")
+            newClusterStatusCopiedTime = newClusterStatusChangedTime
+          }
+        }
+        canCopyClusterStatus
+      }
+
+    if (newDistribution) {
+      logger.warn("Copying ClusterStatus to Distribute.")
+      clusterStatus = newClusterStatus
+      newClusterStatusCopiedTime = newClusterStatusChangedTime
+      updatePartitionsFlag = true
+      logger.warn("copyClusterStatusIfNeeded - Got updatePartitionsFlag. Waiting for distribution")
+    }
+  }
+
   private def SetClusterStatus(cs: ClusterStatus): Unit = lock1.synchronized {
     clusterStatus = cs
+    newClusterStatusCopiedTime = newClusterStatusChangedTime
     updatePartitionsFlag = true
     logger.warn("SetClusterStatus - Got updatePartitionsFlag. Waiting for distribution")
   }
@@ -530,7 +585,7 @@ object KamanjaLeader {
     logger.warn("DistributionCheck:EventChangeCallback got new ClusterStatus")
     LOG.debug("EventChangeCallback => Enter")
     KamanjaConfiguration.participentsChangedCntr += 1
-    SetClusterStatus(cs)
+    SetModifiedClusterStatus(cs)
     LOG.warn("DistributionCheck:NodeId:%s, IsLeader:%s, Leader:%s, AllParticipents:{%s}, participentsChangedCntr:%d".format(cs.nodeId, cs.isLeader.toString, cs.leaderNodeId, cs.participantsNodeIds.mkString(","), KamanjaConfiguration.participentsChangedCntr))
     LOG.debug("EventChangeCallback => Exit")
   }
@@ -805,7 +860,7 @@ object KamanjaLeader {
 //              envCtxt.clearIntermediateResults
 
               // Set STOPPED action in adaptersStatusPath + "/" + nodeId path
-              val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
+              val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
               val act = ("action" -> "stopped")
               val sendJson = compact(render(act))
               LOG.warn("New Action Stopped set to " + adaptrStatusPathForNode)
@@ -827,7 +882,7 @@ object KamanjaLeader {
             // Distribution Map 
             if (actionOnAdaptersMap.distributionmap != None && actionOnAdaptersMap.distributionmap != null) {
               val adapMaxPartsMap = GetAdaptersMaxPartitioinsMap(actionOnAdaptersMap.adaptermaxpartitions)
-              val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+              val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, envCtxt.getNodeIdAndUUID())
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
 
@@ -847,7 +902,7 @@ object KamanjaLeader {
             }
           }
 
-          val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
+          val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
           var sentDistributed = false
           if (distributed) {
             try {
@@ -1284,6 +1339,19 @@ object KamanjaLeader {
     saveEndOffsets = true
     SetUpdatePartitionsFlag
   }
+  
+  private def extractNodeIdAndUUId(nodeIdAndUUIdStr: String): (String, String) = {
+    var nodeId: String = null
+    var uuId: String = null
+
+    if (nodeIdAndUUIdStr.startsWith("NodeId-")) {
+      val uuidKeyWordIdx = nodeIdAndUUIdStr.indexOf("-UUID-")
+      nodeId = nodeIdAndUUIdStr.substring("NodeId-".length, uuidKeyWordIdx)
+      uuId = nodeIdAndUUIdStr.substring(uuidKeyWordIdx + "-UUID-".length)
+    }
+
+    (nodeId, uuId)
+  }
 
   def Init(nodeId1: String, zkConnectString1: String, engineLeaderZkNodePath1: String, engineDistributionZkNodePath1: String, adaptersStatusPath1: String, inputAdap: ArrayBuffer[InputAdapter], outputAdap: ArrayBuffer[OutputAdapter],
            storageAdap: ArrayBuffer[DataStore], enviCxt: EnvContext, zkSessionTimeoutMs1: Int, zkConnectionTimeoutMs1: Int, dataChangeZkNodePath1: String): Unit = {
@@ -1302,7 +1370,7 @@ object KamanjaLeader {
 
     if (zkConnectString != null && zkConnectString.isEmpty() == false && engineLeaderZkNodePath != null && engineLeaderZkNodePath.isEmpty() == false && engineDistributionZkNodePath != null && engineDistributionZkNodePath.isEmpty() == false && dataChangeZkNodePath != null && dataChangeZkNodePath.isEmpty() == false) {
       try {
-        val adaptrStatusPathForNode = adaptersStatusPath + "/" + nodeId
+        val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
         LOG.info("ZK Connecting. adaptrStatusPathForNode:%s, zkConnectString:%s, engineLeaderZkNodePath:%s, engineDistributionZkNodePath:%s, dataChangeZkNodePath:%s".format(adaptrStatusPathForNode, zkConnectString, engineLeaderZkNodePath, engineDistributionZkNodePath, dataChangeZkNodePath))
         CreateClient.CreateNodeIfNotExists(zkConnectString, engineDistributionZkNodePath) // Creating 
         CreateClient.CreateNodeIfNotExists(zkConnectString, adaptrStatusPathForNode) // Creating path for Adapter Statues
@@ -1346,6 +1414,8 @@ object KamanjaLeader {
                 }
               }
 
+              copyClusterStatusIfNeeded
+
               if (LOG.isDebugEnabled())
                 LOG.debug("DistributionCheck:Checking for Distribution information. IsLeaderNode:%s, GetUpdatePartitionsFlag:%s, distributionExecutor.isShutdown:%s".format(
                   IsLeaderNode.toString, GetUpdatePartitionsFlag.toString, distributionExecutor.isShutdown.toString))
@@ -1371,20 +1441,30 @@ object KamanjaLeader {
                     if (nodes == null) {
                       LOG.warn("Got Redistribution request and not able to get nodes from metadata manager for cluster %s. Not going to check whether all nodes came up or not in participents {%s}.".format(KamanjaConfiguration.clusterId, cs.participantsNodeIds.mkString(",")))
                     } else {
-                      val participents = cs.participantsNodeIds.toSet
+                      val allParticipentNodeIds = cs.participantsNodeIds.map(nd => {
+		        val (nodeId, uuId) = extractNodeIdAndUUId(nd)
+                        nodeId
+                      }).filter(nd => nd.size > 0)
+                      val participentNodeIds = allParticipentNodeIds.toSet
                       // Check for nodes in participents now
                       allNodesUp = true
                       var i = 0
                       while (i < nodes.size && allNodesUp) {
-                        if (participents.contains(nodes(i).nodeId) == false)
+                        if (participentNodeIds.contains(nodes(i).nodeId) == false)
                           allNodesUp = false
                         i += 1
+                      }
+
+                      val dupNodes = allParticipentNodeIds.groupBy(x => x).filter(kv => (kv._2.size > 1)).map(kv => kv._1)
+                      if (dupNodes.size > 0) {
+                        LOG.warn("Found duplicate %s in %s.".format(dupNodes.mkString(","), cs.participantsNodeIds.mkString(" ~ ")))
                       }
 
                       if (allNodesUp) {
                         // Check for duplicates if we have any in participents
                         // Just do group by and do get duplicates if we have any. If we have duplicates just make allNodesUp as false, so it will wait long time and by that time the duplicate node may go down.
-                        allNodesUp = (cs.participantsNodeIds.groupBy(x => x).mapValues(lst => lst.size).filter(kv => kv._2 > 1).size == 0)
+                        // allNodesUp = (cs.participantsNodeIds.groupBy(x => x).mapValues(lst => lst.size).filter(kv => kv._2 > 1).size == 0)
+                        allNodesUp = (dupNodes.size == 0)
                       }
                     }
                   }
@@ -1422,25 +1502,6 @@ object KamanjaLeader {
                     } else {
                       updatePartsCntr += 1
                     }
-/*
-                    if (wait4ValidateCheck > 0) {
-                      // Get Partitions keys and values for every M secs
-                      if (getValidateAdapCntr >= wait4ValidateCheck) { // for every waitForValidateCheck secs
-                        // Persists the previous ones if we have any
-                        if (validateUniqVals != null && validateUniqVals.size > 0) {
-                          envCtxt.PersistValidateAdapterInformation(validateUniqVals.map(kv => (kv._1.Serialize, kv._2.Serialize)))
-                        }
-                        // Get the latest ones
-//                        validateUniqVals = GetEndPartitionsValuesForValidateAdapters
-                        getValidateAdapCntr = 0
-                        wait4ValidateCheck = 60 // Next time onwards it is 60 secs
-                      } else {
-                        getValidateAdapCntr += 1
-                      }
-                    } else {
-                      getValidateAdapCntr = 0
-                    }
-*/
                   }
                 } else {
                   wait4ValidateCheck = 0 // Not leader node, don't check for it until we set it in redistribute
