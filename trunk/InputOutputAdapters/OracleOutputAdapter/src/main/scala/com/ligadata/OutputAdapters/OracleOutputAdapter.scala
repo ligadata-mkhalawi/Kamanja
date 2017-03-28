@@ -153,6 +153,7 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
 	  })
 	  
 	  keyColumns = container.getPrimaryKeyNames();
+	  keyColumns.foreach(k => { logger.info("key column => %s".format(k)) })
 	  oracleAdapter.createAnyTable(container.getTypeName(),columns,colTypes, keyColumns,"ddl");
 
 	  // populate rows

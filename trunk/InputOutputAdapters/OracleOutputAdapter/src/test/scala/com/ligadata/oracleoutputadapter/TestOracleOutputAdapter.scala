@@ -116,8 +116,8 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
   def Clone(): ContainerOrConcept = { ParameterContainer.build(this) }
   override def save: Unit = { }
   override def getPartitionKey: Array[String] = Array[String](id.toString)
-  override def getPrimaryKey: Array[String] = Array[String]()
-  
+  override def getPrimaryKey: Array[String] = Array[String](id.toString)
+
   override def getAttributeTypes(): Array[AttributeTypeInfo] = {
     if (attributeTypes == null) return null;
     return attributeTypes
@@ -284,7 +284,7 @@ class TestOracleOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAnd
     // setup AdapterConfiguration object
     var adapterConfig = new AdapterConfiguration;
     adapterConfig.Name = "OracleOutputAdapter";
-    adapterConfig.adapterSpecificCfg = s"""{"hostname": "192.168.1.23","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
+    adapterConfig.adapterSpecificCfg = s"""{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
     oa = OracleOutputAdapter.CreateOutputAdapter(adapterConfig, null);
   }
 

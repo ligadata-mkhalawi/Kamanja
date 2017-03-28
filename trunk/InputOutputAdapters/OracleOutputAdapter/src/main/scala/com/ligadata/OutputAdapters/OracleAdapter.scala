@@ -515,6 +515,120 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
+  private def IsIndexExists(schemaName: String, tableName:String, keyColumns:Array[String]): Boolean = {
+    var con: Connection = null
+    var pstmt: PreparedStatement = null
+    var rs: ResultSet = null
+    var rowCount = 0;
+    var indexName = "";
+    var query = ""
+    var colStr = new StringBuilder();
+    keyColumns.foreach(k => { 
+      colStr.append("'");
+      colStr.append(k.toUpperCase())
+      colStr.append("',");
+    })
+    colStr = colStr.dropRight(1);
+
+    try {
+      con = getConnection
+      query = "SELECT index_name, count(*) FROM dba_ind_columns WHERE table_owner = upper(?) and table_name = upper(?) and column_name in ( " + colStr + ") group by index_name having count(*) = ? "
+      pstmt = con.prepareStatement(query)
+      pstmt.setString(1, schemaName)
+      pstmt.setString(2, tableName)
+      pstmt.setInt(3, keyColumns.length)
+      rs = pstmt.executeQuery();
+      while (rs.next()) {
+	rowCount += 1;
+        indexName = rs.getString(1)
+      }
+      if (rowCount > 0) {
+	logger.info("The index %s with the columns %s already exist".format(indexName,colStr));
+        return true
+      } else {
+        return false
+      }
+    } catch {
+      case e: StorageConnectionException => {
+        throw e
+      }
+      case e: Exception => {
+        throw new Exception("Failed to verify schema existence for the schema " + schemaName + ":" + "query => " + query, e)
+      }
+    } finally {
+      if (rs != null) {
+        rs.close
+      }
+      if (pstmt != null) {
+        pstmt.close
+      }
+      if (con != null) {
+        con.close
+      }
+    }
+  }
+
+
+  def createIndex(containerName: String, keyColumns: Array[String], apiType:String): Unit = {
+    var con: Connection = null
+    var stmt: Statement = null
+    var tableName = toTableName(containerName)
+    val indexName = tableName + "_pk";
+    var fullTableName = toTableName(containerName)
+    var query = new StringBuilder();
+    try {
+      con = getConnection
+      // check if the container already exists
+      if( IsIndexExists(schemaName,tableName,keyColumns) ){
+        logger.debug("A primary key on " + tableName + " already exists ")
+      } else {
+        if (autoCreateTables.equalsIgnoreCase("NO")) {
+          apiType match {
+            case "dml" => {
+              throw new Exception("The option autoCreateTables is set to NO, So Can't create non-existent index automatically to support the requested DML operation")
+            }
+            case _ => {
+              logger.info("proceed with creating index..")
+            }
+          }
+        }
+	if( keyColumns.length == 0 ){
+          throw new Exception("The keyColumns must have atleast one entry");
+	}
+        query.append("create unique index ");
+	query.append(indexName);
+	query.append(" on ");
+	query.append(tableName);
+	query.append("(");
+	var i = 0;
+	for( i  <-  0 to  keyColumns.length - 1){
+	  val col = keyColumns(i);
+	  query.append(col);
+	  query.append(",");
+	}
+	query = query.dropRight(1);
+	query.append(")");
+	
+	logger.info("query => %s".format(query.toString()));
+
+        stmt = con.createStatement()
+        stmt.executeUpdate(query.toString());
+        stmt.close
+      }
+    } catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to create index " + indexName + ": ddl = " + query.toString(), e)
+      }
+    } finally {
+      if (stmt != null) {
+        stmt.close
+      }
+      if (con != null) {
+        con.close
+      }
+    }
+  }
+
   def createAnyTable(containerName: String, columnNames: Array[String], columnTypes: Array[String], keyColumns: Array[String], apiType:String): Unit = {
     var con: Connection = null
     var stmt: Statement = null
@@ -560,7 +674,10 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 
         stmt = con.createStatement()
         stmt.executeUpdate(query.toString());
-        stmt.close
+        stmt.close;
+
+	// create primary key as well
+	createIndex(containerName, keyColumns, apiType);
       }
     } catch {
       case e: Exception => {

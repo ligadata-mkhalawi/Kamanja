@@ -41,7 +41,7 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
   private val kvManagerLoader = new KamanjaLoaderInfo
   private var oracleAdapter: OracleAdapter = null
 
-  val dataStoreInfo = """{"hostname": "192.168.1.23","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
+  val dataStoreInfo = """{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
 
 
   private val maxConnectionAttempts = 10;
@@ -115,27 +115,26 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
   describe("Unit Tests To Create a Random Table and do fetch operations") {
 
     it("Validate api operations in simple case of selectList contains only one column") {
-      And("create a sample table");
       val containerName = "customer1"
+      And("Create a Random Table " + containerName)
 
       val tableName = oracleAdapter.toTableName(containerName)
       val columnNames = Array("name","address","cellNumber")
       val columnTypes = Array("varchar2(30)","varchar2(100)","number")
       val keyColumns = Array("name");
 
-      And("Create Random Table " + containerName)
       noException should be thrownBy {
         oracleAdapter.createAnyTable(containerName,columnNames,columnTypes,keyColumns,"ddl")
       }
 
-      And("truncate the table");
+      And("Truncate the table(if table already exists, empty the table )");
       noException should be thrownBy {
 	var containerList = new Array[String](0)
 	containerList = containerList :+ containerName
 	oracleAdapter.TruncateContainer(containerList)
       }
 
-      And("insert few sample rows");
+      And("Insert few sample rows");
       var rowColumnValues = new Array[Array[(String,String)]](0)
       for (i <- 1 to 10) {
         var custName = "customer-" + i
@@ -161,6 +160,7 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
         oracleAdapter.get(containerName, selectList, filterColumns, readCallBack _)
       }
 
+      And("Validate the results")
       assert(readResults.length == 1)
       assert(readResults(0).tableName.equalsIgnoreCase("customer1"))
       assert(readResults(0).columnName.equalsIgnoreCase("address"))
