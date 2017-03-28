@@ -1341,9 +1341,8 @@ object KamanjaLeader {
   }
   
   private def extractNodeIdAndUUId(nodeIdAndUUIdStr: String): (String, String) = {
-  
-    val nodeId: String = null
-    val uuId: String = null
+    var nodeId: String = null
+    var uuId: String = null
 
     if (nodeIdAndUUIdStr.startsWith("NodeId-")) {
       val uuidKeyWordIdx = nodeIdAndUUIdStr.indexOf("-UUID-")
