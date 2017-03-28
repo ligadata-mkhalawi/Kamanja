@@ -233,7 +233,7 @@ class KamanjaApplicationConfiguration {
         throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' Requires 'AdapterName' to be defined.")
       }).asInstanceOf[String]
 
-      var partitionKey = if (inputSetConfig.getOrElse("PartitionKey", null) == null) None else Some(inputSetConfig("PartitionKey").asInstanceOf[String])
+      val partitionKey: Option[String] = if (inputSetConfig.getOrElse("PartitionKey", null) == null) None else Some(inputSetConfig("PartitionKey").asInstanceOf[String])
 
       partitionKey match {
         case Some(key) =>
@@ -245,9 +245,12 @@ class KamanjaApplicationConfiguration {
             logger.error(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${partitionKey} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
             throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${partitionKey} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
           }
+        case None =>
       }
 
-      val inputSet: InputSet = new InputSet(s"$appDir/data/$inputFilename", inputFormat, inputAdapterName, partitionKey)
+      val inputFileAdapterDir: Option[String]= if (inputSetConfig.getOrElse("FileAdapterDirectory", null) == null) None else Some(inputSetConfig("FileAdapterDirectory").asInstanceOf[String])
+
+      val inputSet: InputSet = new InputSet(s"$appDir/data/$inputFilename", inputFormat, inputAdapterName, inputFileAdapterDir, partitionKey)
 
       // Get the output configuration and convert to map or throw exception
       val expectedResultsSetConfig = dataSetConfig.getOrElse("ExpectedResults", {
@@ -270,7 +273,9 @@ class KamanjaApplicationConfiguration {
         throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'AdapterName' to be defined.")
       }).asInstanceOf[String]
 
-      val expectedResultsSet: ExpectedResultsSet = new ExpectedResultsSet(s"$appDir/data/$expectedResultsFilename", expectedResultsFormat, expectedResultsAdapterName)
+      val outputFileAdapterDir: Option[String]= if (expectedResultsSetConfig.getOrElse("FileAdapterDirectory", null) == null) None else Some(inputSetConfig("FileAdapterDirectory").asInstanceOf[String])
+
+      val expectedResultsSet: ExpectedResultsSet = new ExpectedResultsSet(s"$appDir/data/$expectedResultsFilename", expectedResultsFormat, expectedResultsAdapterName, outputFileAdapterDir)
 
       dataSets :+= new DataSet(inputSet, expectedResultsSet)
     })

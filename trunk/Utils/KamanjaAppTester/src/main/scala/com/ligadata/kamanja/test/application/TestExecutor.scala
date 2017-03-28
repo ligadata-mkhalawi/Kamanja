@@ -1,5 +1,7 @@
 package com.ligadata.kamanja.test.application
 
+import java.io.{File, FileInputStream, FileOutputStream}
+
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.test.embedded.kafka._
@@ -10,7 +12,7 @@ import com.ligadata.test.configuration.cluster.adapters.interfaces._
 import com.ligadata.tools.kvinit.KVInit
 import com.ligadata.tools.test._
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
-import com.ligadata.test.configuration.cluster.adapters.KafkaAdapterConfig
+import com.ligadata.test.configuration.cluster.adapters.{KafkaAdapterConfig, SmartFileAdapterConfig}
 import com.ligadata.test.configuration.cluster.adapters.interfaces.{Adapter, IOAdapter}
 
 import scala.util.control.Breaks._
@@ -103,53 +105,79 @@ object TestExecutor {
 
           logger.info(s"Processing data sets...")
           app.dataSets.foreach(set => {
+            val setExpectedResultsAdapterName = set.expectedResultsSet.adapterName
+            val setExpectedResultsAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setExpectedResultsAdapterName)(0).asInstanceOf[IOAdapter]
+            var consumer: TestKafkaConsumer = null
+            var consumerThread: Thread = null
+            val outputAdapterConfig = setExpectedResultsAdapter.adapterType match {
+              case a@InputAdapter =>
+                logger.error("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
+                throw new Exception("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
+              case a@OutputAdapter => {
+                setExpectedResultsAdapter match {
+                  case a: KafkaAdapterConfig => {
+                    val adapterConfig = a.asInstanceOf[KafkaAdapterConfig]
+                    consumer = new TestKafkaConsumer(adapterConfig)
+                    consumerThread = new Thread(consumer)
+                    consumerThread.start()
+                    //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
+                    Thread sleep 1000
+                    adapterConfig
+                  }
+                  case a: SmartFileAdapterConfig => {
+                    throw new TestExecutorException("***ERROR*** SmartFileProducer is not yet supported as an output adapter in the Kamanja application tester.")
+                  }
+                  case _ =>
+                    logger.error("***ERROR Only Kafka adapters are supported.")
+                    throw new Exception("***ERROR Only Kafka adapters are supported.")
+                }
+              }
+            }
+
             val resultsManager = new ResultsManager
             val setInputAdapterName = set.inputSet.adapterName
             val setInputAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setInputAdapterName)(0).asInstanceOf[IOAdapter]
-            val inputAdapterConfig = {
-              setInputAdapter.adapterType match {
-                case a @ InputAdapter => {
-                  setInputAdapter match {
-                    case a: KafkaAdapterConfig => setInputAdapter.asInstanceOf[KafkaAdapterConfig]
-                    case _ =>
-                      logger.error("***ERROR*** Only Kafka adapters are supported.")
-                      throw new Exception("***ERROR*** Only Kafka adapters are supported.")
+            val inputFile: File = new File(set.inputSet.file)
+            if (!inputFile.exists()) {
+              throw new TestExecutorException(s"***ERROR*** Input Set File ${set.inputSet.file} does not exist.")
+            }
+            val inputAdapterConfig = setInputAdapter.adapterType match {
+              case a@InputAdapter => {
+                setInputAdapter match {
+                  case a: KafkaAdapterConfig => {
+                    val adapterConfig = a.asInstanceOf[KafkaAdapterConfig]
+                    val producer = new TestKafkaProducer
+                    logger.info(s"Pushing data from file ${set.inputSet.file} in format ${set.inputSet.format}")
+                    producer.inputMessages(adapterConfig, inputFile.getAbsolutePath, set.inputSet.format, set.inputSet.partitionKey.getOrElse("1"))
+                    adapterConfig
                   }
+                  case a: SmartFileAdapterConfig => {
+                    set.inputSet.fileAdapterDir match {
+                      case Some(d) => {
+                        val adapterConfig = a.asInstanceOf[SmartFileAdapterConfig]
+                        logger.info(s"Copying data file ${set.inputSet.file} to directory ${set.inputSet.fileAdapterDir}")
+                        val dir = new File(d)
+                        dir.mkdirs()
+                        new FileOutputStream(dir) getChannel() transferFrom(
+                          new FileInputStream(inputFile) getChannel, 0, Long.MaxValue)
+                        adapterConfig
+                      }
+                      case None => throw new TestExecutorException("***ERROR*** Input Adapter Type is a SmartFileConsumer but no FileAdapterDirectory has been specified in configuration.")
+                    }
+                  }
+                  case _ =>
+                    logger.error("***ERROR*** Only Kafka adapters are supported.")
+                    throw new Exception("***ERROR*** Only Kafka adapters are supported.")
                 }
-                case a @ OutputAdapter =>
-                  logger.error("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
-                  throw new Exception("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
               }
+              case a@OutputAdapter =>
+                logger.error("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
+                throw new Exception("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
             }
 
-            val setExpectedResultsAdapterName = set.expectedResultsSet.adapterName
-            val setExpectedResultsAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setExpectedResultsAdapterName)(0).asInstanceOf[IOAdapter]
-            val outputAdapterConfig = {
-              setExpectedResultsAdapter.adapterType match {
-                case a @ InputAdapter =>
-                  logger.error("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
-                  throw new Exception("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
-                case a @ OutputAdapter => {
-                  setExpectedResultsAdapter match {
-                    case a: KafkaAdapterConfig => setExpectedResultsAdapter.asInstanceOf[KafkaAdapterConfig]
-                    case _ =>
-                      logger.error("***ERROR Only Kafka adapters are supported.")
-                      throw new Exception("***ERROR Only Kafka adapters are supported.")
-                  }
-                }
-              }
-            }
-
-            val consumer = new TestKafkaConsumer(outputAdapterConfig)
-            val consumerThread = new Thread(consumer)
-            consumerThread.start()
-
-            //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
-            Thread sleep 1000
-
-            val producer = new TestKafkaProducer
-            logger.info(s"Pushing data from file ${set.inputSet.file} in format ${set.inputSet.format}")
-            producer.inputMessages(inputAdapterConfig, set.inputSet.file, set.inputSet.format, set.inputSet.partitionKey.getOrElse("1"))
+            //val producer = new TestKafkaProducer
+            //logger.info(s"Pushing data from file ${set.inputSet.file} in format ${set.inputSet.format}")
+            //producer.inputMessages(inputAdapterConfig, set.inputSet.file, set.inputSet.format, set.inputSet.partitionKey.getOrElse("1"))
 
             //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
             val expectedResults = resultsManager.parseExpectedResults(set)

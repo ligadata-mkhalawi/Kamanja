@@ -1,4 +1,4 @@
-package scala.com.ligadata.kamanja.test.application
+package com.ligadata.kamanja.test.application
 
 import com.ligadata.kamanja.test.application.KamanjaApplicationManager
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
