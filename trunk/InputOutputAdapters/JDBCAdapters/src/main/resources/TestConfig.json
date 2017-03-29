@@ -1,0 +1,25 @@
+{
+  "DriverName": "oracle.jdbc.driver.OracleDriver",
+  "URLString": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myserver)(PORT=7896))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=myserver)))",
+  "UserId": "test1user",
+  "Password": "test1password",
+  "Consumers": "4",
+  "Timeout": "86400000",
+  "RefreshInterval": "2000",
+  "Serialize": {
+    "Format": "csv",
+    "Options": {
+      "FieldDelimiter": "\u0001"
+    }
+  },
+  "Queries": {
+    "Tbl1Query": {
+      "Query": "SELECT A,B,C FROM TBL1",
+      "PrimaryKeyColumn": "A"
+    },
+    "Tbl2Query": {
+      "Query": "SELECT A,B,C FROM TBL2",
+      "PrimaryKeyColumn": "B"
+    }
+  }
+}
