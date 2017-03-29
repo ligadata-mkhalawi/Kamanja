@@ -84,7 +84,7 @@ object ParameterContainer extends RDDObject[ParameterContainer] with ContainerFa
       if (oldVerobj == null) return null;
       oldVerobj match {
 
-        case oldVerobj: com.ligadata.OutputAdapters.ParameterContainer => { return oldVerobj; }
+        case oldVerobj: com.ligadata.outputadapters.ParameterContainer => { return oldVerobj; }
         case _ => {
           throw new Exception("Unhandled Version Found");
         }
@@ -284,7 +284,7 @@ class TestOracleOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAnd
     // setup AdapterConfiguration object
     var adapterConfig = new AdapterConfiguration;
     adapterConfig.Name = "OracleOutputAdapter";
-    adapterConfig.adapterSpecificCfg = s"""{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
+    adapterConfig.adapterSpecificCfg = s"""{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"NO"}"""
     oa = OracleOutputAdapter.CreateOutputAdapter(adapterConfig, null);
   }
 
@@ -305,7 +305,7 @@ class TestOracleOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAnd
 	var inst = new ParameterContainer(ParameterContainer)
 	inst.set("id",i)
 	inst.set("name","parameter" + i)
-	inst.set("value",getCurrentTimeAsString)
+	inst.set("value","value" + i)
 	instances += inst
       }
       oa.send(null, instances.toArray)

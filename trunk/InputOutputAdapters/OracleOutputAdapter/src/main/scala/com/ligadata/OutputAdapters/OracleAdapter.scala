@@ -247,7 +247,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     maxIdleConnections = parsed_json.get("maxIdleConnections").get.toString.trim.toInt
   }
 
-  var initialSize = 10
+  var initialSize = 1
   if (parsed_json.contains("initialSize")) {
     initialSize = parsed_json.get("initialSize").get.toString.trim.toInt
   }
@@ -255,12 +255,6 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   var maxWaitMillis = 10000
   if (parsed_json.contains("maxWaitMillis")) {
     maxWaitMillis = parsed_json.get("maxWaitMillis").get.toString.trim.toInt
-  }
-
-  // some misc optional parameters
-  var clusteredIndex = "YES"
-  if (parsed_json.contains("clusteredIndex")) {
-    clusteredIndex = parsed_json.get("clusteredIndex").get.toString.trim
   }
 
   var autoCreateTables = "YES"
@@ -285,7 +279,6 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   logger.info("schemaName => " + schemaName)
   logger.info("jarpaths => " + jarpaths)
   logger.info("jdbcJar  => " + jdbcJar)
-  logger.info("clusterdIndex  => " + clusteredIndex)
   logger.info("autoCreateTables  => " + autoCreateTables)
   logger.info("externalDDLOnly  => " + externalDDLOnly)
   logger.info("appendOnly  => " + appendOnly)
@@ -634,7 +627,9 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     var fullTableName = toTableName(containerName)
     var query = new StringBuilder();
     try {
+      logger.debug("setup database connection...");
       con = getConnection
+      logger.debug("done setting up database connection");
       // check if the container already exists
       if( IsTableExists(schemaName,tableName) ){
         logger.debug("The table " + tableName + " already exists ")
@@ -651,7 +646,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
         }
 	if( columnNames.length == 0 || columnTypes.length == 0 || 
 	    columnNames.length != columnTypes.length ){
-          throw new Exception("The array parameters columnNames and columnTypes must be equal in size and greater than zero");
+          throw new Exception("The parameters columnNames and columnTypes must be equal in size and greater than zero");
 	}
         query.append("create table ");
 	query.append(fullTableName)
@@ -731,6 +726,83 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
+  // delete can be improved to pass only key values
+  private def delete(con: Connection, containerName: String, columnNames:Array[String], 
+		     rowColumnValues: Array[Array[(String,String)]]): Unit = {
+    var pstmt: PreparedStatement = null
+    var tableName = toTableName(containerName)
+    var query = new StringBuilder();
+    var totalRowsDeleted = 0;
+
+    try {
+      query.append("delete from ");
+      query.append(tableName);
+      var whereClauseColumns = columnNames;
+      query.append(" where ");
+      whereClauseColumns.foreach( x => {
+	query.append(x);
+	query.append(" = ");
+	query.append("? and ");
+      })
+      query = query.dropRight(5);
+      logger.info("query => %s".format(query.toString()));
+      pstmt = con.prepareStatement(query.toString())
+      getColumnTypes(tableName);
+
+      rowColumnValues.foreach( row => {
+	var colIndex = 0;
+	row.foreach( x => {
+	  val colName = x._1;
+	  val colValue = x._2;
+	  val colType = columnTypes(tableName.toUpperCase() + "." + x._1.toUpperCase());
+	  colIndex += 1;
+	  logger.debug("colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
+          colType match{
+	    case "NUMBER" => {
+	      val f = java.lang.Long.parseLong(colValue);
+	      pstmt.setLong(colIndex,f);
+	    }
+	    case "VARCHAR2" => {
+	      pstmt.setString(colIndex,colValue);
+	    }
+	    case _ => {
+	      // more types can be supported without throwing error
+	      throw new Exception("The column type %s is not supported by this adapter".format(colType))
+	    }
+	  }
+	})
+	pstmt.addBatch();
+      })
+
+      logger.debug("Executing bulk delete...")
+      var deleteCount = pstmt.executeBatch();
+      deleteCount.foreach(cnt => { totalRowsDeleted += cnt });
+      if (pstmt != null) {
+        pstmt.clearBatch();
+        pstmt.close
+        pstmt = null;
+      }
+    } catch {
+      case e: Exception => {
+        if (con != null) {
+          try {
+            // rollback has thrown exception in some special scenarios, capture it
+            con.rollback()
+          } catch {
+            case ie: Exception => {
+              logger.error("", ie)
+            }
+          }
+        }
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":" + "query => " + query.toString(), e)
+      }
+    } finally {
+      if (pstmt != null) {
+        pstmt.close
+      }
+    }
+  }
+
   def put(containerName: String, columnNames:Array[String],
 	  rowColumnValues: Array[Array[(String,String)]]): Unit = {
     var con: Connection = null
@@ -787,6 +859,11 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	})
 	pstmt.addBatch();
       })
+
+      if( appendOnly.equalsIgnoreCase("NO") ){
+	// delete the rows before inserting
+	delete(con,containerName,columnNames,rowColumnValues);
+      }
 
       logger.debug("Executing bulk insert...")
       var insertCount = pstmt.executeBatch();

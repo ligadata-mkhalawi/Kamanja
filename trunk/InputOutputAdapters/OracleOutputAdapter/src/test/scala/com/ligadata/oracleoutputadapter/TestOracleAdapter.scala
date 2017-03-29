@@ -41,7 +41,7 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
   private val kvManagerLoader = new KamanjaLoaderInfo
   private var oracleAdapter: OracleAdapter = null
 
-  val dataStoreInfo = """{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
+  val dataStoreInfo = """{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"NO"}"""
 
 
   private val maxConnectionAttempts = 10;
