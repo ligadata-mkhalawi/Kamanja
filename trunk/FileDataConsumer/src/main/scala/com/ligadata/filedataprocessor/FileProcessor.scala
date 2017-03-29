@@ -232,8 +232,8 @@ object FileProcessor {
       if (logger.isInfoEnabled) logger.info("SMART_FILE_CONSUMER (global): Removing file " + fileName + " from zookeeper")
       deleteData(znodePath + "/" + URLEncoder.encode(fileName, "UTF-8"))
     } catch {
-      case e: Exception => if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure", e)
-      case e: Throwable => if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure", e)
+      case e: Exception => logger.error("SmartFileConsumer - Failure", e)
+      case e: Throwable => logger.error("SmartFileConsumer - Failure", e)
     }
   }
 
@@ -245,7 +245,7 @@ object FileProcessor {
         }
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure closing ZKC.")
+          logger.error("SmartFileConsumer - Failure closing ZKC.")
         }
       } finally {
         zkc = null
@@ -266,7 +266,7 @@ object FileProcessor {
           //return client
         } catch {
           case e: Throwable => {
-            if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure creating a new zookeeper connection, retrying.", e)
+            logger.error("SmartFileConsumer - Failure creating a new zookeeper connection, retrying.", e)
             try {
               Thread.sleep(MAX_ZK_RETRY_MS)
             } catch {
@@ -292,7 +292,7 @@ object FileProcessor {
         isSuccess = true
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure deleting data from zookeeper, reinitializing connection and retrying.")
+          logger.error("SmartFileConsumer - Failure deleting data from zookeeper, reinitializing connection and retrying.")
           try {
             Thread.sleep(MAX_ZK_RETRY_MS)
             zkc = getZkc(zkcConnectString)
@@ -318,7 +318,7 @@ object FileProcessor {
         isSuccess = true
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
+          logger.error("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
           try {
             Thread.sleep(MAX_ZK_RETRY_MS)
             zkc = getZkc(zkcConnectString)
@@ -342,7 +342,7 @@ object FileProcessor {
         isSuccess = true
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
+          logger.error("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
           try {
             Thread.sleep(MAX_ZK_RETRY_MS)
             zkc = getZkc(zkcConnectString)
@@ -368,7 +368,7 @@ object FileProcessor {
         isSuccess = true
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
+          logger.error("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
           try {
             Thread.sleep(MAX_ZK_RETRY_MS)
             zkc = getZkc(zkcConnectString)
@@ -395,7 +395,7 @@ object FileProcessor {
         isSuccess = true
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
+          logger.error("SmartFileConsumer - Failure adding data to zookeeper reinitializing and retrying.")
           try {
             Thread.sleep(MAX_ZK_RETRY_MS)
             zkc = getZkc(zkcConnectString)
@@ -419,7 +419,7 @@ object FileProcessor {
         isSuccess = true
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Failure creating a new node in zookeeper, retrying.")
+          logger.error("SmartFileConsumer - Failure creating a new node in zookeeper, retrying.")
           try {
             Thread.sleep(MAX_ZK_RETRY_MS)
           } catch {
@@ -795,7 +795,7 @@ object FileProcessor {
           Thread.sleep(refreshRate)
         } catch {
           case e: Throwable => {
-            logger.warn("SMART_FILE_CONSUMER: Thread sleep exception", e)
+            logger.error("SMART_FILE_CONSUMER: Thread sleep exception", e)
           }
         }
       } catch {
@@ -841,15 +841,15 @@ object FileProcessor {
         contentType = tika.detect(fis)
       } catch {
         case e: IOException => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Tika unable to read from InputStream - " + e.getMessage, e)
+          logger.error("SmartFileConsumer - Tika unable to read from InputStream - " + e.getMessage, e)
           throw e
         }
         case e: Exception => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Tika processing generic exception - " + e.getMessage, e)
+          logger.error("SmartFileConsumer - Tika processing generic exception - " + e.getMessage, e)
           throw e
         }
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - Tika processing runtime exception - " + e.getMessage, e)
+          logger.error("SmartFileConsumer - Tika processing runtime exception - " + e.getMessage, e)
           throw e
         }
       } finally {
@@ -881,29 +881,29 @@ object FileProcessor {
               contentType = magicMatcher.getMimeType
           } catch {
             case e: MagicParseException => {
-              if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - MimeMagic caught a parsing exception - " + e.getMessage, e)
+              logger.error("SmartFileConsumer - MimeMagic caught a parsing exception - " + e.getMessage, e)
               throw e
             }
             case e: MagicMatchNotFoundException => {
-              if (logger.isWarnEnabled) logger.warn("SmartFileConsumer -MimeMagic Mime Not Found -" + e.getMessage, e)
+              logger.error("SmartFileConsumer -MimeMagic Mime Not Found -" + e.getMessage, e)
               throw e
             }
             case e: MagicException => {
-              if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - MimeMagic generic exception - " + e.getMessage, e)
+              logger.error("SmartFileConsumer - MimeMagic generic exception - " + e.getMessage, e)
               throw e
             }
             case e: Exception => {
-              if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - MimeMagic processing generic exception - " + e.getMessage, e)
+              logger.error("SmartFileConsumer - MimeMagic processing generic exception - " + e.getMessage, e)
               throw e
             }
             case e: Throwable => {
-              if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - MimeMagic processing runtime exception - " + e.getMessage, e)
+              logger.error("SmartFileConsumer - MimeMagic processing runtime exception - " + e.getMessage, e)
               throw e
             }
           }
         } catch {
           case e: Exception =>
-            if (logger.isWarnEnabled) logger.warn("SmartFileConsumer - File read exception - " + e.getMessage, e)
+            logger.error("SmartFileConsumer - File read exception - " + e.getMessage, e)
             throw e
         } finally {
           if (is != null)
@@ -990,7 +990,7 @@ object FileProcessor {
                   isFailedFileReprocessed = true
                 } catch {
                   case e: Throwable => {
-                    if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global) - recovering failed files, Error accesisng disk, retrying")
+                    logger.error("SMART FILE CONSUMER (global) - recovering failed files, Error accesisng disk, retrying")
                     try {
                       Thread.sleep(500)
                     } catch {
@@ -1055,12 +1055,12 @@ object FileProcessor {
               } catch {
                 case ie: InterruptedException =>
                 case e: Exception => {
-                  if (logger.isWarnEnabled) logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                  logger.error("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
                   Thread.sleep(errorWaitTime)
                   errorWaitTime = scala.math.min((errorWaitTime * 2), FileProcessor.MAX_WAIT_TIME)
                 }
                 case e: Throwable => {
-                  if (logger.isWarnEnabled) logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                  logger.error("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
                   Thread.sleep(errorWaitTime)
                   errorWaitTime = scala.math.min((errorWaitTime * 2), FileProcessor.MAX_WAIT_TIME)
                 }
@@ -1149,11 +1149,11 @@ object FileProcessor {
         }
       } catch {
         case fio: IOException => {
-          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: ERROR", fio)
+          logger.error("SMART FILE CONSUMER: ERROR", fio)
           isWatchedFileSystemAccesible = false
         }
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: ERROR", e)
+          logger.error("SMART FILE CONSUMER: ERROR", e)
           isTargetFileSystemAccesible = false
         }
       }
@@ -1167,11 +1167,11 @@ object FileProcessor {
         }
       } catch {
         case fio: IOException => {
-          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: ERROR", fio)
+          logger.error("SMART FILE CONSUMER: ERROR", fio)
           isTargetFileSystemAccesible = false
         }
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: ERROR", e)
+          logger.error("SMART FILE CONSUMER: ERROR", e)
           isTargetFileSystemAccesible = false
         }
       }
@@ -1392,7 +1392,7 @@ object FileProcessor {
         if (logger.isWarnEnabled) logger.warn(status_data_string)
       } catch {
         case e: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("Unable to produce STATS due to ", e)
+          logger.error("Unable to produce STATS due to ", e)
           try {
             Thread.sleep(FileProcessor.RECOVERY_SLEEP_TIME)
           } catch {
@@ -1958,7 +1958,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
       // One counter for bufferQ and one for msgQ and also taken concurrentKafkaJobsRunning and 2 extra in memory
       while (!LocationWatcher.shutdown && (bufferQ.size + msgQ.size) >= bufferLimit) {
         if (waitedCntr == 0) {
-          if (logger.isWarnEnabled) logger.warn("SMART FILE ADDAPTER (" + partitionId + ") : current size:%d (bufferQ:%d + msgQ:%d) exceed the MAX number of %d buffers. Halting for a free slot".format(bufferQ.size + msgQ.size, bufferQ.size, msgQ.size, bufferLimit))
+          logger.info("SMART FILE ADDAPTER (" + partitionId + ") : current size:%d (bufferQ:%d + msgQ:%d) exceed the MAX number of %d buffers. Halting for a free slot".format(bufferQ.size + msgQ.size, bufferQ.size, msgQ.size, bufferLimit))
         }
         waitedCntr += 1
         Thread.sleep(throttleTime)
@@ -1966,7 +1966,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
       if (waitedCntr > 0) {
         val timeDiff = System.currentTimeMillis - st
-        if (logger.isWarnEnabled) logger.warn("%d:Got a slot after waiting %dms".format(partitionId, timeDiff))
+        logger.info("%d:Got a slot after waiting %dms".format(partitionId, timeDiff))
       }
 
       if (!isContentParsable) {
@@ -2061,12 +2061,12 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
       bis = null
     } catch {
       case ioe: IOException => {
-        if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: partition " + partitionId + " Unable to detect file as being processed " + fileName)
-        if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: Check to make sure the input directory does not still contain this file " + ioe)
+        logger.error("SMART FILE CONSUMER: partition " + partitionId + " Unable to detect file as being processed " + fileName)
+        logger.error("SMART FILE CONSUMER: Check to make sure the input directory does not still contain this file " + ioe)
       }
       case e: Throwable => {
-        if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: partition " + partitionId + " Unable to detect file as being processed " + fileName)
-        if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: Check to make sure the input directory does not still contain this file " + e)
+        logger.error("SMART FILE CONSUMER: partition " + partitionId + " Unable to detect file as being processed " + fileName)
+        logger.error("SMART FILE CONSUMER: Check to make sure the input directory does not still contain this file " + e)
       }
     }
   }
@@ -2203,7 +2203,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         is = null
       } catch {
         case e1: Throwable => {
-          if (logger.isWarnEnabled) logger.warn("Error while closing the file", e1)
+          logger.error("Error while closing the file", e1)
           is = null
         }
       }

@@ -406,15 +406,15 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           }
         } catch {
           case mfe: KVMessageFormatingException => {
-            logger.warn("Unknown message format in partition " + partIdx, mfe)
+            logger.error("Unknown message format in partition " + partIdx, mfe)
             writeErrorMsg(msg)
           }
           case e: Exception => {
-            logger.warn("Unknown message format in partition " + partIdx, e)
+            logger.error("Unknown message format in partition " + partIdx, e)
             writeErrorMsg(msg)
           }
           case e: Throwable => {
-            logger.warn("Unknown message format in partition " + partIdx, e)
+            logger.error("Unknown message format in partition " + partIdx, e)
             writeErrorMsg(msg)
           }
         }
@@ -898,7 +898,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
             }
           }
           case e: Throwable => {
-            logger.warn("SMART FILE CONSUMER:  ERROR", e)
+            logger.error("SMART FILE CONSUMER:  ERROR", e)
             throw e
           }
         }
@@ -918,10 +918,10 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         }
       } catch {
         case e: Exception => {
-          logger.warn("SMART FILE CONSUMER:  ERROR in getPartition", e)
+          logger.error("SMART FILE CONSUMER:  ERROR in getPartition", e)
         }
         case e: Throwable => {
-          logger.warn("SMART FILE CONSUMER:  ERROR in getPartition", e)
+          logger.error("SMART FILE CONSUMER:  ERROR in getPartition", e)
         }
       }
     }
