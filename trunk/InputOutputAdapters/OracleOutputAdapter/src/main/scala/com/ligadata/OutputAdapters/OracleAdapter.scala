@@ -21,8 +21,6 @@ import java.sql.{ Statement, PreparedStatement, CallableStatement, DatabaseMetaD
 import java.sql.Connection
 import java.sql.DatabaseMetaData;
 import com.ligadata.KamanjaBase.NodeContext
-import com.ligadata.KvBase.{ Key, TimeRange, Value }
-import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterFactory }
 import java.nio.ByteBuffer
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.logging.log4j._
@@ -86,6 +84,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   var _putBytes:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
 
   var columnTypes: scala.collection.mutable.Map[String, String] = new scala.collection.mutable.HashMap()
+  var columnLists: scala.collection.mutable.Map[String, Array[String]] = new scala.collection.mutable.HashMap()
   var columnTypesFetched: scala.collection.mutable.Map[String, Int] = new scala.collection.mutable.HashMap()
 
 
@@ -275,7 +274,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   }
 
   // some misc optional parameters
-  var appendOnly = "NO"
+  var appendOnly = "YES"
   if (parsed_json.contains("appendOnly")) {
     appendOnly = parsed_json.get("appendOnly").get.toString.trim
   }
@@ -536,7 +535,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
       pstmt = con.prepareStatement(query)
       pstmt.setString(1, schemaName)
       pstmt.setString(2, tableName)
-      pstmt.setInt(3, keyColumns.length)
+      pstmt.setLong(3, keyColumns.length)
       rs = pstmt.executeQuery();
       while (rs.next()) {
 	rowCount += 1;
@@ -567,7 +566,6 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
       }
     }
   }
-
 
   def createIndex(containerName: String, keyColumns: Array[String], apiType:String): Unit = {
     var con: Connection = null
@@ -705,13 +703,16 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
       val meta = con.getMetaData();
       rs = meta.getColumns(null,null,tableName.toUpperCase(),null);
       var colCount = 0;
+      var colNames = new Array[String](0);
       while( rs.next() ){
 	val colName = rs.getString("COLUMN_NAME");
+	colNames = colNames :+ colName;
 	val colType = rs.getString("TYPE_NAME");
 	val key = tableName.toUpperCase() + "." + colName.toUpperCase();
 	columnTypes(key) = colType;
 	colCount = colCount + 1;
       }
+      columnLists(tableName.toUpperCase()) = colNames;
       logger.debug("Found %d columns in the table %s".format(colCount,tableName));
       if( colCount > 0 ){
 	columnTypesFetched(tableName) = 1;
@@ -772,8 +773,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	  logger.debug("colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
           colType match{
 	    case "NUMBER" => {
-	      val f = java.lang.Float.parseFloat(colValue);
-	      pstmt.setFloat(colIndex,f);
+	      val f = java.lang.Long.parseLong(colValue);
+	      pstmt.setLong(colIndex,f);
 	    }
 	    case "VARCHAR2" => {
 	      pstmt.setString(colIndex,colValue);
@@ -820,54 +821,10 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
-  // to here
-  // get operations
-  def getRowCount(containerName: String, whereClause: String): Int = {
-    var con: Connection = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
-    var rowCount = 0
-    var tableName = ""
-    var query = new StringBuilder();
-    try {
-      con = getConnection
-
-      tableName = toFullTableName(containerName)
-      query.append("select count(*) from ");
-      query.append(tableName);
-      if (whereClause != null) {
-        query.append(whereClause);
-      }
-
-      logger.info("query => %s".format(query.toString()));
-
-      stmt = con.createStatement()
-      rs = stmt.executeQuery(query.toString());
-      while (rs.next()) {
-        rowCount = rs.getInt(1)
-      }
-      rowCount
-    } catch {
-      case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query.toString(), e)
-      }
-    } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
-      }
-    }
-  }
-
-  private def processCell(tableName:String, columnName: String, columnValue: String,callbackFunction: (String, String, String) => Unit) {
+  private def processCell(tableName:String, rowNumber:Int,columnName: String, columnValue: String,callbackFunction: (String, Int, String, String) => Unit) {
     try {
       if (callbackFunction != null)
-        (callbackFunction)(tableName, columnName,columnValue)
+        (callbackFunction)(tableName, rowNumber, columnName,columnValue)
     } catch {
       case e: Exception => {
         throw e
@@ -875,7 +832,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
-  def get(containerName: String, selectList: Array[String], filterColumns:Array[(String,String)], callbackFunction: (String, String, String) => Unit): Unit = {
+  def get(containerName: String, selectList: Array[String], filterColumns:Array[(String,String)], callbackFunction: (String, Int, String, String) => Unit): Unit = {
     var con: Connection = null
     var pstmt: PreparedStatement = null
     var rs: ResultSet = null
@@ -883,58 +840,66 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     var query = new StringBuilder();
     query = new StringBuilder("select ");
     try{
-      selectList.foreach(s => {
+      getColumnTypes(tableName);
+      var selectColumns = selectList;
+      if( selectList == null ){
+	selectColumns = columnLists(tableName.toUpperCase());
+      }
+      selectColumns.foreach(s => {
 	query.append(s);
 	query.append(",");
       })
       query = query.dropRight(1);// drop last comma
       query.append(" from ")
       query.append(tableName)
-      query.append(" where ");
-      filterColumns.foreach(f => {
-	val colName = f._1;
-	query.append(colName);
-	query.append(" = ? and ");
-      })
-      query = query.dropRight(4); // drop last "and "
+      if( filterColumns != null ){
+	query.append(" where ");
+	filterColumns.foreach(f => {
+	  val colName = f._1;
+	  query.append(colName);
+	  query.append(" = ? and ");
+	})
+	query = query.dropRight(4); // drop last "and "
+      }
       con = getConnection
-      getColumnTypes(tableName);
       pstmt = con.prepareStatement(query.toString());
       var colIndex = 0;
-      filterColumns.foreach(f => {
-	colIndex += 1;
-	val colName = f._1;
-	val colValue = f._2;
-	val colType = columnTypes(tableName.toUpperCase() + "." + colName.toUpperCase());
-	logger.debug("Setting up where clause: colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
-        colType match{
-	  case "NUMBER" => {
-	    val f = java.lang.Float.parseFloat(colValue);
-	    pstmt.setFloat(colIndex,f);
+      if( filterColumns != null ){
+	filterColumns.foreach(f => {
+	  colIndex += 1;
+	  val colName = f._1;
+	  val colValue = f._2;
+	  val colType = columnTypes(tableName.toUpperCase() + "." + colName.toUpperCase());
+	  logger.debug("Setting up where clause: colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
+          colType match{
+	    case "NUMBER" => {
+	      val f = java.lang.Long.parseLong(colValue);
+	      pstmt.setLong(colIndex,f);
+	    }
+	    case "VARCHAR2" => {
+	      pstmt.setString(colIndex,colValue);
+	    }
+	    case _ => {
+	      // more types can be supported without throwing error
+	      throw new Exception("The column type %s is not supported by this adapter".format(colType))
+	    }
 	  }
-	  case "VARCHAR2" => {
-	    pstmt.setString(colIndex,colValue);
-	  }
-	  case _ => {
-	    // more types can be supported without throwing error
-	    throw new Exception("The column type %s is not supported by this adapter".format(colType))
-	  }
-	}
-      })
+	})
+      }
       rs = pstmt.executeQuery();
       var rowCount = 1;
       while (rs.next()) {
 	logger.debug("Fetched a row rowCount => %d. process it...".format(rowCount));
 	colIndex = 0;
-	for( i <- 0 to selectList.length - 1 ){
-	  val colName = selectList(i);
+	for( i <- 0 to selectColumns.length - 1 ){
+	  val colName = selectColumns(i);
 	  val colType = columnTypes(tableName.toUpperCase() + "." + colName.toUpperCase());
 	  var colValue: String = "";
 	  colIndex += 1;
 	  logger.debug("Fetching values from result set: colName => %s, colType => %s, colIndex => %d".format(colName,colType,colIndex));
           colType match{
 	    case "NUMBER" => {
-	      colValue = rs.getFloat(colIndex).toString();
+	      colValue = rs.getLong(colIndex).toString();
 	    }
 	    case "VARCHAR2" => {
 	      colValue = rs.getString(colIndex).toString();
@@ -945,7 +910,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	    }
 	  }
 	  logger.debug("Fetched a value from result set: colName => %s, colType => %s, colIndex => %d".format(colName,colType,colIndex));
-	  processCell(tableName,colName,colValue,callbackFunction);
+	  processCell(tableName,rowCount,colName,colValue,callbackFunction);
 	}
 	rowCount += 1;
       }

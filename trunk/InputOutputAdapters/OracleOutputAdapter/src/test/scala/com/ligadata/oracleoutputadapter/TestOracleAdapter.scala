@@ -27,7 +27,7 @@ import org.apache.logging.log4j._
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.Exceptions._
 
-case class ReadResult(tableName: String,columnName: String,columnValue: String);
+case class ReadResult(tableName: String,rowNumber: Int, columnName: String,columnValue: String);
 
 class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   private val loggerName = this.getClass.getName
@@ -66,10 +66,10 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
     }
   }
 
-  def readCallBack(tableName: String, columnName: String, columnValue: String) {
-    logger.info("tableName => %s,columnName => %s, columnValue => %s".format(tableName,columnName,columnValue));
+  def readCallBack(tableName: String, rowNumber: Int, columnName: String, columnValue: String) {
+    logger.info("tableName => %s,rowNumber => %d,columnName => %s, columnValue => %s".format(tableName,rowNumber,columnName,columnValue));
     readCount = readCount + 1
-    val rr = new ReadResult(tableName,columnName,columnValue);
+    val rr = new ReadResult(tableName,rowNumber,columnName,columnValue);
     readResults = readResults :+ rr
   }
 
@@ -163,8 +163,33 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
       And("Validate the results")
       assert(readResults.length == 1)
       assert(readResults(0).tableName.equalsIgnoreCase("customer1"))
+      assert(readResults(0).rowNumber.equals(1))
       assert(readResults(0).columnName.equalsIgnoreCase("address"))
       assert(readResults(0).columnValue.equals("10001,Main St, Redmond WA 98052"))
+
+      And("Get all the rows  with no fliter applied ")
+      readResults = new Array[ReadResult](0);
+      selectList = null;
+      filterColumns = null;
+      noException should be thrownBy {
+        oracleAdapter.get(containerName, selectList, filterColumns, readCallBack _)
+      }
+
+      And("Validate the results")
+      assert(readResults.length == 30)
+      val readResultsByTable = readResults.groupBy(c => c.tableName)
+      readResultsByTable.foreach(t => {
+	val tableName = t._1;
+	val tableReadResults = t._2;
+	val readResultsByRow = tableReadResults.groupBy(c => c.rowNumber)
+	readResultsByRow.foreach(r => {
+	  val rowNumber = r._1;
+	  val rowReadResults = r._2;
+	  rowReadResults.foreach(r1 => {
+	    logger.info("rowNumber => %d,columnName => %s, columnValue => %s".format(rowNumber,r1.columnName,r1.columnValue));
+	  })
+	})
+      })
     }
 
     it("Test dropContainer ..."){

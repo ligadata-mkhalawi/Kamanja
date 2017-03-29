@@ -97,17 +97,16 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
     return ""
   }
 
-  private def typeCategoryToOracleType(container:ContainerInterface, colName: String) : String = {
-    val ati = container.getAttributeType(colName);
-    ati.getTypeCategory().getValue() match {
+  private def typeCategoryToOracleType(typeCategoryValue: Int) : String = {
+    typeCategoryValue match {
       case 0 => "NUMBER"
       case 1 => "VARCHAR2(100)" // oracle doesn't support a varchar2 without specifying an upper bound to length of the string. 
       case 2 => "NUMBER"
       case 3 => "NUMBER"
       case 4 => "NUMBER"
       case 5 => "NUMBER"
-      case 6 => "VARCHAR2(1)"
-      case 7 => "NUMBER"
+      case 6 => "CHAR(1)"
+      case 7 => "NUMBER(1)"
       case 1001 => "CONTAINER"
       case 1002 => "MESSAGE"
       case 1003 => "ARRAY"
@@ -149,7 +148,13 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
 	  val attrTypes   = container.getAttributeTypes();
 	  var colTypes = new Array[String](0);
 	  attrTypes.foreach(a =>{
-	    colTypes = colTypes :+ typeCategoryToOracleType(container,a.getName);
+	    val ati = container.getAttributeType(a.getName);
+	    val typeCategoryValue = ati.getTypeCategory().getValue();
+	    var colType = typeCategoryToOracleType(typeCategoryValue);
+	    if( colType == null ){
+	      throw new Exception("The typeCategory %d is not supported ".format(typeCategoryValue));
+	    }
+	    colTypes = colTypes :+ colType;
 	  })
 	  
 	  keyColumns = container.getPrimaryKeyNames();
@@ -176,7 +181,7 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
   }
   
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
-    // throw error not implemented
+    throw new Exception("send non-fixed messages is not yet implemented")  // throw error not implemented
   }
 
   override def Shutdown(): Unit = {
