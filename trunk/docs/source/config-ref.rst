@@ -37,6 +37,8 @@ Configuration File Reference Pages
      - Generated file used to upgrade from an earlier release
    * - :ref:`modelcfg-config-ref`
      - Control compilation of a Java or Scala model
+   * - :ref:`monitrc-config-ref`
+     - Control file for :ref:`monit-term`
    * - :ref:`tenant-def-config-ref`
      - Define :ref:`tenancy<tenancy-term>` for the cluster
 
@@ -54,6 +56,7 @@ Configuration File Reference Pages
    config-ref/MetadataAPIConfig-properties
    config-ref/MigrateConfig_template
    config-ref/modelCfg
+   config-ref/monitrc
    config-ref/tenant-def
 
 

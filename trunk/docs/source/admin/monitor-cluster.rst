@@ -8,7 +8,7 @@ Tools are provided for monitoring the Kamanja cluster:
 
 .. list-table::
    :class: ld-wrap-fixed-table
-   :widths: 25 75
+   :widths: 35 65
    :header-rows: 1
 
    * - Command
@@ -20,6 +20,8 @@ Tools are provided for monitoring the Kamanja cluster:
      - 
    * - :ref:`zookeeper-query-admin`
      - 
+   * - :ref:`monit-admin`
+     - Start, stop, and monitor Kamanja nodes
    * - :ref:`message-tracking-admin`
      - view message-level events such as which message was executed,
        when it was executed, and which models were executed.

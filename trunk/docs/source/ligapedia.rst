@@ -56,6 +56,7 @@ Ligapedia
    ligapedia/g-m/metadata-api
    ligapedia/g-m/metadata-mgr
    ligapedia/g-m/model
+   ligapedia/g-m/monit
    ligapedia/n-r/naive-bayes
    ligapedia/n-r/neural-networks
    ligapedia/n-r/nlp

@@ -6,7 +6,9 @@ SSH (Secure SHell)
 
 SSH is the Linux Secure Shell allows secure access to the shell
 on a remote system.
-Kamanja nodes use SSH to communicate between themselves;
+Kamanja nodes use SSH to communicate between themselves
+and between themselves and other servers
+running associated processes such as monitoring utilities;
 administrators can use it to access the individual nodes
 for maintenance work.
 
