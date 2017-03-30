@@ -1,25 +1,41 @@
 {
-  "DriverName": "oracle.jdbc.driver.OracleDriver",
-  "URLString": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myserver)(PORT=7896))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=myserver)))",
-  "UserId": "test1user",
-  "Password": "test1password",
-  "Consumers": "4",
-  "Timeout": "86400000",
-  "RefreshInterval": "2000",
-  "Serialize": {
-    "Format": "csv",
-    "Options": {
-      "FieldDelimiter": "\u0001"
-    }
-  },
-  "Queries": {
-    "Tbl1Query": {
-      "Query": "SELECT A,B,C FROM TBL1",
-      "PrimaryKeyColumn": "A"
+  "Name": "DbInputAdapter1",
+  "TypeString": "Input",
+  "TenantId": "tenant1",
+  "ClassName": "com.ligadata.InputAdapters.DbConsumer$",
+  "DependencyJars": [
+    "ojdbc6.jar"
+  ],
+  "AdapterSpecificCfg": {
+    "DriverName": "oracle.jdbc.driver.OracleDriver",
+    "URLString": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myserver)(PORT=7896))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=myserver)))",
+    "UserId": "test1user",
+    "Password": "test1password",
+    "Consumers": "4",
+    "Timeout": "86400",
+    "RefreshInterval": "2000",
+    "Serialize": {
+      "Format": "kv",
+      "Options": {
+        "FieldDelimiter": "\u0001",
+        "AlwaysQuoteFields": "false",
+        "KeyDelimiter": "\u0002"
+      }
     },
-    "Tbl2Query": {
-      "Query": "SELECT A,B,C FROM TBL2",
-      "PrimaryKeyColumn": "B"
+    "Queries": {
+      "Tbl1Query": {
+        "Query": "SELECT A, B, C FROM TBL1 WHERE ${PrimaryAndPartitionSubstitution} ORDER BY A FETCH FIRST 100 ROWS ONLY",
+        "PrimaryKeyColumn": "A",
+        "PartitionExpression": "MOD(C, ${MaxPartitions}) = ${PartitionId}",
+        "PrimaryKeyExpression": "A > ${PreviousPrimaryKeyValue}"
+      },
+      "Tbl2Query": {
+        "Query": "SELECT A, B AS X, C FROM TBL2 WHERE ${PrimaryAndPartitionSubstitution} AND C in (1, 2, 3) ORDER BY X DESC FETCH FIRST 100 ROWS WITH TIES",
+        "PrimaryKeyColumn": "X",
+        "PartitionExpression": "MOD(ORA_HASH(CONCAT(A, B)), ${MaxPartitions}) = ${PartitionId}",
+        "PrimaryKeyExpression": "X < ${PreviousPrimaryKeyValue}"
+      }
     }
   }
 }
+
