@@ -383,6 +383,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
           while (!isQuiese && !isShutdown) {
             try {
+              if(kafkaConsumer == null){
+                kafkaConsumer = createConsumerWithInputProperties()
+              }
               var poll_records = (kafkaConsumer.poll(KamanjaKafkaConsumer.POLLING_INTERVAL))
               var records = poll_records.iterator
               while (records.hasNext && !isQuiese && !isShutdown) {
