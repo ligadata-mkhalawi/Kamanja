@@ -14,7 +14,7 @@ for instructions about defining $KAMANJA_HOME.
 
 - bin - contains command scripts such as
   :ref:`CreateQueues.sh<createqueues-command-ref>`
-  and :ref:`WatchInputQueue.sh<watchinputqueue-command-ref>`.
+  and :ref:`WatchInputQueue.sh<watchqueue-command-ref>`.
 - config - contains configuration files such as
   :ref:`ClusterConfig.json<clusterconfig-config-ref>`
   and :ref:`MetadataAPIConfig.properties<metadataapiconfig-config-ref>`

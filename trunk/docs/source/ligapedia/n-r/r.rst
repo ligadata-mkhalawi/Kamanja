@@ -25,7 +25,7 @@ See also:
   as well as documentation and other resources.
 - RStudio is the most popular IDE for R;
   you can download it from the
-  :ref:`RStudio home page <https://www.rstudio.com/>`_.
+  `RStudio home page <https://www.rstudio.com/>`_.
 - RATTLE (R Analytical Tool To Learn Easily) is a graphical tool
   that simplifies the process of
   :ref:`ingesting data<ingest-data-term>`,

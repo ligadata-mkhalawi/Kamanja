@@ -14,6 +14,6 @@ for that cluster.
 See also:
 
 - :ref:`How to install Kamanja on a node<kamanja-install-top>`
-- :ref:`How to start a node<start-node-install-guide>`
+- :ref:`How to start a node<start-stop-cluster>`
 - :ref:`cluster-term`
 

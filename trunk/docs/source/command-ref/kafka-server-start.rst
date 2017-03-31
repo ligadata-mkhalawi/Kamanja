@@ -55,6 +55,6 @@ Expected output:
 See also
 --------
 
-- :ref:`start-node-install-guide`
+- :ref:`start-stop-cluster`
 
 
