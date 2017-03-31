@@ -5,10 +5,9 @@ Using Monit
 ===========
 
 The :ref:`monit-term` utility
-can be used to monitor the status of the Kamanja cluster as a whole
-and each Kamanja and non-Kamanja node that is configured
+can be used to monitor the status of the Kamanja cluster
+and the configured nodes
 and to restart any node that has failed.
-It can also monitor the availability of the system that holds Kamanja.
 For full information about using **monit**, see the
 `Monit documentation <https://mmonit.com/monit/documentation/monit.html>`_.
 
@@ -19,7 +18,7 @@ Monit is run as a daemon that is started from the command line;
 results can be viewed in a browser or on the command line.
 
 Before running monit, you must configure it for your environment;
-see :ref:`monit-config-admin`.
+see :ref:`monit-config-admin` at the end of this chapter.
 
 To start/stop/reload monit, use the following commands:
 
@@ -41,7 +40,7 @@ This location can be modified  by editing the
 :ref:`monitrc<monitrc-admin>` file.
 Each file defines the shell scripts to be used to check for status
 or to start/stop the service.
-The shell scripts exit with status=0 if successful;
+The shell script that checks the nodes exits with status=0 if successful;
 if the return status is not 0,
 Monit raises an alert.
 
@@ -49,7 +48,7 @@ Note the following:
 
 - If the :ref:`SSH<ssh-term>` connection to the main node fails,
   it is not possible to start/stop nodes from Monit
-  but status of the nodes can be pulled.
+  but the status of the nodes can still be pulled.
 - Status checks are done once every specified number of seconds so,
   when turning a node on or off,
   it may take a few seconds for Monit to display the correct status.
@@ -180,22 +179,22 @@ To configure Monit:
      - Monit control file
    * - KamanjaCluster
      - `- r w - - - - - - -`
-       (600)
+       (chmod 600)
      - One copy for each configured Kamanja cluster;
        edit it for your configuration.
    * - :ref:`remoteHostSystem-admin`
      - `- r w - - - - - - -`
-       (600)
+       (chmod 600)
      - One copy for each physical or virtual system node;
        edit it for your configuration.
    * - :ref:`kamanja1-admin`
      - `- r w - - - - - - -`
-       (600)
+       (chmod 600)
      - One copy for each instance of the Kamanja cluster;
        edit it for your configuration.
    * - :ref:`shell scripts<monit-scripts-admin>`
      - `- r w x r - x r - x`
-       (755)
+       (chmod 755)
      - Shell scripts are used to check the status.
        These must be located in the directory specified
        by the other files and be edited for your configuration.
@@ -252,13 +251,13 @@ These parameters are defined as:
 - **with start delay** -- If set, specifies the lag between when Monit starts
   and the first check of services.
   By default, this parameter is not enabled
-  and Monit checks the services immediately after is starts.
+  and Monit checks the services immediately after it starts.
 
 - **set logfile** -- specify the directory where
   `Syslog <https://linux.die.net/man/8/syslogd>` writes Monit logs.
 
 - **set httpd port** -- specify the port to use for HTTP access.
-  This is folled by **allow** lines that provide an access control list.
+  This is followed by **allow** lines that provide an access control list
   and set the user name and password used to access the dashboard.
   You can add additional lines to enable other users to log in.
   You can also set up an external file to manage the user names and passwords.
@@ -290,8 +289,10 @@ KamanjaCluster
 ~~~~~~~~~~~~~~
 
 For the Kamanja cluster itself,
-make a copy of the *KamanjaCluster* path
-and edit it to reflect your configuration:
+make a copy of the *KamanjaCluster* file,
+giving it a name that makes sense in your configuration.
+The name of this file is the name displayed under the "Program" column
+on the Monit dashboard.
 
 ::
 
@@ -309,14 +310,17 @@ and edit it to reflect your configuration:
 
 
 This file must then be edited to reflect your configuration.
-Most of the strings that need to be supplied
+The strings that need to be supplied
 are represented in curly brackets:
 
 - {PATH_TO} - replace with the full path for the specified file.
-  For the Monit scripts, this is typically
-  the */home/kamanjadev/monit-5.20.0/scripts* directory.
-  For the :ref:`metadataapiconfig-config-ref` file,
-  this is typically the *$KAMANJA_HOME/config* directory.
+
+  - For the Monit scripts, this is typically
+    the */home/kamanjadev/monit-5.20.0/scripts* directory.
+  - For the :ref:`metadataapiconfig-config-ref` file,
+    this is typically the *$KAMANJA_HOME/config* directory.
+  - For the Key.pem file, this is typically *$HOME/.ssh*.
+
 - {NODES_IPS} - IP addresses of each node in the cluster,
   separated with commas.  For example, if this is a four-node cluster,
   this list might be:
@@ -336,9 +340,10 @@ are represented in curly brackets:
 
 remoteHostSystem
 ~~~~~~~~~~~~~~~~
+
 For each physical or virtual system node,
 copy an instance of the *remoteHostSystem* file,
-giving it a name that makes sense for your configuration:
+giving it a name that makes sense for your configuration.
 
 ::
 
@@ -390,10 +395,13 @@ Most of the strings that need to be supplied
 are represented in curly brackets:
 
 - {PATH_TO} - replace with the full path for the specified file.
-  For the Monit scripts, this is typically
-  the */home/kamanjadev/monit-5.20.0/scripts* directory.
-  For the :ref:`metadataapiconfig-config-ref` file,
-  this is typically the *$KAMANJA_HOME/config* directory.
+
+  - For the Monit scripts, this is typically
+    the */home/kamanjadev/monit-5.20.0/scripts* directory.
+  - For the :ref:`metadataapiconfig-config-ref` file,
+    this is typically the *$KAMANJA_HOME/config* directory.
+  - For the Key.pem file, this is typically *$HOME/.ssh*.
+
 - {NODE_IP} - IP address of this node
 - {USER} -
 - {LEADER_NODE_IP} -
@@ -430,8 +438,43 @@ You can set the file permissions with the following commands:
 You then need to edit each file to have
 the correct paths and permissions set.
 
-NOTE : in each of these files, make sure to have
-the correct paths and permissions for keys (rw------.),
-status check files, kamanja scripts
-and make sure to have the correct persmissions set.
+kamanjaClusterStatusCheck.sh
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  #!/bin/bash
+
+  Nodes=$1
+  atLeastOneNodeUp='1'
+  nodesStatus=''
+
+  IFS=',' read -ra nodesIPs <<< "$Nodes"
+
+  for i in "${nodesIPs[@]}"; do
+     operations=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@$i 'ps aux | grep java | grep com.ligadata.KamanjaManager.KamanjaManager | grep -v "grep" | wc -l'`
+     if [ $operations -gt 0 ]
+     then
+        atLeastOneNodeUp='0'
+     fi
+  done
+
+  if [ $atLeastOneNodeUp -eq 0 ]
+  then
+  echo "Cluster is UP"
+  exit $?
+  else
+  ErrorCode=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${NODE_1_IP} 'cat ${PATH_TO}/KamanjaLog.log | grep ERROR | tail -n 1'`
+  echo "Cluster is DOWN: $ErrorCode"
+  fi
+
+  sleep 29
+
+
+kamanjaStatusCheck.sh
+^^^^^^^^^^^^^^^^^^^^^
+
+remoteHostServerStatusCheck.sh
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
