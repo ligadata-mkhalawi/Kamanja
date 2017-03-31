@@ -195,10 +195,11 @@ case class DbKeyData(Version: Int, Type: String, Name: String, QueryUniqStr: Str
 
 class DbPartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
-  val Type: String = "JdbcDatabase"
-  var Name: String = _
+  val Type: String = "Database"
   // Name
-  var PartitionId: Int = _ // Partition Id
+  var Name: String = _
+  // Partition Id
+  var PartitionId: Int = _
 
   override def Serialize: String = {
     // Making String from key
