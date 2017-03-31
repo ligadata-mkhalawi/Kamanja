@@ -66,7 +66,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeenStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(lastSeen))
     return new MonitorComponentInfo(AdapterConfiguration.TYPE_INPUT, inputConfig.Name, DbConsumer.ADAPTER_DESCRIPTION,
-      startTime, lastSeenStr, Serialization.write(metrics).toString)
+      startTime, lastSeenStr, "{}" /*Serialization.write(metrics).toString */)
   }
 
   override def getComponentSimpleStats: String = {
@@ -192,7 +192,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
                   var cols: Int = 0
 
                   var listData = new ArrayList[Object]
-                  var map = scala.collection.mutable.Map[String, Object]
+                  var map = scala.collection.mutable.Map[String, Object]()
 
                   for (cols <- 1 to resultSetMetaData.getColumnCount) {
                     /*
