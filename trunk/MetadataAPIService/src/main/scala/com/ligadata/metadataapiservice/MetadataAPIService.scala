@@ -29,11 +29,12 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization._
 import MediaTypes._
+import com.ligadata.KamanjaBase.{MsgBindingInfo}
 import org.apache.logging.log4j._
 import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
 import com.ligadata.dataaccessapi.KafkaDataAccessAdapter
-import com.ligadata.dataaccessapi.{DataContainerDef, AttributeDef, AttributeGroupDef}
+import com.ligadata.dataaccessapi.{AttributeDef, AttributeGroupDef, DataContainerDef}
 import com.ligadata.kamanja.metadata._
 
 class MetadataAPIServiceActor extends Actor with MetadataAPIService {
@@ -192,7 +193,34 @@ trait MetadataAPIService extends HttpService {
                             }
                           }
                         }
-                      }
+                      }~
+                        pathPrefix("data") {
+                          str => {
+                            pathEndOrSingleSlash {
+                              complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
+                            } ~
+                              path("input" / Rest) {
+                                str => {
+                                  logger.debug("PUT reqeust : data/input" + str)
+                                  val toknRoute = str.split("/")
+                                  val messageInfo = getMessageDefinitions(toknRoute(0))
+                                  if (toknRoute.size == 0 || toknRoute(0) == null) {
+                                    complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
+                                  } else if (!messageInfo._1){
+                                    complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "did not find %s message in metadata".format(toknRoute(0)))).toString))
+                                  } else {
+                                    val messageName = toknRoute(0)
+                                    val messageData = toknRoute(1)
+                                    entity(as[String]) {
+                                      reqBody => {
+                                        requestContext => processSetDataRequest(messageName, messageInfo._2, messageData, messageInfo._3, requestContext, user, password, role)
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                          }
+                        }
                     } ~
                     post {
                       entity(as[String]) { reqBody =>
@@ -637,5 +665,60 @@ trait MetadataAPIService extends HttpService {
     }
     return results.toMap
   }
-}  
+
+  /**
+    * This method used to check if message exists in our metadata
+    *
+    * @param messageName message name t find
+    * @return flag for message if exist && serializer && partitionKey
+    */
+  private def getMessageDefinitions(messageName: String): (Boolean, String, Array[String]) ={
+    val msgDefs: Option[scala.collection.immutable.Set[MessageDef]] = MdMgr.mdMgr.Messages(true, true)
+    if (msgDefs.isEmpty) {
+      (false, null, null)
+    } else {
+      for (message <- msgDefs.get) {
+        // check if case sensitive
+        if(messageName.equalsIgnoreCase(message.Name)){
+           val serializer = getSerializerDeserializer(message.FullName)
+          (true, serializer, message.cType.PartitionKey)
+        }
+      }
+    }
+    (false, null, null)
+  }
+
+  /**
+    * This method used to get serializer for message
+    *
+    * @param messageFullName message name to find serializer
+    * @return serializer of the message
+    */
+  private def getSerializerDeserializer(messageFullName: String): String = {
+    val adapterMessageMap: Map[String, AdapterMessageBinding] = MdMgr.mdMgr.AllAdapterMessageBindings
+    //val adapterDefs: Map[String, AdapterInfo] = MdMgr.mdMgr.Adapters
+    if(adapterMessageMap.size == 0){
+      logger.info("No adapter binding in metadata")
+      null
+    } else {
+      for (adapterMessage <- adapterMessageMap) {
+        if(adapterMessage._2.messageName.equalsIgnoreCase(messageFullName)){
+          logger.info("found adapter binding for %s message with %s serializer".format(messageFullName, adapterMessage._2.serializer))
+          adapterMessage._2.serializer
+        }
+      }
+    }
+    null
+  }
+
+  private def processSetDataRequest(messageFullName: String, SerializerInfo: String, data: String,key: Array[String], rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
+    // to-do push message to Kafka
+//    val adapterDefs: Map[String, AdapterInfo] = MdMgr.mdMgr.Adapters
+//    if(!adapterDefs.isEmpty){
+//      for(adapter <- adapterDefs){
+//        adapter._2.AdapterSpecificCfg
+//      }
+//    }
+  }
+  }
 
