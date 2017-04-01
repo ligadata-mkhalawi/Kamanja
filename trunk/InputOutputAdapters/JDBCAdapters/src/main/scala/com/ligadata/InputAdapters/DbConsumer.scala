@@ -2,15 +2,8 @@
 
 package com.ligadata.InputAdapters
 
-import org.json4s.jackson.Serialization
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.PreparedStatement
-import java.sql.ResultSet
-import java.sql.ResultSetMetaData
-import java.sql.SQLException
-import java.sql.Statement
-import java.util.Date
+import java.sql.{Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, ResultSetMetaData, SQLException, Statement}
+import java.util.{ArrayList, Date, Properties}
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.util.control.Breaks.{break, breakable}
@@ -18,27 +11,41 @@ import org.apache.logging.log4j.LogManager
 import com.ligadata.AdaptersConfiguration.{DbAdapterConfiguration, DbPartitionUniqueRecordKey, DbPartitionUniqueRecordValue}
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.NodeContext
-
-// import javax.sql.DataSource
-
 import org.apache.commons.dbcp2.BasicDataSource
-import org.apache.commons.csv.CSVFormat
-import java.io.StringWriter
-
-import org.apache.commons.csv.CSVPrinter
-import java.util.ArrayList
-
-import com.thoughtworks.xstream.XStream
-import com.ligadata.adapters.xstream.CustomMapConverter
 import java.util.concurrent.atomic.AtomicLong
 
 import com.ligadata.HeartBeat.MonitorComponentInfo
+import org.json4s.jackson.Serialization
 
+// import javax.sql.DataSource
+// import org.apache.commons.csv.CSVFormat
+// import java.io.StringWriter
+// import org.apache.commons.csv.CSVPrinter
+// import com.thoughtworks.xstream.XStream
+// import com.ligadata.adapters.xstream.CustomMapConverter
 
 object DbConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "JDBC_Consumer"
 
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new DbConsumer(inputConfig, execCtxtObj, nodeContext)
+}
+
+class DbConsumerDriverShim(d: Driver) extends Driver {
+  private var driver: Driver = d
+
+  def connect(u: String, p: Properties): Connection = this.driver.connect(u, p)
+
+  def acceptsURL(u: String): Boolean = this.driver.acceptsURL(u)
+
+  def getPropertyInfo(u: String, p: Properties): Array[DriverPropertyInfo] = this.driver.getPropertyInfo(u, p)
+
+  def getMajorVersion(): Int = this.driver.getMajorVersion
+
+  def getMinorVersion(): Int = this.driver.getMinorVersion
+
+  def jdbcCompliant(): Boolean = this.driver.jdbcCompliant()
+
+  def getParentLogger(): java.util.logging.Logger = this.driver.getParentLogger()
 }
 
 class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
@@ -58,6 +65,9 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   private[this] var initialSize = 5
   private[this] var maxWaitMillis = 5000
 
+  private[this] var isShutdown = false
+  private[this] var isStopProcessing = false
+
   //DataSource for the connection Pool
   private var dataSource: BasicDataSource = _
   private var executor: ExecutorService = _
@@ -74,17 +84,20 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   }
 
   override def Shutdown: Unit = lock.synchronized {
+    isShutdown = true
     StopProcessing
   }
 
   override def StopProcessing: Unit = lock.synchronized {
+    isStopProcessing = true
     LOG.debug("Initiating Stop Processing...")
 
     //Shutdown the executor
     if (executor != null) {
       executor.shutdownNow
       while (executor.isTerminated == false) {
-        Thread.sleep(100) // sleep 100ms and then check
+        // sleep 100ms and then check
+        Thread.sleep(100)
       }
     }
     executor = null
@@ -95,44 +108,127 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
     }
   }
 
-  override def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
-    LOG.debug("Initiating Start Processing...")
+  private def loadDriver: Unit = {
+    try {
+      if (LOG.isInfoEnabled) LOG.info("Loading the Driver..")
+      val d = Class.forName(dcConf.DriverName).newInstance.asInstanceOf[Driver]
+      if (LOG.isInfoEnabled) LOG.info("Registering Driver..")
+      DriverManager.registerDriver(new DbConsumerDriverShim(d));
+    } catch {
+      case e: Exception => {
+        LOG.error("Failed to load/register jdbc driver name:%s.".format(dcConf.DriverName), e)
+        throw e
+      }
+    }
+  }
 
-    LOG.debug("Configuration data - " + dcConf);
+  private def getBasicDataSource: BasicDataSource = {
+    try {
+      //Create a DBCP based Connection Pool Here
+      var dataSrc = new BasicDataSource
+
+      dataSrc.setDriverClassName(dcConf.DriverName)
+      dataSrc.setUrl(dcConf.URLString)
+      dataSrc.setUsername(dcConf.UserId);
+      dataSrc.setPassword(dcConf.Password);
+      dataSrc.setMaxTotal(maxActiveConnections);
+      dataSrc.setMaxIdle(maxIdleConnections);
+      dataSrc.setMinIdle(0);
+      dataSrc.setInitialSize(initialSize);
+      dataSrc.setMaxWaitMillis(maxWaitMillis);
+
+      dataSrc.setTestWhileIdle(false);
+      dataSrc.setTestOnBorrow(true);
+      dataSrc.setValidationQuery("Select 1");
+      dataSrc.setTestOnReturn(false);
+
+      return dataSrc
+    } catch {
+      case e: Exception => {
+        LOG.error("Failed to create BasicDataSource using DriverName:%s, URLString:%s, UserId:%s, Password:%s, maxActiveConnections:%d, maxIdleConnections:%d, initialSize:%d, maxWaitMillis:%d.".format(dcConf.DriverName, dcConf.URLString, dcConf.UserId, dcConf.Password, maxActiveConnections, maxIdleConnections, initialSize, maxWaitMillis), e)
+        throw e
+      }
+    }
+  }
+
+  private def getConnection: Connection = {
+    try {
+      var con = dataSource.getConnection
+      con
+    } catch {
+      case e: Exception => {
+        LOG.error("Failed to get connection", e)
+        throw e
+      }
+    }
+  }
+
+  override def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+    isShutdown = false
+    isStopProcessing = false
+
+    if (LOG.isDebugEnabled) LOG.debug("Initiating Start Processing...")
+
+    if (LOG.isDebugEnabled) LOG.debug("Configuration data - " + dcConf);
 
     if (partitionInfo == null || partitionInfo.size == 0)
       return
 
+    var startActionTime = System.currentTimeMillis
+    var waitTime = 5000
+
+    while (!isShutdown && !isStopProcessing) {
+      try {
+        loadDriver
+      } catch {
+        case e: Throwable => {
+          val timeDiff = System.currentTimeMillis - startActionTime
+          LOG.error("Failed to load driver. Waiting for %d ms and try again. Trying to load driver from past %d ms".format(waitTime, timeDiff), e);
+          try {
+            Thread.sleep(waitTime)
+          } catch {
+            case e: Throwable => {}
+          }
+          if (waitTime < 60000) {
+            waitTime *= 2
+            if (waitTime > 60000)
+              waitTime = 60000
+          }
+        }
+      }
+    }
+
+    if (isShutdown || isStopProcessing)
+      return
+
+    startActionTime = System.currentTimeMillis
+    waitTime = 5000
+
+    while (!isShutdown && !isStopProcessing) {
+      try {
+        dataSource = getBasicDataSource
+      } catch {
+        case e: Throwable => {
+          val timeDiff = System.currentTimeMillis - startActionTime
+          LOG.error("Failed to create BasicDataSource using DriverName:%s, URLString:%s, UserId:%s, Password:%s, maxActiveConnections:%d, maxIdleConnections:%d, initialSize:%d, maxWaitMillis:%d. Waiting for %d ms and try again. Trying to create BasicDataSource from past %d ms".format(dcConf.DriverName, dcConf.URLString, dcConf.UserId, dcConf.Password, maxActiveConnections, maxIdleConnections, initialSize, maxWaitMillis, waitTime, timeDiff), e)
+          try {
+            Thread.sleep(waitTime)
+          } catch {
+            case e: Throwable => {}
+          }
+          if (waitTime < 60000) {
+            waitTime *= 2
+            if (waitTime > 60000)
+              waitTime = 60000
+          }
+        }
+      }
+    }
+
+    if (isShutdown || isStopProcessing)
+      return
+
     executor = Executors.newFixedThreadPool(partitionInfo.length)
-
-    //Create a DBCP based Connection Pool Here
-    dataSource = new BasicDataSource
-
-    //Force a load of the DB Driver Class
-    Class.forName(dcConf.DriverName)
-    LOG.debug("Loaded the DB Driver..." + dcConf.DriverName)
-
-    dataSource.setDriverClassName(dcConf.DriverName)
-    dataSource.setUrl(dcConf.URLString)
-    dataSource.setUsername(dcConf.UserId);
-    dataSource.setPassword(dcConf.Password);
-
-    dataSource.setTestWhileIdle(false);
-    dataSource.setTestOnBorrow(true);
-    dataSource.setValidationQuery("Select 1");
-    dataSource.setTestOnReturn(false);
-
-    dataSource.setMaxTotal(maxActiveConnections);
-    dataSource.setMaxIdle(maxIdleConnections);
-    dataSource.setMinIdle(0);
-    dataSource.setInitialSize(initialSize);
-    dataSource.setMaxWaitMillis(maxWaitMillis);
-
-    //var conn:Connection = DriverManager.getConnection(dcConf.URLString+"/"+dcConf.dbName,dcConf.UserId,dcConf.Password)
-    //var conn:Connection = dataSource.getConnection
-    //LOG.debug("Created Connection..."+conn.toString())
-
-    LOG.debug("Created DataSource..." + dataSource.toString())
 
     var failedToCreateTasks = false
     partitionInfo.foreach(pInfo => {
@@ -248,7 +344,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
                   cntr += 1
 
-                  if (executor.isShutdown) {
+                  if (isShutdown || isStopProcessing || executor.isShutdown) {
                     break
                   }
                 }
