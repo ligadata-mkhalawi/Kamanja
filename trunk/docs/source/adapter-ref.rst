@@ -16,6 +16,8 @@ Adapter Reference Pages
      - Description
    * - :ref:`elastic-output-adapter-ref`
      - Output JSON data to :ref:`elasticsearch-term`
+   * - :ref:`oracle-output-adapter-ref`
+     - Output JSON data to an Oracle database
    * - :ref:`smart-input-config-ref`
      - ingest streaming messages automatically
    * - :ref:`smart-output-config-ref`
@@ -28,6 +30,7 @@ Adapter Reference Pages
    :maxdepth: 1
 
    adapter-ref/elastic-output
+   adapter-ref/OracleOutputAdapter
    adapter-ref/smart-input
    adapter-ref/smart-output
 

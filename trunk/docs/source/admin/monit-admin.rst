@@ -474,7 +474,41 @@ kamanjaClusterStatusCheck.sh
 kamanjaStatusCheck.sh
 ^^^^^^^^^^^^^^^^^^^^^
 
+::
+
+  #!/bin/bash
+
+  nodeIP=$1
+  operations=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@$nodeIP
+      'ps aux | grep java | grep com.ligadata.KamanjaManager.KamanjaManager |
+      grep -v "grep" | wc -l'`
+  if [ $operations -gt 0 ]
+  then
+  echo "Node is UP"
+  exit $?
+  else
+  echo "Node is DOWN"
+  sleep 30
+  fi
+
+
 remoteHostServerStatusCheck.sh
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  #!/bin/bash
+
+  nodeIP=$1
+  operations=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@$nodeIP 'ls / | wc -l'`
+  if [ $operations -gt 1 ]
+  then
+  echo "Machine is UP"
+  exit $?
+  else
+  echo "Machine is DOWN"
+  sleep 30
+  fi
+
 
 

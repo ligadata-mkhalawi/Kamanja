@@ -9,6 +9,10 @@ to export the JSON data from a Kamanja output adapter
 to the :ref:`ElasticSearch<elasticsearch-term>` engine.
 
 
+ClassName
+---------
+
+com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer$
 
 ElasticSearch Output Adapter structure
 --------------------------------------
