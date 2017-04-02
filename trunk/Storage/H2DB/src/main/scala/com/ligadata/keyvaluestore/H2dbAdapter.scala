@@ -30,7 +30,7 @@ import org.apache.commons.dbcp2.BasicDataSource
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scala.collection.mutable.TreeSet
-import com.ligadata.EncryptUtils._
+import com.ligadata.EncryptUtils.EncryptionUtil
 
 
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {

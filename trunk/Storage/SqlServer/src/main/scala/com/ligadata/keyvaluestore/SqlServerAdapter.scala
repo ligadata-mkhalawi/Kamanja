@@ -38,7 +38,7 @@ import java.sql.{ Driver, DriverPropertyInfo, SQLException }
 import java.sql.Timestamp
 import java.util.Properties
 import org.apache.commons.dbcp2.BasicDataSource
-import com.ligadata.EncryptUtils._
+import com.ligadata.EncryptUtils.EncryptionUtil
 
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {
   override def addURL(url: URL) {
