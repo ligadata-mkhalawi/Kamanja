@@ -111,5 +111,6 @@ class KafkaDataAccessAdapter(configJson: String) extends DataAccessAPI {
   def sendToKafka(key: Array[String], message: String, context: Any, callback: (Any, Any, String) => Unit) ={
     val reqId = java.util.UUID.randomUUID().toString
     addRequest(reqId, (context, callback))
+    requestTopic.send(key, Array(message.getBytes("UTF8")))
   }
 }

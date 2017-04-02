@@ -11,6 +11,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 
 /**
+  * Created by Yousef on 3/31/2017.
   */
 
 class SearchUtil(messageName: String) extends ObjectResolver{
