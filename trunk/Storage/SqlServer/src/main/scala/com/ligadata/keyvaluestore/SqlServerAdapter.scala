@@ -38,6 +38,7 @@ import java.sql.{ Driver, DriverPropertyInfo, SQLException }
 import java.sql.Timestamp
 import java.util.Properties
 import org.apache.commons.dbcp2.BasicDataSource
+import com.ligadata.EncryptUtils._
 
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {
   override def addURL(url: URL) {
@@ -182,9 +183,27 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     SchemaName = user
   }
 
+  var algorithm = None: Option[String];
+  if (parsed_json.contains("algorithm")) {
+    algorithm = Some(parsed_json.get("algorithm").get.toString.trim)
+  }
+
+  var publickey = None: Option[String];
+  if (parsed_json.contains("publickey")) {
+    publickey = Some(parsed_json.get("publickey").get.toString.trim)
+  }
+
   var password: String = null;
   if (parsed_json.contains("password")) {
-    password = parsed_json.get("password").get.toString.trim
+      password = parsed_json.get("password").get.toString.trim
+    if(publickey!= None && algorithm != None){
+      val sqlPassdecodedBytes = EncryptionUtil.decode(password);
+      password = EncryptionUtil.decrypt(algorithm, sqlPassdecodedBytes, publickey)
+    }else if(publickey == None && algorithm == None){
+      logger.warn("Using normal password without encryption");
+    }else{
+      throw CreateConnectionException("public key and algorithm should be in adapterConfig", new Exception("Invalid adapterConfig"))
+    }
   } else {
     throw CreateConnectionException("Unable to find password in adapterConfig ", new Exception("Invalid adapterConfig"))
   }

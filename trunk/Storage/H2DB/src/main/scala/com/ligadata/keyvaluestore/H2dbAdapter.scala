@@ -30,6 +30,7 @@ import org.apache.commons.dbcp2.BasicDataSource
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scala.collection.mutable.TreeSet
+import com.ligadata.EncryptUtils._
 
 
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {
@@ -193,9 +194,27 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
     SchemaName = user
   }
 
+  var algorithm = None: Option[String];
+  if (parsed_json.contains("algorithm")) {
+    algorithm = Some(parsed_json.get("algorithm").get.toString.trim)
+  }
+
+  var publickey = None: Option[String];
+  if (parsed_json.contains("publickey")) {
+    publickey = Some(parsed_json.get("publickey").get.toString.trim)
+  }
+
   var password: String = null;
   if (parsed_json.contains("password")) {
     password = parsed_json.get("password").get.toString.trim
+    if(publickey!= None && algorithm != None){
+      val sqlPassdecodedBytes = EncryptionUtil.decode(password);
+      password = EncryptionUtil.decrypt(algorithm, sqlPassdecodedBytes, publickey)
+    }else if(publickey == None && algorithm == None){
+      logger.warn("Using normal password without encryption");
+    }else{
+      throw CreateConnectionException("public key and algorithm should be in adapterConfig", new Exception("Invalid adapterConfig"))
+    }
   } else {
     logger.info("The User is not supplied in adapterConfig, defaults to " + "test")
     password = "test"
