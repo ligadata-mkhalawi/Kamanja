@@ -35,6 +35,7 @@ import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
 import com.ligadata.dataaccessapi.KafkaDataAccessAdapter
 import com.ligadata.dataaccessapi.{AttributeDef, AttributeGroupDef, DataContainerDef}
+import com.ligadata.dataaccessapi.SearchUtil
 import com.ligadata.kamanja.metadata._
 
 class MetadataAPIServiceActor extends Actor with MetadataAPIService {
@@ -193,34 +194,7 @@ trait MetadataAPIService extends HttpService {
                             }
                           }
                         }
-                      }~
-                        pathPrefix("data") {
-                          str => {
-                            pathEndOrSingleSlash {
-                              complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
-                            } ~
-                              path("input" / Rest) {
-                                str => {
-                                  logger.debug("PUT reqeust : data/input" + str)
-                                  val toknRoute = str.split("/")
-                                  val messageInfo = getMessageDefinitions(toknRoute(0))
-                                  if (toknRoute.size == 0 || toknRoute(0) == null) {
-                                    complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
-                                  } else if (!messageInfo._1){
-                                    complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "did not find %s message in metadata".format(toknRoute(0)))).toString))
-                                  } else {
-                                    val messageName = toknRoute(0)
-                                    val messageData = toknRoute(1)
-                                    entity(as[String]) {
-                                      reqBody => {
-                                        requestContext => processSetDataRequest(messageName, messageInfo._2, messageData, messageInfo._3, requestContext, user, password, role)
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                          }
-                        }
+                      }
                     } ~
                     post {
                       entity(as[String]) { reqBody =>
@@ -270,7 +244,37 @@ trait MetadataAPIService extends HttpService {
                             } else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString) }
                           }
                         }
-                      }
+                      }~
+                        entity(as[String]) { reqBody =>
+                          pathPrefix("data") {
+                            str => {
+                              pathEndOrSingleSlash {
+                                complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
+                              } ~
+                                path(Rest) {
+                                  str => {
+                                    logger.debug("POST reqeust : data" + str)
+                                    val toknRoute = str.split("/")
+                                    if (toknRoute.size == 0 || toknRoute(0) == null) {
+                                      complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
+                                    } else {
+                                      val searchObj = new SearchUtil(toknRoute(0))
+                                      if (!searchObj.checkMessagExisats(toknRoute(0))) {
+                                        complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "did not find %s message in metadata".format(toknRoute(0)))).toString))
+                                      } else {
+                                        parameterMap { params =>
+                                          val DeserializerFormat = searchObj.getDeserializerType(params.getOrElse("format", "").toString)
+                                          val msgBindingInfo = searchObj.ResolveDeserializer(toknRoute(0), DeserializerFormat,  null)
+                                          val partitionKey = searchObj.getMessageKey(toknRoute(0), reqBody, msgBindingInfo)
+                                          requestContext => processSetDataRequest(toknRoute(0), reqBody, partitionKey, requestContext, user, password, role)
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                            }
+                          }
+                        }
                     } ~
                     delete {
                       entity(as[String]) { reqBody =>
@@ -622,7 +626,6 @@ trait MetadataAPIService extends HttpService {
 
         daasApi.retrieve(dcDef.fullContainerName, projectList, key, filter, rContext, (ctx, result, status) => {
           val context = ctx.asInstanceOf[RequestContext]
-          //val res = result.asInstanceOf[Map[String, Any]]
           if(status == "1000")
             context.complete(result.asInstanceOf[String])
           else
@@ -667,58 +670,23 @@ trait MetadataAPIService extends HttpService {
   }
 
   /**
-    * This method used to check if message exists in our metadata
-    *
-    * @param messageName message name t find
-    * @return flag for message if exist && serializer && partitionKey
+    * used to push data in kafka topic
+    * @param messageFullName message name
+    * @param data record that pushed to kafka
+    * @param key partition key for message
+    * @param rContext rquest context
+    * @param userid user id
+    * @param password password for user
+    * @param role privilege  for user
     */
-  private def getMessageDefinitions(messageName: String): (Boolean, String, Array[String]) ={
-    val msgDefs: Option[scala.collection.immutable.Set[MessageDef]] = MdMgr.mdMgr.Messages(true, true)
-    if (msgDefs.isEmpty) {
-      (false, null, null)
-    } else {
-      for (message <- msgDefs.get) {
-        // check if case sensitive
-        if(messageName.equalsIgnoreCase(message.Name)){
-           val serializer = getSerializerDeserializer(message.FullName)
-          (true, serializer, message.cType.PartitionKey)
-        }
-      }
-    }
-    (false, null, null)
-  }
-
-  /**
-    * This method used to get serializer for message
-    *
-    * @param messageFullName message name to find serializer
-    * @return serializer of the message
-    */
-  private def getSerializerDeserializer(messageFullName: String): String = {
-    val adapterMessageMap: Map[String, AdapterMessageBinding] = MdMgr.mdMgr.AllAdapterMessageBindings
-    //val adapterDefs: Map[String, AdapterInfo] = MdMgr.mdMgr.Adapters
-    if(adapterMessageMap.size == 0){
-      logger.info("No adapter binding in metadata")
-      null
-    } else {
-      for (adapterMessage <- adapterMessageMap) {
-        if(adapterMessage._2.messageName.equalsIgnoreCase(messageFullName)){
-          logger.info("found adapter binding for %s message with %s serializer".format(messageFullName, adapterMessage._2.serializer))
-          adapterMessage._2.serializer
-        }
-      }
-    }
-    null
-  }
-
-  private def processSetDataRequest(messageFullName: String, SerializerInfo: String, data: String,key: Array[String], rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
-    // to-do push message to Kafka
-//    val adapterDefs: Map[String, AdapterInfo] = MdMgr.mdMgr.Adapters
-//    if(!adapterDefs.isEmpty){
-//      for(adapter <- adapterDefs){
-//        adapter._2.AdapterSpecificCfg
-//      }
-//    }
+  private def processSetDataRequest(messageFullName: String, data: String,key: Array[String], rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
+    daasApi.sendToKafka(key, data, rContext, (ctx, result, status)=> {
+      val context = ctx.asInstanceOf[RequestContext]
+      if(status == "1000")
+        context.complete(result.asInstanceOf[String])
+      else
+        context.complete(500, result.asInstanceOf[String])
+    })
   }
   }
 
