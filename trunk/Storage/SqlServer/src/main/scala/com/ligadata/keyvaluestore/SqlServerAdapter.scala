@@ -198,7 +198,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       password = parsed_json.get("password").get.toString.trim
     if(publickey!= None && algorithm != None){
       val sqlPassdecodedBytes = EncryptionUtil.decode(password);
-      password = EncryptionUtil.decrypt(algorithm, sqlPassdecodedBytes, publickey)
+      password = EncryptionUtil.decrypt(algorithm.get, sqlPassdecodedBytes, publickey.get)
     }else if(publickey == None && algorithm == None){
       logger.warn("Using normal password without encryption");
     }else{
