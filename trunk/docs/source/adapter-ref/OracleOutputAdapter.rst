@@ -4,7 +4,7 @@
 Oracle Output Adapter
 =====================
 
-The Oracle Output Adapter is a "ref:`smart-output-config-ref`
+The Oracle Output Adapter is a :ref:`smart-output-config-ref`
 that feeds the data to an Oracle database.
 
 
