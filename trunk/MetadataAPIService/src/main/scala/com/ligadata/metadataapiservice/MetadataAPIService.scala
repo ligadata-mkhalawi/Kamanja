@@ -251,17 +251,18 @@ trait MetadataAPIService extends HttpService {
                                     logger.debug("POST reqeust : data" + str)
                                     val toknRoute = str.split("/")
                                     if (toknRoute.size == 0 || toknRoute(0) == null) {
-                                      complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString))
+                                      complete(write((new DataApiResult("-1", APIName, "Unknown POST route", None, None))))
                                     } else {
                                       val searchObj = new SearchUtil(toknRoute(0))
-                                      if (!searchObj.checkMessagExists(toknRoute(0))) {
-                                        complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "did not find %s message in metadata".format(toknRoute(0)))).toString))
+                                      if (!searchObj.checkMessageExists(toknRoute(0))) {
+                                        complete(write(new DataApiResult("-1" , APIName, "did not find %s message in metadata".format(toknRoute(0)), None, None)))
                                       } else {
                                         parameterMap { params =>
                                           val DeserializerFormat = searchObj.getDeserializerType(params.getOrElse("format", "").toString)
-                                          val msgBindingInfo = searchObj.ResolveDeserializer(toknRoute(0), DeserializerFormat,  null)
+                                          val msgBindingInfo = searchObj.ResolveDeserializer(toknRoute(0), DeserializerFormat,  params.getOrElse("options", null).toString)
                                           val partitionKey = searchObj.getMessageKey(toknRoute(0), reqBody, msgBindingInfo)
-                                          requestContext => processSetDataRequest(toknRoute(0), reqBody, partitionKey, requestContext, user, password, role)
+                                          requestContext => processSetDataRequest(toknRoute(0), reqBody, partitionKey)
+                                            complete(write(new DataApiResult("success" , "0", "Sent Data", None, None)))
                                         }
                                       }
                                     }
@@ -667,19 +668,9 @@ trait MetadataAPIService extends HttpService {
     * @param messageFullName message name
     * @param data record that pushed to kafka
     * @param key partition key for message
-    * @param rContext rquest context
-    * @param userid user id
-    * @param password password for user
-    * @param role privilege  for user
     */
-  private def processSetDataRequest(messageFullName: String, data: String,key: Array[String], rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
-    daasApi.sendToKafka(key, data, rContext, (ctx, result, status)=> {
-      val context = ctx.asInstanceOf[RequestContext]
-      if(status == "1000")
-        context.complete(result.asInstanceOf[String])
-      else
-        context.complete(500, result.asInstanceOf[String])
-    })
+  private def processSetDataRequest(messageFullName: String, data: String,key: Array[String]): Unit = {
+    daasApi.sendToKafka(key, data)
   }
   }
 

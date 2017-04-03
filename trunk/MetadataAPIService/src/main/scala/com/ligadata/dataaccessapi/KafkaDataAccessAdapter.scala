@@ -32,23 +32,35 @@ class KafkaDataAccessAdapter(configJson: String) extends DataAccessAPI {
   //implicit val formats = DefaultFormats
   
   val pendingRequests = scala.collection.mutable.Map[String, (Any, (Any, Any, String) => Unit)]()
-  val config = parse(configJson).values.asInstanceOf[Map[String, Any]]
-  
+
+  var config: Map[String, Any]=_
+  try {
+    config = parse(configJson).values.asInstanceOf[Map[String, Any]]
+  } catch{
+    case e: Exception => log.warn("Did not pass DaasConig in MetadataAPIConfig.properties")
+  }
   val requestConfig = config.getOrElse("requestTopic", null)
   if(requestConfig == null)
     throw new Exception("Error in configuration: requestTopic needs to be specified.")
 
+  val inputConfig = config.getOrElse("inputTopic", null)
+  if(inputConfig == null)
+    throw new Exception("Error in configuration: inputTopic needs to be specified.")
+
   val responseConfig = config.getOrElse("responseTopic", null)
   if(responseConfig == null)
     throw new Exception("Error in configuration: responseTopic needs to be specified.")
-  
+
   var requestTopic: KafkaRequestSender = null
   var responseTopic: KafkaResponseReader = null
-  
+  var inputTopic: KafkaRequestSender = null
+
   def start() = {
     log.debug("Starting Kafka producer ")
     requestTopic = new KafkaRequestSender(requestConfig.asInstanceOf[Map[String, String]])
     requestTopic.start
+    inputTopic = new KafkaRequestSender(inputConfig.asInstanceOf[Map[String, String]])
+    inputTopic.start
     
     log.debug("Starting Kafka consumer ")
     responseTopic = new KafkaResponseReader(responseConfig.asInstanceOf[Map[String, String]])
@@ -58,6 +70,7 @@ class KafkaDataAccessAdapter(configJson: String) extends DataAccessAPI {
   def stop() = {    
     if(requestTopic != null) requestTopic.stop
     if(responseTopic != null) responseTopic.stop
+    if(inputTopic != null) inputTopic.stop
   }
   
   def addRequest(reqid: String, reqCtx: (Any, (Any, Any, String) => Unit)) = synchronized {
@@ -108,9 +121,12 @@ class KafkaDataAccessAdapter(configJson: String) extends DataAccessAPI {
     }
   }
 
-  def sendToKafka(key: Array[String], message: String, context: Any, callback: (Any, Any, String) => Unit) ={
-    val reqId = java.util.UUID.randomUUID().toString
-    addRequest(reqId, (context, callback))
-    requestTopic.send(key, Array(message.getBytes("UTF8")))
+  def sendToKafka(key: Array[String], message: String): Unit ={ // check context
+    if(key.length == 0) {
+      val reqId = java.util.UUID.randomUUID().toString
+      inputTopic.send(Array(reqId), Array(message.getBytes("UTF8")))
+    } else {
+      inputTopic.send(key, Array(message.getBytes("UTF8")))
+    }
   }
 }

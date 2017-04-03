@@ -4,6 +4,7 @@ import java.io.File
 
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.KamanjaBase.{ContainerFactoryInterface, _}
+import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
@@ -30,18 +31,14 @@ class SearchUtil(messageName: String) extends ObjectResolver {
   var isOk: Boolean = true
 
   if (typeNameCorrType == null || typeNameCorrType == None) {
+    logger.error("Not found valid type for " + messageName.toLowerCase)
+    isOk = false
+  } else {
     objFullName = typeNameCorrType.FullName.toLowerCase
   }
 
-  val cfgfile = "$KAMANJA_HOME/config/Engine1Config.properties"
-  val (loadConfigs, failStr) = Utils.loadConfiguration(cfgfile.toString, true)
-  if (failStr != null && failStr.size > 0) {
-    logger.error(failStr)
-    isOk = false
-  }
-
   if (isOk) {
-    SearchUtilConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
+    SearchUtilConfiguration.nodeId = MetadataAPIImpl.getMetadataAPI.GetMetadataAPIConfig.getProperty("NODE_ID".toLowerCase, "0").replace("\"", "").trim.toInt
     nodeInfo = mdMgr.Nodes.getOrElse(SearchUtilConfiguration.nodeId.toString, null)
   }
 
@@ -58,14 +55,14 @@ class SearchUtil(messageName: String) extends ObjectResolver {
     }
   }
 
-  if(isOk) {
-   isOk= LoadJarIfNeeded(typeNameCorrType, searchUtilLoder.loadedJars, searchUtilLoder.loader)
+  if (isOk) {
+    isOk = LoadJarIfNeeded(typeNameCorrType, searchUtilLoder.loadedJars, searchUtilLoder.loader)
   }
 
   var isMsg = false
   var isContainer = false
 
-  if(isOk) {
+  if (isOk) {
     var clsName = typeNameCorrType.PhysicalName.trim
     if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') // if no $ at the end we are taking $
       clsName = clsName + "$"
@@ -211,30 +208,31 @@ class SearchUtil(messageName: String) extends ObjectResolver {
     * @param messageName message name t find
     * @return flag for message if exist
     */
-  def checkMessagExists(messageName: String): Boolean ={
+  def checkMessageExists(messageName: String): Boolean = {
+    var flag = false
     val msgDefs: Option[scala.collection.immutable.Set[MessageDef]] = MdMgr.mdMgr.Messages(true, true)
     if (msgDefs.isEmpty) {
-      false
+      flag = false
     } else {
       for (message <- msgDefs.get) {
         // check if case sensitive
-        if(messageName.equalsIgnoreCase(message.FullName)){
-          true
+        if (messageName.equalsIgnoreCase(message.FullName)) {
+          flag = true
         }
       }
     }
-    false
+    flag
   }
 
   /**
     * deserialize message data
     *
-    * @param messageName message full name
+    * @param messageName  message full name
     * @param deserializer deserializer type
-    * @param optionsjson extra option for deserializer
+    * @param optionsjson  extra option for deserializer
     * @return message binding info
     */
-  def ResolveDeserializer(messageName: String, deserializer: String, optionsjson : String): MsgBindingInfo = {
+  def ResolveDeserializer(messageName: String, deserializer: String, optionsjson: String): MsgBindingInfo = {
     val serInfo = MdMgr.mdMgr.GetSerializer(deserializer)
     if (serInfo == null) {
       throw new KamanjaException(s"Not found Serializer/Deserializer for ${deserializer}", null)
@@ -274,17 +272,17 @@ class SearchUtil(messageName: String) extends ObjectResolver {
   /**
     * get partition key from message data
     *
-    * @param messageFullName message full name
-    * @param data data that used to extract partition key from it
+    * @param messageFullName    message full name
+    * @param data               data that used to extract partition key from it
     * @param messageBindingInfo message binding info includes desrializer type
     * @return patition key
     */
-  def getMessageKey(messageFullName : String, data: String, messageBindingInfo: MsgBindingInfo): Array[String] ={
+  def getMessageKey(messageFullName: String, data: String, messageBindingInfo: MsgBindingInfo): Array[String] = {
     if (messageBindingInfo == null || messageBindingInfo.serInstance == null) {
       throw new KamanjaException("Unable to resolve deserializer", null)
     }
     val message = messageBindingInfo.serInstance.deserialize(data.getBytes, messageFullName)
-    val partitionKey:Array[String] = message.getPartitionKey
+    val partitionKey: Array[String] = message.getPartitionKey
     partitionKey
   }
 
@@ -294,49 +292,12 @@ class SearchUtil(messageName: String) extends ObjectResolver {
     * @param format json or delimited
     * @return deserializer type
     */
-  def getDeserializerType(format: String): String ={
-    if(format.equalsIgnoreCase("json")){
+  def getDeserializerType(format: String): String = {
+    if (format.equalsIgnoreCase("json")) {
       "com.ligadata.kamanja.serializer.jsonserdeser"
     } else {
       "com.ligadata.kamanja.serializer.csvserdeser"
     }
-  }
-
-  /**
-    * create message data
-    *
-    * @param Messagename message full name
-    * @param formatOption deserializer type
-    * @param payLoad data to insert
-    * @return message data as json format
-    */
-  def makeMessage(Messagename: String, formatOption: String, payLoad: String): String ={
-    val json = (
-      ("MsgType" -> Messagename)~
-        ("FormatOption" -> formatOption)~
-        ("PayLoad" -> payLoad)
-      )
-    compact(render(json))
-  }
-
-  /**
-    * create adapter binding for message
-    *
-    * @param adapterName adapter name in cluster config
-    * @param deserializerType deserializer type
-    * @param messageName message full name
-    * @return adapter binding
-    */
-  def prepareAdapterBinding(adapterName: String, deserializerType: String, messageName: String): String ={
-    val adapterBinding = "{ \"AdapterName\": \"%s\",".format(adapterName) +
-      "   \"MessageNames\": [   " +
-      "\"%ss\"    ],   ".format(messageName) +
-      " \"Serializer\": \"%s\",".format(deserializerType) +
-      "    \"Options\": {" +
-      "      \"alwaysQuoteFields\": false," +
-      "      \"fieldDelimiter\": \",\"" +
-      "   }"
-    adapterBinding
   }
 }
 
