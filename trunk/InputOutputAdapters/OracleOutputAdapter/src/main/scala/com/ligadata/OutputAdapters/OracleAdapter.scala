@@ -48,7 +48,7 @@ class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoa
   }
 }
 
-class DriverShim(d: Driver) extends Driver {
+class OraDriverShim(d: Driver) extends Driver {
   private var driver: Driver = d
 
   def connect(u: String, p: Properties): Connection = this.driver.connect(u, p)
@@ -187,10 +187,10 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   }
 
   var schemaName: String = null;
-  if (parsed_json.contains("SchemaName")) {
-    schemaName = parsed_json.get("SchemaName").get.toString.trim
+  if (parsed_json.contains("schemaName")) {
+    schemaName = parsed_json.get("schemaName").get.toString.trim
   } else {
-    logger.info("The SchemaName is not supplied in adapterConfig, defaults to " + user)
+    logger.info("The schemaName is not supplied in adapterConfig, defaults to " + user)
     schemaName = user
   }
 
@@ -273,29 +273,31 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     appendOnly = parsed_json.get("appendOnly").get.toString.trim
   }
 
+  var jdbcUrl = "jdbc:oracle:thin:@" + hostname + ":" + portNumber + ":" + sid;
+
 
   logger.info("hostname => " + hostname)
   logger.info("username => " + user)
   logger.info("schemaName => " + schemaName)
   logger.info("jarpaths => " + jarpaths)
   logger.info("jdbcJar  => " + jdbcJar)
+  logger.info("jdbcUrl  => " + jdbcUrl)
   logger.info("autoCreateTables  => " + autoCreateTables)
   logger.info("externalDDLOnly  => " + externalDDLOnly)
   logger.info("appendOnly  => " + appendOnly)
 
-  var jdbcUrl = "jdbc:oracle:thin:@//" + hostname + ":" + portNumber + "/" + sid;
 
   var jars = new Array[String](0)
   var jar = jarpaths + "/" + jdbcJar
   jars = jars :+ jar
 
-  val driverType = "oracle.jdbc.driver.OracleDriver";
+  val driverType = "oracle.jdbc.OracleDriver";
   try {
     logger.info("Loading the Driver..")
     LoadJars(jars)
     val d = Class.forName(driverType, true, clsLoader).newInstance.asInstanceOf[Driver]
-    logger.info("Registering Driver..")
-    DriverManager.registerDriver(new DriverShim(d));
+    logger.info("Registering Driver.." + d)
+    DriverManager.registerDriver(new OraDriverShim(d));
   } catch {
     case e: Exception => {
       msg = "Failed to load/register jdbc driver name:%s.".format(driverType)
@@ -303,11 +305,16 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
+  val userprops = new Properties();
+  userprops.setProperty("user", user);
+  userprops.setProperty("password", password);
+
   // setup connection pooling using apache-commons-dbcp2
   logger.info("Setting up jdbc connection pool ..")
   var dataSource: BasicDataSource = null
   try {
     dataSource = new BasicDataSource
+    dataSource.setDriverClassName(driverType);
     dataSource.setUrl(jdbcUrl)
     dataSource.setUsername(user)
     dataSource.setPassword(password)
@@ -317,6 +324,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     dataSource.setMaxWaitMillis(maxWaitMillis);
     dataSource.setTestOnBorrow(true);
     dataSource.setValidationQuery("SELECT 1 from dual");
+    //dataSource.getConnection();
   } catch {
     case e: Exception => {
       msg = "Failed to setup connection pooling using apache-commons-dbcp."
@@ -407,7 +415,10 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 
   private def getConnection: Connection = {
     try {
-      var con = dataSource.getConnection
+      //var con = dataSource.getConnection();
+      // Pool Creation using dbcp2 library is creating problems
+      // So obtaining the connection without using the pool
+      val con = DriverManager.getConnection(jdbcUrl, userprops);
       con
     } catch {
       case e: Exception => {
@@ -620,7 +631,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
-  def createAnyTable(containerName: String, columnNames: Array[String], columnTypes: Array[String], keyColumns: Array[String], apiType:String): Unit = {
+  def createTable(containerName: String, columnNamesAndTypes: Array[(String,String)], keyColumns: Array[String], apiType:String): Unit = {
     var con: Connection = null
     var stmt: Statement = null
     var tableName = toTableName(containerName)
@@ -644,17 +655,16 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
             }
           }
         }
-	if( columnNames.length == 0 || columnTypes.length == 0 || 
-	    columnNames.length != columnTypes.length ){
-          throw new Exception("The parameters columnNames and columnTypes must be equal in size and greater than zero");
+	if( columnNamesAndTypes.length == 0 ){
+          throw new Exception("The parameters columnNamesAndTypes should have atleast one entry");
 	}
         query.append("create table ");
 	query.append(fullTableName)
 	query.append("(");
 	var i = 0;
-	for( i  <-  0 to  columnNames.length - 1){
-	  val col = columnNames(i);
-	  val typ = columnTypes(i);
+	for( i  <-  0 to  columnNamesAndTypes.length - 1){
+	  val col = columnNamesAndTypes(i)._1;
+	  val typ = columnNamesAndTypes(i)._2;
 	  query.append(col);
 	  query.append(" ");
 	  query.append(typ);
@@ -670,7 +680,9 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
         stmt.close;
 
 	// create primary key as well
-	createIndex(containerName, keyColumns, apiType);
+	if( keyColumns != null && keyColumns.length > 0 ){
+	  createIndex(containerName, keyColumns, apiType);
+	}
       }
     } catch {
       case e: Exception => {
@@ -727,6 +739,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   }
 
   // delete can be improved to pass only key values
+  // Assumption: rowColumnValues contains values for all columns of the table
+  // in the same order as the columns in the table
   private def delete(con: Connection, containerName: String, columnNames:Array[String], 
 		     rowColumnValues: Array[Array[(String,String)]]): Unit = {
     var pstmt: PreparedStatement = null
@@ -737,7 +751,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     try {
       query.append("delete from ");
       query.append(tableName);
-      var whereClauseColumns = columnNames;
+      val whereClauseColumns = columnLists(tableName.toUpperCase());
       query.append(" where ");
       whereClauseColumns.foreach( x => {
 	query.append(x);
@@ -759,8 +773,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	  logger.debug("colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
           colType match{
 	    case "NUMBER" => {
-	      val f = java.lang.Long.parseLong(colValue);
-	      pstmt.setLong(colIndex,f);
+	      val f = java.lang.Double.parseDouble(colValue);
+	      pstmt.setDouble(colIndex,f);
 	    }
 	    case "VARCHAR2" => {
 	      pstmt.setString(colIndex,colValue);
@@ -803,6 +817,9 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     }
   }
 
+  // Assumption: rowColumnValues contains values for all columns of the table
+  // in the same order as the columns in the table
+  // Need to be improved..
   def put(containerName: String, columnNames:Array[String],
 	  rowColumnValues: Array[Array[(String,String)]]): Unit = {
     var con: Connection = null
@@ -816,11 +833,14 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
       con = getConnection
       // we need to commit entire batch
       con.setAutoCommit(false)
+      getColumnTypes(tableName);
+
+      val insertColumns = columnLists(tableName.toUpperCase());
 
       query.append("insert into ");
       query.append(tableName);
       query.append("(");
-      columnNames.foreach( x => {
+      insertColumns.foreach( x => {
 	query.append(x);
 	query.append(",");
 	values_str.append("?,");
@@ -833,7 +853,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 
       logger.info("query => %s".format(query.toString()));
       pstmt = con.prepareStatement(query.toString())
-      getColumnTypes(tableName);
+
 
       rowColumnValues.foreach( row => {
 	var colIndex = 0;
@@ -845,8 +865,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	  logger.debug("colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
           colType match{
 	    case "NUMBER" => {
-	      val f = java.lang.Long.parseLong(colValue);
-	      pstmt.setLong(colIndex,f);
+	      val f = java.lang.Double.parseDouble(colValue);
+	      pstmt.setDouble(colIndex,f);
 	    }
 	    case "VARCHAR2" => {
 	      pstmt.setString(colIndex,colValue);
@@ -950,8 +970,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	  logger.debug("Setting up where clause: colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
           colType match{
 	    case "NUMBER" => {
-	      val f = java.lang.Long.parseLong(colValue);
-	      pstmt.setLong(colIndex,f);
+	      val f = java.lang.Double.parseDouble(colValue);
+	      pstmt.setDouble(colIndex,f);
 	    }
 	    case "VARCHAR2" => {
 	      pstmt.setString(colIndex,colValue);

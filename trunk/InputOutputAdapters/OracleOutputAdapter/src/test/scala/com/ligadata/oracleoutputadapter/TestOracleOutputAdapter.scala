@@ -75,7 +75,7 @@ object ParameterContainer extends RDDObject[ParameterContainer] with ContainerFa
     val tmInfo = getTimePartitionInfo();
     return (tmInfo != null && tmInfo.getTimePartitionType != TimePartitionInfo.TimePartitionType.NONE);
   }
-  override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.oracleoutputadapter.test" , "name" : "ParameterContainer" , "fields":[{ "name" : "id" , "type" : "int"},{ "name" : "name" , "type" : "string"},{ "name" : "value" , "type" : "string"}]}""";
+  override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.oracleoutputadapter.test" , "name" : "ParameterContainer" , "fields":[{ "name" : "id" , "type" : "int"},{ "name" : "name" , "type" : "string"},{ "name" : "value" , "type" : "string"}, { "name" : "altername" , "type" : "string"}, { "name" : "alterid" , "type" : "double"}]}""";
 
   final override def convertFrom(srcObj: Any): T = convertFrom(createInstance(), srcObj);
 
@@ -103,10 +103,12 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
   var attributeTypes = generateAttributeTypes;
 
   private def generateAttributeTypes(): Array[AttributeTypeInfo] = {
-    var attributeTypes = new Array[AttributeTypeInfo](3);
+    var attributeTypes = new Array[AttributeTypeInfo](5);
     attributeTypes(0) = new AttributeTypeInfo("id", 0, AttributeTypeInfo.TypeCategory.INT, -1, -1, 0)
     attributeTypes(1) = new AttributeTypeInfo("name", 1, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
     attributeTypes(2) = new AttributeTypeInfo("value", 2, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
+    attributeTypes(3) = new AttributeTypeInfo("altername", 3, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
+    attributeTypes(4) = new AttributeTypeInfo("alterid", 4, AttributeTypeInfo.TypeCategory.DOUBLE, -1, -1, 0)
 
     return attributeTypes
   }
@@ -135,6 +137,8 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
   var id: Int = _;
   var name: String = _;
   var value: String = _;
+  var altername: String = _;
+  var alterid: Double = _;
   
   override def get(index: Int): AnyRef = { 
     try {
@@ -142,6 +146,8 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
         case 0 => return this.id.asInstanceOf[AnyRef];
         case 1 => return this.name.asInstanceOf[AnyRef];
         case 2 => return this.value.asInstanceOf[AnyRef];
+        case 3 => return this.altername.asInstanceOf[AnyRef];
+        case 4 => return this.alterid.asInstanceOf[AnyRef];
 
         case _ => throw new Exception(s"$index is a bad index for message ParameterContainer");
       }
@@ -203,11 +209,13 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
   }
 
   override def getAllAttributeValues(): Array[AttributeValue] = { 
-    var attributeVals = new Array[AttributeValue](3);
+    var attributeVals = new Array[AttributeValue](5);
     try {
       attributeVals(0) = new AttributeValue(this.id, keyTypes("id"))
       attributeVals(1) = new AttributeValue(this.name, keyTypes("name"))
       attributeVals(2) = new AttributeValue(this.value, keyTypes("value"))
+      attributeVals(3) = new AttributeValue(this.altername, keyTypes("altername"))
+      attributeVals(4) = new AttributeValue(this.alterid, keyTypes("alterid"))
     } catch {
       case e: Exception => {
         throw e
@@ -249,6 +257,16 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
         case 2 => {
           if (value.isInstanceOf[String])
             this.value = value.asInstanceOf[String];
+          else throw new Exception(s"Value is the not the correct type for field eventepochtime in message ParameterContainer")
+        }
+        case 3 => {
+          if (value.isInstanceOf[String])
+            this.altername = value.asInstanceOf[String];
+          else throw new Exception(s"Value is the not the correct type for field eventepochtime in message ParameterContainer")
+        }
+        case 4 => {
+          if (value.isInstanceOf[Double])
+            this.alterid = value.asInstanceOf[Double];
           else throw new Exception(s"Value is the not the correct type for field eventepochtime in message ParameterContainer")
         }
 
@@ -306,6 +324,8 @@ class TestOracleOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAnd
 	inst.set("id",i)
 	inst.set("name","parameter" + i)
 	inst.set("value","value" + i)
+	inst.set("altername","altername" + i)
+	inst.set("alterid",i.asInstanceOf[Double])
 	instances += inst
       }
       oa.send(null, instances.toArray)

@@ -97,6 +97,21 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
     return ""
   }
 
+  /*
+   			case 0: TypeCategory.INT;
+			case 1: TypeCategory.STRING;
+			case 2: TypeCategory.FLOAT;
+			case 3: TypeCategory.DOUBLE;
+			case 4: TypeCategory.LONG;
+			case 5: TypeCategory.BYTE;
+			case 6: TypeCategory.CHAR;
+			case 7: TypeCategory.BOOLEAN;
+			case 1001: TypeCategory.CONTAINER;
+			case 1002: TypeCategory.MESSAGE;
+			case 1003: TypeCategory.ARRAY;
+			default: TypeCategory.NONE;
+  */
+
   private def typeCategoryToOracleType(typeCategoryValue: Int) : String = {
     typeCategoryValue match {
       case 0 => "NUMBER"
@@ -106,7 +121,7 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
       case 4 => "NUMBER"
       case 5 => "NUMBER"
       case 6 => "CHAR(1)"
-      case 7 => "NUMBER(1)"
+      case 7 => "VARCHAR2(5)" // A Boolean attribute translates to a string 'true' or 'false'
       case 1001 => "CONTAINER"
       case 1002 => "MESSAGE"
       case 1003 => "ARRAY"
@@ -146,20 +161,20 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
 	  val container = kv._2(0);
 	  val columns   = container.getAttributeNames();
 	  val attrTypes   = container.getAttributeTypes();
-	  var colTypes = new Array[String](0);
-	  attrTypes.foreach(a =>{
+	  var colNamesAndTypes = new Array[(String,String)](0);
+	  attrTypes.foreach(a => {
 	    val ati = container.getAttributeType(a.getName);
 	    val typeCategoryValue = ati.getTypeCategory().getValue();
 	    var colType = typeCategoryToOracleType(typeCategoryValue);
 	    if( colType == null ){
-	      throw new Exception("The typeCategory %d is not supported ".format(typeCategoryValue));
+	      throw new Exception("The typeCategory %d for the column %s is not supported ".format(typeCategoryValue,a));
 	    }
-	    colTypes = colTypes :+ colType;
+	    colNamesAndTypes = colNamesAndTypes :+ (a.getName,colType);
 	  })
 	  
 	  keyColumns = container.getPrimaryKeyNames();
 	  keyColumns.foreach(k => { logger.info("key column => %s".format(k)) })
-	  oracleAdapter.createAnyTable(container.getTypeName(),columns,colTypes, keyColumns,"ddl");
+	  oracleAdapter.createTable(container.getTypeName(),colNamesAndTypes, keyColumns,"ddl");
 
 	  // populate rows
 	  var rowColumnValues = new Array[Array[(String,String)]](0)
@@ -169,8 +184,9 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
 	    var fieldValues = new Array[(String,String)](0)
 	    fields.foreach(fld => {
 	      val fn = fld.getValueType().getName();
-	      val fv = fld.getValue().toString()
-	      fieldValues = fieldValues :+ (fn,fv)
+	      val fv = fld.getValue().toString();
+	      logger.info("fn => %s,fv => %s".format(fn,fv));
+	      fieldValues = fieldValues :+ (fn,fv);
 	    });
 	    rowColumnValues = rowColumnValues :+ fieldValues;
 	  })

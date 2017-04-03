@@ -119,12 +119,13 @@ class TestOracleAdapter extends FunSpec with BeforeAndAfter with BeforeAndAfterA
       And("Create a Random Table " + containerName)
 
       val tableName = oracleAdapter.toTableName(containerName)
-      val columnNames = Array("name","address","cellNumber")
-      val columnTypes = Array("varchar2(30)","varchar2(100)","number")
+      val columnNames = Array("name","address","cellNumber");
+      val columnNamesAndTypes = Array(("name","varchar2(30)"),("address","varchar2(100)"),("cellNumber","number"));
+      //val columnTypes = Array("varchar2(30)","varchar2(100)","number")
       val keyColumns = Array("name");
 
       noException should be thrownBy {
-        oracleAdapter.createAnyTable(containerName,columnNames,columnTypes,keyColumns,"ddl")
+        oracleAdapter.createTable(containerName,columnNamesAndTypes,keyColumns,"ddl")
       }
 
       And("Truncate the table(if table already exists, empty the table )");
