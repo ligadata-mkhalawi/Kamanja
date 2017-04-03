@@ -292,12 +292,14 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   jars = jars :+ jar
 
   val driverType = "oracle.jdbc.OracleDriver";
+  var driverShim:OraDriverShim = null;
   try {
     logger.info("Loading the Driver..")
     LoadJars(jars)
     val d = Class.forName(driverType, true, clsLoader).newInstance.asInstanceOf[Driver]
     logger.info("Registering Driver.." + d)
-    DriverManager.registerDriver(new OraDriverShim(d));
+    driverShim = new OraDriverShim(d);
+    DriverManager.registerDriver(driverShim);
   } catch {
     case e: Exception => {
       msg = "Failed to load/register jdbc driver name:%s.".format(driverType)
@@ -314,7 +316,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   var dataSource: BasicDataSource = null
   try {
     dataSource = new BasicDataSource
-    dataSource.setDriverClassName(driverType);
+    dataSource.setDriver(driverShim);
+    //dataSource.setDriverClassName(driverType);
     dataSource.setUrl(jdbcUrl)
     dataSource.setUsername(user)
     dataSource.setPassword(password)
@@ -415,10 +418,11 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 
   private def getConnection: Connection = {
     try {
-      //var con = dataSource.getConnection();
+      // get connection from the pool
+      var con = dataSource.getConnection();
       // Pool Creation using dbcp2 library is creating problems
       // So obtaining the connection without using the pool
-      val con = DriverManager.getConnection(jdbcUrl, userprops);
+      // val con = DriverManager.getConnection(jdbcUrl, userprops);
       con
     } catch {
       case e: Exception => {
