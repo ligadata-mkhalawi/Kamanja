@@ -188,18 +188,18 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     algorithm = Some(parsed_json.get("algorithm").get.toString.trim)
   }
 
-  var publickey = None: Option[String];
-  if (parsed_json.contains("publickey")) {
-    publickey = Some(parsed_json.get("publickey").get.toString.trim)
+  var privatekey = None: Option[String];
+  if (parsed_json.contains("privatekey")) {
+    privatekey = Some(parsed_json.get("privatekey").get.toString.trim)
   }
 
   var password: String = null;
   if (parsed_json.contains("password")) {
       password = parsed_json.get("password").get.toString.trim
-    if(publickey!= None && algorithm != None){
+    if(privatekey!= None && algorithm != None){
       val sqlPassdecodedBytes = EncryptionUtil.decode(password);
-      password = EncryptionUtil.decrypt(algorithm.get, sqlPassdecodedBytes, publickey.get)
-    }else if(publickey == None && algorithm == None){
+      password = EncryptionUtil.decrypt(algorithm.get, sqlPassdecodedBytes, privatekey.get)
+    }else if(privatekey == None && algorithm == None){
       logger.warn("Using normal password without encryption");
     }else{
       throw CreateConnectionException("public key and algorithm should be in adapterConfig", new Exception("Invalid adapterConfig"))
