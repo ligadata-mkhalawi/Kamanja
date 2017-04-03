@@ -217,6 +217,8 @@ cp $ivyPath/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $
 
 cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.10/elasticsearchinputoutputadapters_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Storage/Elasticsearch/target/scala-2.10/elasticsearch_2.10-${currentKamanjaVersion}.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.10/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 # copy fat jars to KamanjaInstall
 cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
@@ -620,6 +622,8 @@ cp $ivyPath/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $
 
 cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.11/elasticsearchinputoutputadapters_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Storage/Elasticsearch/target/scala-2.11/elasticsearch_2.11-${currentKamanjaVersion}.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.11/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 # copy jars used to reduce package size
 cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
