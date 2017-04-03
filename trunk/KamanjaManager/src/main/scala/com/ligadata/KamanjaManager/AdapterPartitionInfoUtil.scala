@@ -11,20 +11,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.io.Source
 import scala.io.Source._
 
-case class AdapterPartKeyValues(var key: String, var keyValue: String)
+case class AdapterPartKeyValues(var key: String, var keyvalue: String)
 
-case class PartitionKeyValuesInfo(var nodeid: String, var uuid: String, var nodestarttime: Long, var uniquecounter: Long, var keyvalues: Array[(String, String)])
+case class PartitionKeyValuesInfo(var nodeid: String, var uuid: String, var nodestarttime: Long, var uniquecounter: Long, var keyvalues: Array[AdapterPartKeyValues])
+
+case class PartitionKeyValues(var key: String, var keyvalue: String, var nodeid: String, var uuid: String, var nodestarttime: Long, var uniquecounter: Long)
+
+case class PartKeyValues(var keyvalues: Array[PartitionKeyValues])
+
+case class NodeInfo(var NodeId: String, var UUID: String)
 
 object AdapterPartitionInfoUtil {
   private[this] val LOG = LogManager.getLogger(getClass);
   private var guid: String = ""
   private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
-
-  private var counter: Long = 0
-  def increment = {
-    counter = counter + 1;
-    counter
-  }
 
   val file = "/adapterinfo.json"
   val backupfile1 = "/adapterinfo_bkup1.json"
@@ -33,7 +33,7 @@ object AdapterPartitionInfoUtil {
   val backupfile4 = "/adapterinfo_bkup4.json"
   val backupfile5 = "/adapterinfo_bkup5.json"
 
-  def generateAdapterInfoJson_Old(uuid: String, nodeId: String, nodestarttime: Long, adapterinfoMap: scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]): String = {
+  def generateAdapterInfoJson_Old(uuid: String, nodeId: String, nodestarttime: Long, adapterinfoMap: scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]], increment: Long): String = {
     var adapterInfoString: String = ""
 
     val json = ("uuid" -> uuid) ~
@@ -44,16 +44,9 @@ object AdapterPartitionInfoUtil {
         ("adaptername" -> adapinfo._1) ~
           ("keyvalues" -> adapinfo._2.toList.map(kv =>
             ("key" -> kv.key) ~
-              ("value" -> kv.keyValue)))));
+              ("value" -> kv.keyvalue)))));
 
     adapterInfoString = compact(render(json))
-
-    if (adapterinfoMap != null && adapterinfoMap.size > 0) {
-      adapterinfoMap.foreach(adapInfo => {
-        println("2 adapInfo._1" + adapInfo._1)
-        println(adapInfo._2.map(a => println("2key values: " + a.key + " : " + a.keyValue)))
-      })
-    }
     adapterInfoString
   }
 
@@ -66,8 +59,8 @@ object AdapterPartitionInfoUtil {
       ("nodestarttime" -> paritionKeyValues.nodestarttime) ~
       ("nodeid" -> paritionKeyValues.nodeid) ~
       ("keyvalues" -> paritionKeyValues.keyvalues.toList.map(kv =>
-        ("key" -> kv._1) ~
-          ("value" -> kv._2)));
+        ("key" -> kv.key) ~
+          ("keyvalue" -> kv.keyvalue)));
 
     adapterInfoString = compact(render(json))
     adapterInfoString
@@ -78,76 +71,67 @@ object AdapterPartitionInfoUtil {
     return guid
   }
 
-  def writeToFile(allPartitions: scala.collection.mutable.ArrayBuffer[JValue], nodeadapterInfoPath: String): Unit = {
-    if (nodeadapterInfoPath.equalsIgnoreCase(null)) {
-      LOG.error("nodeadapterInfoPath should not be null for select operation")
-    } else {
-      if (!allPartitions.isEmpty) {
-        val filename = nodeadapterInfoPath + file
-        val finaljson = allPartitions.map { key =>
-          (key)
-        }
-        new PrintWriter(filename) {
-          write(pretty(render(finaljson)));
-          close
-        }
+  def writeToFile(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], nodeadapterInfoPath: String): Unit = {
+    try {
+      if (nodeadapterInfoPath.equalsIgnoreCase(null)) {
+        LOG.error("nodeadapterInfoPath should not be null for select operation")
       } else {
-        LOG.error("no data retrieved")
+        if (!allPartitions.isEmpty) {
+          val filename = nodeadapterInfoPath + file
+          val finaljson = generatePartitionInfoJson(allPartitions)
+          new PrintWriter(filename) {
+            write(finaljson);
+            close
+          }
+        } else {
+          LOG.error("no data retrieved")
+        }
       }
+    } catch {
+      case e: Exception => LOG.debug("AdapterPartitionInfoUtil - writeToFile " + e.getMessage)
     }
   }
 
-  /*  read to local map from local drive 
-  def readfromFile(nodeId: String, localDriveLocation: String, adapPartitionMap: scala.collection.mutable.Map[String, String]) = {
-    //  get the file from local drive
-    //  add to the map
-    var location: String = ""
-    var adapterpartitioninfo: String = ""
-    if (!localDriveLocation.endsWith("/"))
-      location = localDriveLocation + "/"
-    else
-      location = localDriveLocation
-    val fileStr = location + nodeId + file
-    println("fileStr" + fileStr)
-    if (fileExist(fileStr)) {
-      adapterpartitioninfo = readFile(fileStr)
-      //  val mapOriginal = parse(adapterpartitioninfo).values.asInstanceOf[scala.collection.immutable.List[Any]]
-      val mapOriginal = parse(adapterpartitioninfo)
-      val children = mapOriginal.children
-      if (children != null) {
-        children.foreach(child => {
-          println("child" + child)
-          val nodeidJStr = child \ "nodeid"
-          val nodeid = nodeidJStr.values.toString()
-          println("nodeid " + nodeid)
-          val json = pretty(render(child))
-          if (nodeid != null && nodeid.trim().length() > 0 && json != null) {
-            adapPartitionMap(nodeid) = json
-          }
-        })
-      }
-    } else println("file do not exists")   
-  }*/
+  private def generatePartitionInfoJson(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)]): String = {
+
+    var adapterInfoString: String = ""
+    val guid = setGuid(System.currentTimeMillis())
+
+    val json = ("keyvalues" -> allPartitions.map(kv =>
+      ("key" -> kv._1) ~
+        ("keyvalue" -> kv._2._1) ~
+        ("nodeid" -> kv._2._2) ~
+        ("uuid" -> kv._2._3) ~
+        ("nodestarttime" -> kv._2._4) ~
+        ("uniquecounter" -> kv._2._5)));
+
+    adapterInfoString = compact(render(json))
+    adapterInfoString
+  }
 
   /* read to local map from local drive */
   def readfromFile(nodeId: String, localDriveLocation: String): String = {
     //  get the file from local drive
     //  add to the map
+
     var location: String = ""
     var adapterpartitioninfo: String = ""
-    if (!localDriveLocation.endsWith("/"))
-      location = localDriveLocation + "/"
-    else
-      location = localDriveLocation
-    val fileStr = location + nodeId + file
-    println("fileStr" + fileStr)
-    if (fileExist(fileStr)) {
-      adapterpartitioninfo = readFile(fileStr)
+    try {
+      if (!localDriveLocation.endsWith("/"))
+        location = localDriveLocation + "/"
+      else
+        location = localDriveLocation
+      val fileStr = location + nodeId + file
+      if (fileExist(fileStr)) {
+        adapterpartitioninfo = readFile(fileStr)
+      }
+    } catch {
+      case e: Exception => LOG.debug("AdapterPartitionInfoUtil - readfromFile " + e.getMessage)
     }
     return adapterpartitioninfo
   }
 
-  def readFile(filePath: String): String = { //This method used to read a whole file (from header && pmml)
+  def readFile(filePath: String): String = {
     return fromFile(filePath).mkString
   }
 
@@ -155,65 +139,36 @@ object AdapterPartitionInfoUtil {
     return new java.io.File(filePath).exists
   }
 
-  def takeBackUpAndWriteToFile(allPartitions: scala.collection.mutable.ArrayBuffer[JValue], nodeadapterInfoPath: String): Unit = {
+  def takeBackUpAndWriteToFile(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], nodeadapterInfoPath: String): Unit = {
+    var localAllPartitions = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
     try {
       lock.writeLock().lock();
-      {
-        if (fileExist(nodeadapterInfoPath + backupfile5))
-          deleteFile(nodeadapterInfoPath + backupfile5)
-        if (fileExist(nodeadapterInfoPath + backupfile4)) {
-          val str = Source.fromFile(nodeadapterInfoPath + backupfile4).mkString;
-          val pw = new PrintWriter(new File(nodeadapterInfoPath + backupfile5))
-          pw.write(str)
-          pw.close
-        }
-      };
-      {
-        if (fileExist(nodeadapterInfoPath + backupfile4))
-          deleteFile(nodeadapterInfoPath + backupfile4)
-        if (fileExist(nodeadapterInfoPath + backupfile3)) {
-          val str = Source.fromFile(nodeadapterInfoPath + backupfile3).mkString;
-          val pw = new PrintWriter(new File(nodeadapterInfoPath + backupfile4))
-          pw.write(str)
-          pw.close
-        }
-      };
-      {
-        if (fileExist(nodeadapterInfoPath + backupfile3))
-          deleteFile(nodeadapterInfoPath + backupfile3)
-        if (fileExist(nodeadapterInfoPath + backupfile2)) {
-          val str = Source.fromFile(nodeadapterInfoPath + backupfile2).mkString;
-          val pw = new PrintWriter(new File(nodeadapterInfoPath + backupfile3))
-          pw.write(str)
-          pw.close
-        }
-      };
-      {
-        if (fileExist(nodeadapterInfoPath + backupfile2))
-          deleteFile(nodeadapterInfoPath + backupfile2)
-        if (fileExist(nodeadapterInfoPath + backupfile1)) {
-          val str = Source.fromFile(nodeadapterInfoPath + backupfile1).mkString;
-          val pw = new PrintWriter(new File(nodeadapterInfoPath + backupfile2))
-          pw.write(str)
-          pw.close
-        }
-      };
-      {
-        if (fileExist(nodeadapterInfoPath + backupfile1))
-          deleteFile(nodeadapterInfoPath + backupfile1)
-        if (fileExist(nodeadapterInfoPath + file)) {
-          val str = Source.fromFile(nodeadapterInfoPath + file).mkString;
-          val pw = new PrintWriter(new File(nodeadapterInfoPath + backupfile1))
-          pw.write(str)
-          pw.close
-        }
-      };
-      writeToFile(allPartitions, nodeadapterInfoPath)
-
+      deleteOldFileAndWriteToFile(nodeadapterInfoPath, backupfile5, backupfile4)
+      deleteOldFileAndWriteToFile(nodeadapterInfoPath, backupfile4, backupfile3)
+      deleteOldFileAndWriteToFile(nodeadapterInfoPath, backupfile3, backupfile2)
+      deleteOldFileAndWriteToFile(nodeadapterInfoPath, backupfile2, backupfile1)
+      deleteOldFileAndWriteToFile(nodeadapterInfoPath, backupfile1, file)
+      localAllPartitions = allPartitions
     } catch {
       case e: Exception => LOG.error("taking backup of adapter file" + e.getMessage)
     } finally {
       lock.writeLock().unlock()
+    }
+    writeToFile(localAllPartitions, nodeadapterInfoPath)
+  }
+
+  private def deleteOldFileAndWriteToFile(nodeadapterInfoPath: String, oldFile: String, newFile: String) = {
+    try {
+      if (fileExist(nodeadapterInfoPath + oldFile))
+        deleteFile(nodeadapterInfoPath + oldFile)
+      if (fileExist(nodeadapterInfoPath + newFile)) {
+        val str = Source.fromFile(nodeadapterInfoPath + newFile).mkString;
+        val pw = new PrintWriter(new File(nodeadapterInfoPath + oldFile))
+        pw.write(str)
+        pw.close
+      }
+    } catch {
+      case e: Exception => LOG.error("deleteOldFileAndWriteToFile " + e.getMessage)
     }
 
   }
@@ -234,15 +189,11 @@ object AdapterPartitionInfoUtil {
       var finalAdapterInfo: JValue = null
 
       if (allPartitions.size > 1) {
-        println("11111 ")
         var arrJValue = new scala.collection.mutable.ArrayBuffer[JValue]
         allPartitions.foreach(adapInfo => {
           val jVal = parse(adapInfo._2)
           arrJValue += jVal
-          println("adapInfo._2 " + parse(adapInfo._2))
         })
-        println("adapInfo._2 " + arrJValue)
-        println("2222 " + arrJValue.size)
 
         val uuidStr = "uuid"
         val temp = getHighestUUIDAdapInfo(arrJValue, uuidStr)
@@ -299,8 +250,6 @@ object AdapterPartitionInfoUtil {
         val comp = compareUUID(temp, nextuuid) //UUID.fromString(temp).compareTo(UUID.fromString(nextuuid))
         if (comp > 0)
           temp = nextuuid
-        println("i" + i)
-        println("temp " + temp)
       }
     }
     return temp
@@ -323,27 +272,10 @@ object AdapterPartitionInfoUtil {
         val comp = tempNodeStrtTime.compareTo(nexnodestrttime)
         if (comp > 0)
           tempNodeStrtTime = nexnodestrttime
-        println("i" + i)
-        println("tempNodeStrtTime " + tempNodeStrtTime)
       }
     }
     return tempNodeStrtTime
   }
 
 }
-//compare 100 uuids
 
-    //======
-
-    //get the all nodes adapter json, 
-    //take the same node adapter partition information,. put it on arraybuffer
-
-    //compare all the uuid of all the nodes json string,
-    //if uuid matches compare the node start time
-    //take the latest nodestart time for that node, repeat above for all nodes
-    //Build the final Map[String, Array[String, String]]  (adaptername, Array(key, values)) for all nodes..
-
-
-  //   addlistenerwithconsoliodateString
-
-  //add distribution mechanism

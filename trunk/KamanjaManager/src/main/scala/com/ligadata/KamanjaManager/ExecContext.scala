@@ -25,6 +25,9 @@ import com.ligadata.StorageBase.DataStore
 import com.ligadata.kamanja.metadata.{ AdapterMessageBinding, ContainerDef, MessageDef }
 import com.ligadata.kamanja.metadata.MdMgr._
 import org.apache.logging.log4j.{ LogManager, Logger }
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 
 //import org.json4s._
 //import org.json4s.JsonDSL._
@@ -82,7 +85,8 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             lastEventOrigin = nullEventOrigin
             lastTimeCommitOffsets = System.currentTimeMillis
             eventsCntr = 0
-            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, prevEventOrigin.value)
+            WriteAdpterInfo(prevEventOrigin.key, prevEventOrigin.value)
+            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, MaskedParitionKeyValue(prevEventOrigin.value))
           } catch {
             case e: Throwable => {
               lastEventOrigin = prevEventOrigin
@@ -95,6 +99,47 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         WriteUnlock(execCtxt_reent_lock)
       }
     }
+  }
+
+  private def WriteAdpterInfo(key: String, keyVal: String): Unit = {
+    try {
+      if (key != null && key.length() > 0 && keyVal != null && keyVal.length() > 0) {
+        var allParts = KamanjaLeader.allPartitions
+        if (allParts != null && allParts.size > 0 && allParts.contains(key)) {
+          val value = allParts(key)
+          allParts(key) = (keyVal, value._2, value._3, value._4, value._5)
+        }
+        KamanjaLeader.writeAdapPartitionInfoToNodes(allParts)
+      }
+    } catch {
+      case e: Exception => LOG.error("WriteAdpterInfo " + e.getMessage)
+    }
+
+  }
+
+  private def MaskedParitionKeyValue(keyValue: String): String = {
+    var maskedKeyValue: String = keyValue
+    if (keyValue != null && keyValue.size > 0) {
+      val uuid = KamanjaLeader.UUID
+      val versionstr = KamanjaLeader.versionStr
+      val counter = KamanjaLeader.counter
+      maskedKeyValue = generateMaskedKeyValue(keyValue, versionstr, KamanjaLeader.UUID, KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId(), KamanjaLeader.nodeStartTime, counter)
+    }
+    return maskedKeyValue
+  }
+
+  private def generateMaskedKeyValue(keyValue: String, versionStr: String, uuid: String, nodeId: String, nodestarttime: Long, counter: Long): String = {
+    var partitionKeyValue: String = ""
+
+    val json = ("versionstr" -> versionStr) ~
+      ("keyvalue" -> keyValue) ~
+      ("uuid" -> uuid) ~
+      ("nodestarttime" -> nodestarttime) ~
+      ("nodeid" -> nodeId) ~
+      ("uniquecounter" -> counter)
+
+    partitionKeyValue = compact(render(json))
+    partitionKeyValue
   }
 
   def GetAdapterPartitionKVInfo: (String, String, String) = {
@@ -372,7 +417,8 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                   lastEventOrigin = nullEventOrigin
                   lastTimeCommitOffsets = System.currentTimeMillis
                   eventsCntr = 0
-                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+                  WriteAdpterInfo(prevEventOrigin.key, prevEventOrigin.value)
+                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, MaskedParitionKeyValue(txnCtxt.origin.value))
                   prevTimeCommitOffsets = lastTimeCommitOffsets
                   prevEventsCntr = eventsCntr
                   prevEventOrigin = lastEventOrigin
@@ -389,7 +435,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                 lastEventOrigin = nullEventOrigin
                 eventsCntr = 0
                 lastTimeCommitOffsets = System.currentTimeMillis
-                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, MaskedParitionKeyValue(txnCtxt.origin.value))
               }
             } catch {
               case e: Exception => {

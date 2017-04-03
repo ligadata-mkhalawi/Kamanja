@@ -42,16 +42,23 @@ import scala.actors.threadpool.{ Executors, ExecutorService }
 import com.ligadata.Exceptions.{ KamanjaException, FatalAdapterException }
 import scala.collection.JavaConversions._
 import com.ligadata.KvBase.{ Key }
+import java.io.{ PrintWriter, File, PrintStream, BufferedReader, InputStreamReader }
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 case class AdapMaxPartitions(Adap: String, MaxParts: Int)
+/*
 case class NodeDistMap(Adap: String, Parts: List[String])
 case class DistributionMap(Node: String, Adaps: List[NodeDistMap])
 case class FoundKeysInValidation(K: String, V1: String, V2: Int, V3: Int, V4: Long)
 case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap]])
+*/
 
-case class NodeDistMap1(Adap: String, Parts: List[(String, String)])
-case class DistributionMap1(Node: String, Adaps: List[NodeDistMap1])
-case class ActionOnAdaptersMap1(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap1]])
+case class PartitionKeyVal(Key: String, KeyValue: String, UUID: String, NodeStartTime: Long, Counter: Long)
+case class NodeDistMap(Adap: String, Parts: List[PartitionKeyVal])
+case class DistributionMap(Node: String, Adaps: List[NodeDistMap])
+case class ActionOnAdaptersMap1(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap]])
+
+case class KeyValue(var keyValue: String, var nodeid: String, var uuid: String, var nodestarttime: Long, var counter: Long)
 
 object KamanjaLeader {
   private[this] val LOG = LogManager.getLogger(getClass);
@@ -92,6 +99,27 @@ object KamanjaLeader {
   private[this] var saveEndOffsets = false
   private[this] var distributionExecutor = Executors.newFixedThreadPool(1)
 
+  private var partitionsInfoMap = scala.collection.mutable.Map[String, String]()
+  private var execCtxtsAdapterInfoPool: ExecutorService = null // 
+  var updatePartitionInfoPath = "data/node"
+  var consolidatedPartitionInfo = "/adapterinfo/consolidate/"
+  var adapterJson: String = ""
+  //key is node id, value is (partition id, file name, offset, ignoreFirstMsg)
+  val allPartitions = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+  private val consolidatedPartitions = scala.collection.mutable.Map[String, String]()
+  var condolidatedAdapterInfoMap = Map[String, Array[(String, String)]]()
+  private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
+
+  val versionStr = "value embedded in node execution information"
+  val UUID = AdapterPartitionInfoUtil.setGuid(System.currentTimeMillis())
+  val nodeStartTime = System.currentTimeMillis()
+
+  var counter: Long = 0
+  def increment = {
+    counter = counter + 1;
+    counter
+  }
+
   private val MAX_ZK_RETRIES = 1
 
   def Reset: Unit = {
@@ -99,7 +127,7 @@ object KamanjaLeader {
     clusterStatus = ClusterStatus("", false, "", null)
     newClusterStatusChangedTime = 0L
     newClusterStatusCopiedTime = 0L
-//    zkLeaderLatch = null
+    //    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
     engineLeaderZkNodePath = null
@@ -203,45 +231,6 @@ object KamanjaLeader {
 */
   }
 
-  private def GenerateCurrentAdapterPartitionJson(distributionMap: scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]): scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[(String, String)]]] = {
-    var distMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[(String, String)]]]()
-    //  scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]
-
-    try {
-      if (distributionMap != null && distributionMap.size > 0) {
-        distributionMap.foreach(dist => {
-          var adapMap = scala.collection.mutable.Map[String, ArrayBuffer[(String, String)]]()
-
-          if (dist != null && dist._2 != null && dist._2.size > 0) {
-            dist._2.foreach(adap => {
-
-              if (adap != null && adap._1 != null && adap._2 != null) {
-                var keyValBuffer = scala.collection.mutable.ArrayBuffer[(String, String)]()
-
-                val keyValues = adap._2
-                for (i <- 0 until adap._2.size) {
-                  val partKey = adap._2(i)
-                  if (partKey != null && partKey.trim.size > 0) {
-                    val adapPartKeyValue = GetUniqueKeyValue(adap._2(i))
-                    val keyVal = (partKey, adapPartKeyValue)
-                    keyValBuffer += keyVal
-                  }
-                }
-                adapMap(adap._1) = keyValBuffer
-
-              }
-            })
-          }
-          distMap(dist._1) = adapMap
-        })
-      }
-    } catch {
-      case e: Exception => LOG.debug("GenerateCurrentAdapterPartitionJson : " + e.getMessage)
-    }
-
-    return distMap
-  }
-
   private def UpdatePartitionsNodeData(eventType: String, eventPath: String, eventPathData: Array[Byte]): Unit = lock.synchronized {
     try {
       val evntPthData = if (eventPathData != null) (new String(eventPathData)) else "{}"
@@ -259,6 +248,74 @@ object KamanjaLeader {
 
             if (expectedNodesAction.compareToIgnoreCase(action) == 0) {
               nodesStatus += extractedNode
+
+              val nodeJson = parse(extractedNode)
+
+              if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
+                return
+
+              val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
+
+              val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
+
+              var partKeyValueMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+
+              //scala.collection.mutable.Map[null, (null, UUID, nodeId)]()
+              if (distributionMap != null && distributionMap.size > 0) {
+                distributionMap.foreach(distInfo => {
+                  distInfo._2.foreach(parts => {
+                    val partitions = parts._2
+                    if (partitions != null && partitions.size > 0) {
+                      for (i <- 0 until partitions.size) {
+                        partKeyValueMap(partitions(i)) = (null, nodeid, UUID, nodeStartTime, counter)
+                      }
+                    }
+                  })
+                })
+              }
+              //get the key values from storage
+              var nodeKeysMap = scala.collection.mutable.Map[String, Array[String]]()
+              distributionMap.foreach(distMap => {
+                distMap._2.foreach(distr => {
+                  var keys = new scala.collection.mutable.ArrayBuffer[String]
+                  if (nodeKeysMap.contains(distr._1)) {
+                    val previousKeys = nodeKeysMap(distr._1)
+                    if (previousKeys != null && previousKeys.length > 0) {
+                      for (i <- 0 until previousKeys.length) {
+                        keys += previousKeys(i)
+                      }
+                    }
+                  }
+                  keys = keys ++ distr._2
+                  nodeKeysMap(distr._1) = keys.toArray
+                })
+              })
+
+              partKeyValueMap = getPartKeyValues(partKeyValueMap, nodeKeysMap.toMap)
+
+              if (LOG.isDebugEnabled()) {
+                nodeKeysMap.foreach(kv => {
+                  LOG.debug("nodeKeysMap kv " + kv._1)
+                  for (i <- 0 until kv._2.length) {
+                    LOG.debug("kv._2 " + kv._2(i))
+                  }
+                })
+                if (partKeyValueMap != null && partKeyValueMap.keys.size > 0) {
+                  partKeyValueMap.foreach(kv => {
+                    LOG.debug(kv._1 + " : " + kv._2._1 + " : " + kv._2._2 + " : " + kv._2._3 + " : " + kv._2._4 + " : " + kv._2._5)
+                  })
+                }
+              }
+
+              if (expectedNodesAction == "stopped") {
+                // extractedNode
+                val parittionsInfo = values.getOrElse("PartitionsInfo", "")
+
+                if (parittionsInfo != null)
+                  partitionsInfoMap(nodeId) = parittionsInfo.toString
+              }
+              val finalConsolidatedPartitionMap = consolidatePartitionsMap(partitionsInfoMap.toMap, partKeyValueMap)
+
               if (nodesStatus.size == curParticipents.size && expectedNodesAction == "stopped" && (nodesStatus -- curParticipents).isEmpty) {
                 // Send the data to output queues in case if anything not sent before
                 SendUnSentInfoToOutputAdapters
@@ -271,47 +328,6 @@ object KamanjaLeader {
 
                 // Set DISTRIBUTE Action on engineDistributionZkNodePath
                 // Send all Unique keys to corresponding nodes 
-
-                /*val distribute =
-                  ("action" -> "distribute") ~
-                    ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
-                      ("Adap" -> kv._1) ~
-                        ("MaxParts" -> kv._2))) ~
-                    ("distributionmap" -> distributionMap.map(kv =>
-                      ("Node" -> kv._1) ~
-                        ("Adaps" -> kv._2.map(kv1 => ("Adap" -> kv1._1) ~
-                          ("Parts" -> kv1._2.toList)))))*/
-
-                //create adapter json from the db read 
-
-                var sendJson: String = ""
-                /*   if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
-                  val distMap = scala.collection.mutable.Map[String, String]()
-                  consolidatedDistMap.foreach(kv => {
-                    val keyvalues = kv._2
-                    if (keyvalues != null && keyvalues.size > 0) {
-                      for (i <- 0 until keyvalues.size) {
-                        distMap(keyvalues(i)._1) = keyvalues(i)._2
-
-                      }
-                    }
-                  })
-                  val distribute =
-                    ("action" -> "distribute") ~
-                      ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
-                        ("Adap" -> kv._1) ~
-                          ("MaxParts" -> kv._2))) ~
-                      ("distributionmap" -> distributionMap.map(kv =>
-                        ("Node" -> kv._1) ~
-                          ("Adaps" -> kv._2.map(kv1 =>
-                            ("Adap" -> kv1._1) ~
-                              ("Parts" -> kv1._2.toList.map(k => {
-                                val value = distMap.getOrElse(k, "");
-                                ("Key" -> k) ~
-                                  ("Value" -> value)
-                              }))))))
-                  sendJson = compact(render(distribute))
-                } else {*/
                 val distribute =
                   ("action" -> "distribute") ~
                     ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
@@ -320,14 +336,49 @@ object KamanjaLeader {
                     ("distributionmap" -> distributionMap.map(kv =>
                       ("Node" -> kv._1) ~
                         ("Adaps" -> kv._2.map(kv1 => ("Adap" -> kv1._1) ~
-                          ("Parts" -> kv1._2.toList)))))
-                sendJson = compact(render(distribute))
-                //  }
+                          ("Parts" -> kv1._2.toList.map(k => {
+                            val value = finalConsolidatedPartitionMap(k);
+                            ("Key" -> k) ~
+                              ("KeyValue" -> value._1) ~
+                              ("UUID" -> value._3) ~
+                              ("NodeStartTime" -> value._4) ~
+                              ("Counter" -> value._5)
+                          }))))))
 
+                val sendJson = compact(render(distribute))
                 LOG.warn("Partition Distribution: " + sendJson)
                 nodesActionIssuedTime = System.currentTimeMillis
                 SetNewDataToZkc(engineDistributionZkNodePath, sendJson.getBytes("UTF8"))
               }
+
+              /*
+                if (nodesStatus.size == curParticipents.size && expectedNodesAction == "stopped" && (nodesStatus -- curParticipents).isEmpty) {
+                  // Send the data to output queues in case if anything not sent before
+                  SendUnSentInfoToOutputAdapters
+                  // envCtxt.PersistRemainingStateEntriesOnLeader
+                  nodesStatus.clear
+                  expectedNodesAction = "distributed"
+
+                  // val fndKeyInVal = if (foundKeysInValidation == null) scala.collection.immutable.Map[String, (String, Int, Int, Long)]() else foundKeysInValidation
+                  val fndKeyInVal = scala.collection.immutable.Map[String, (String, Int, Int, Long)]()
+
+                  // Set DISTRIBUTE Action on engineDistributionZkNodePath
+                  // Send all Unique keys to corresponding nodes 
+                  val distribute =
+                    ("action" -> "distribute") ~
+                      ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
+                        ("Adap" -> kv._1) ~
+                          ("MaxParts" -> kv._2))) ~
+                      ("distributionmap" -> distributionMap.map(kv =>
+                        ("Node" -> kv._1) ~
+                          ("Adaps" -> kv._2.map(kv1 => ("Adap" -> kv1._1) ~
+                            ("Parts" -> kv1._2.toList)))))
+                  val sendJson = compact(render(distribute))
+                  LOG.warn("Partition Distribution: " + sendJson)
+                  nodesActionIssuedTime = System.currentTimeMillis
+                  SetNewDataToZkc(engineDistributionZkNodePath, sendJson.getBytes("UTF8"))
+                }
+              } */
             } else {
               val redStr = if (canRedistribute) "canRedistribute is true, Redistributing" else "canRedistribute is false, waiting until next call"
               // Got different action. May be re-distribute. For now any non-expected action we will redistribute
@@ -557,6 +608,7 @@ object KamanjaLeader {
       }
 
       expectedNodesAction = "stopped"
+      partitionsInfoMap.clear
       // Set STOP Action on engineDistributionZkNodePath
       val act = ("action" -> "stop")
       val sendJson = compact(render(act))
@@ -593,8 +645,7 @@ object KamanjaLeader {
       if (newClusterStatusCopiedTime == 0 && newClusterStatusChangedTime > 0) {
         logger.warn("First time - Copy ClusterStatus")
         true
-      }
-      else {
+      } else {
         val curTm = System.currentTimeMillis
         var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < curTm))
         if (canCopyClusterStatus) {
@@ -611,7 +662,7 @@ object KamanjaLeader {
               // clusterStatus.nodeId != newClusterStatus.nodeId ||
               curParticipents.size != newParticipents.size ||
               diff1.size > 0 || diff2.size > 0)
-          if (! canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
+          if (!canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
             // Resetting newClusterStatusCopiedTime from newClusterStatusChangedTime. Because no need to change ClusterStatus/ClusterDistribution
             logger.warn("Found canCopyClusterStatus as true, but there is no real change in ClusterStatus.")
             newClusterStatusCopiedTime = newClusterStatusChangedTime
@@ -676,10 +727,110 @@ object KamanjaLeader {
     LOG.debug("EventChangeCallback => Exit")
   }
 
+  /*
   private def GetUniqueKeyValue(uk: String): String = {
     envCtxt.getAdapterUniqueKeyValue(uk)
   }
+*/
 
+  private def GetUniqueKeyValue(uk: String): KeyValue = {
+    var keyvalue: KeyValue = null
+    var keyValueStr = envCtxt.getAdapterUniqueKeyValue(uk)
+    try {
+      val json = parse(keyValueStr)
+      if (json != null && json.values != null) {
+        val values = json.values.asInstanceOf[Map[String, String]]
+        if (values.contains("versionstr")) {
+          val versionStr = values.getOrElse("versionstr", "").toString.toLowerCase
+          if (versionStr != null && versionStr.trim().size > 0 && versionStr.equals(versionStr)) {
+            val keyValue = values.getOrElse("keyvalue", "").toString
+            val nodeid = values.getOrElse("nodeid", nodeId).toString
+            val uuid = values.getOrElse("uuid", UUID).toString
+            val nodestarttime = values.getOrElse("nodestarttime", nodeStartTime).toString.toLong
+            val countr = values.getOrElse("counter", counter).toString.toLong
+            keyvalue = new KeyValue(keyValue, nodeid, uuid, nodestarttime, countr)
+          } else {
+            keyvalue = new KeyValue(keyValueStr, nodeId, UUID, nodeStartTime, counter)
+          }
+        } else {
+          keyvalue = new KeyValue(keyValueStr, nodeId, UUID, nodeStartTime, counter)
+        }
+      }
+    } catch {
+      case e: Exception => {
+        keyvalue = new KeyValue(keyValueStr, nodeId, UUID, nodeStartTime, counter)
+        LOG.error("uuid, nodeid, nodestarttime do not exists in database ")
+
+      }
+    }
+    if (LOG.isDebugEnabled()) LOG.debug("Kamanja Leader - GetUniqueKeyValue - keyvalue: " + keyvalue.keyValue + " : " + keyvalue.nodeid + " : " + keyvalue.uuid + " : " + keyvalue.nodestarttime + " : " + keyvalue.counter)
+    keyvalue
+  }
+
+  private def getPartKeyValues(keyValueMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], nodeKeysMap: scala.collection.immutable.Map[String, Array[String]]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+    if (keyValueMap == null || keyValueMap.size == 0) {
+      return keyValueMap
+    }
+
+    var remainingInpAdapters = inputAdapters.toArray
+    var failedWaitTime = 15000 // Wait time starts at 15 secs
+    val maxFailedWaitTime = 60000 // Max Wait time 60 secs
+
+    //BUGBUG:: We may be blocking here for long time. Which will not give any updates from zookeeper for this node.
+    while (remainingInpAdapters.size > 0) {
+      var failedInpAdapters = ArrayBuffer[InputAdapter]()
+      remainingInpAdapters.foreach(ia => {
+        val name = ia.UniqueName
+        try {
+          val uAK = nodeKeysMap.getOrElse(name, null)
+          if (uAK != null) {
+            val uKV = uAK.map(uk => { GetUniqueKeyValue(uk) })
+            val keys = uAK.map(k => ia.DeserializeKey(k))
+            val vals = uKV.map(v => (ia.DeserializeValue(if (v.keyValue != null) v.keyValue else null), v))
+            for (i <- 0 until keys.size) {
+              val key = keys(i).Serialize
+              keyValueMap(key) = (vals(i)._1.Serialize, vals(i)._2.nodeid, vals(i)._2.uuid, vals(i)._2.nodestarttime, vals(i)._2.counter)
+            }
+          }
+        } catch {
+          case fae: FatalAdapterException => {
+            LOG.error("Failed to start processing input adapter:" + name, fae)
+            failedInpAdapters += ia
+          }
+          case e: Exception => {
+            LOG.error("Failed to start processing input adapter:" + name, e)
+            failedInpAdapters += ia
+          }
+          case t: Throwable => {
+            LOG.error("Failed to start processing input adapter:" + name, t)
+            failedInpAdapters += ia
+          }
+        }
+      })
+
+      remainingInpAdapters = failedInpAdapters.toArray
+
+      if (remainingInpAdapters.size > 0) {
+        try {
+          LOG.error("Failed to start processing %d input adapters while distributing. Waiting for another %d milli seconds and going to start them again.".format(remainingInpAdapters.size, failedWaitTime))
+          Thread.sleep(failedWaitTime)
+        } catch {
+          case e: Exception => { LOG.warn("", e) }
+        }
+        // Adjust time for next time
+        if (failedWaitTime < maxFailedWaitTime) {
+          failedWaitTime = failedWaitTime * 2
+          if (failedWaitTime > maxFailedWaitTime)
+            failedWaitTime = maxFailedWaitTime
+        }
+      }
+    }
+    LOG.debug("keyValueMap: " + keyValueMap)
+    return keyValueMap
+  }
+
+  /*
+  
   private def StartNodeKeysMap(nodeKeysMap: scala.collection.immutable.Map[String, Array[String]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
     if (nodeKeysMap == null || nodeKeysMap.size == 0) {
       return true
@@ -761,8 +912,8 @@ object KamanjaLeader {
 
     return true
   }
-
-  private def StartNodeKeysMap_1(nodeKeysMap: scala.collection.immutable.Map[String, Array[(String, String)]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
+*/
+  private def StartNodeKeysMap(nodeKeysMap: scala.collection.immutable.Map[String, Array[(String, String)]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
     if (nodeKeysMap == null || nodeKeysMap.size == 0) {
       return true
     }
@@ -854,7 +1005,7 @@ object KamanjaLeader {
 
     adapterMax.toMap
   }
-
+  /*
   private def GetDistMapForNodeId(distributionmap: Option[List[DistributionMap]], nodeId: String): scala.collection.immutable.Map[String, Array[String]] = {
     val retVals = scala.collection.mutable.Map[String, Array[String]]()
     if (distributionmap != None && distributionmap != null) {
@@ -870,19 +1021,21 @@ object KamanjaLeader {
 
     retVals.toMap
   }
+*/
 
-  val consolidatedDistMap = KamanjaManager.instance.condolidatedAdapterInfoMap
-
-  private def GetDistMapForNodeId_1(distributionmap: Option[List[DistributionMap]], nodeId: String): scala.collection.immutable.Map[String, Array[(String, String)]] = {
+  private def GetDistMapForNodeId(distributionmap: Option[List[DistributionMap]], nodeId: String): scala.collection.immutable.Map[String, Array[(String, String)]] = {
     val retVals = scala.collection.mutable.Map[String, Array[(String, String)]]()
     if (distributionmap != None && distributionmap != null) {
       val nodeDistMap = distributionmap.get.filter(ndistmap => { (ndistmap.Node.compareToIgnoreCase(nodeId) == 0) })
-      if (consolidatedDistMap != null && consolidatedDistMap.size > 0) { // At most 1 value, but not enforcing
-        consolidatedDistMap.foreach(cdistmap => {
-          retVals(cdistmap._1) = (cdistmap._2);
+      if (nodeDistMap != None && nodeDistMap != null) { // At most 1 value, but not enforcing
+        nodeDistMap.foreach(ndistmap => {
+          ndistmap.Adaps.map(ndm => {
+            retVals(ndm.Adap) = ndm.Parts.map(a => (a.Key, a.KeyValue)).toArray
+          })
         })
       }
     }
+
     retVals.toMap
   }
 
@@ -907,6 +1060,15 @@ object KamanjaLeader {
     if (LOG.isInfoEnabled)
       LOG.info("ActionOnAdaptersDistImpl => receivedJsonStr: " + receivedJsonStr)
 
+    ActionOnDistCommit(receivedJsonStr)
+
+    if (LOG.isDebugEnabled)
+      LOG.debug("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
+  }
+
+  /*
+  
+  private def ActionOnDist(receivedJsonStr: String): Unit = {
     try {
       // Perform the action here (STOP or DISTRIBUTE for now)
       val json = parse(receivedJsonStr)
@@ -917,7 +1079,6 @@ object KamanjaLeader {
 
       implicit val jsonFormats: Formats = DefaultFormats
       val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap]
-      KamanjaManager.instance.actionOnAdaptersMap = actionOnAdaptersMap
 
       actionOnAdaptersMap.action match {
         case "stop" => {
@@ -927,6 +1088,8 @@ object KamanjaLeader {
             val maxFailedWaitTime = 60000 // Max Wait time 60 secs
             val maxTries = 5
             var tryNo = 0
+
+            //    ===============  writeAllPartitions
 
             while (remInputAdaps.size > 0 && tryNo < maxTries) { // maximum trying only 5 times
               tryNo += 1
@@ -998,36 +1161,8 @@ object KamanjaLeader {
                   }
                 })
               }
-
-              /*  if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
-                val envCtxts = KamanjaManager.instance.GetEnvCtxts
-                LOG.warn("Running PostAdapterPatitionInfoToNodeLocalDrive for " + envCtxts.length + " envCtxts while doing stop")
-                envCtxts.map(ctxt => {
-                  try {
-                    if (ctxt != null)
-                      KamanjaManager.instance.PostAdapterParitionInfoToLocalDrive
-                  } catch {
-                    case e: Throwable => {
-                      LOG.error("Failed to commit partitions offsets", e)
-                    }
-                  }
-                })
-              }*/
-
-              // Sleep for a sec
-              try {
-                Thread.sleep(3000)
-              } catch {
-                case e: Exception => {
-                  // Not doing anything
-                  LOG.debug("", e)
-                }
-              }
-
               KamanjaManager.instance.ClearExecContext()
-              println("Kamanja Leader RecreateExecCtxtsCommitPartitionOffsetPool start ")
               KamanjaManager.instance.RecreateExecCtxtsCommitPartitionOffsetPool()
-              println("Kamanja Leader RecreateExecCtxtsCommitPartitionOffsetPool end")
             }
 
             // Write all adapters end points in case if requested
@@ -1073,8 +1208,18 @@ object KamanjaLeader {
 
               // Set STOPPED action in adaptersStatusPath + "/" + nodeId path
               val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
-              val act = ("action" -> "stopped")
-              val sendJson = compact(render(act))
+              var sendJson: String = ""
+              if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+                val nodeId: String = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+                val writeLocation = KamanjaConfiguration.adapterInfoWriteLocation
+               
+                val localData = AdapterPartitionInfoUtil.readfromFile(nodeId, writeLocation)
+                val act = ("action" -> "stopped") ~ ("PartitionsInfo" -> localData)
+                sendJson = compact(render(act))
+              } else {
+                val act = ("action" -> "stopped")
+                sendJson = compact(render(act))
+              }
               LOG.warn("New Action Stopped set to " + adaptrStatusPathForNode)
               SetNewDataToZkc(adaptrStatusPathForNode, sendJson.getBytes("UTF8"))
             }
@@ -1098,23 +1243,13 @@ object KamanjaLeader {
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
 
-              // val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
-
               //              if (actionOnAdaptersMap.foundKeysInValidation != None && actionOnAdaptersMap.foundKeysInValidation != null) {
               //                actionOnAdaptersMap.foundKeysInValidation.get.foreach(ks => {
               //                  foundKeysInVald(ks.K.toLowerCase) = (ks.V1, ks.V2, ks.V3, ks.V4)
               //                })
               //
               //              }
-
-              if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
-                val nodeDistMap = GetDistMapForNodeId_1(actionOnAdaptersMap.distributionmap, nodeId)
-                StartNodeKeysMap_1(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)
-                KamanjaManager.instance.adapInfoMapFromLeader = nodeDistMap
-              } else {
-                val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
-                StartNodeKeysMap(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)
-              }
+              StartNodeKeysMap(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)
             }
 
           } catch {
@@ -1151,16 +1286,271 @@ object KamanjaLeader {
           LOG.debug("No action performed, because of invalid action %s in json %s".format(actionOnAdaptersMap.action, receivedJsonStr))
         }
       }
+    } catch {
+      case e: Exception => {
+        LOG.error("Found invalid JSON: %s".format(receivedJsonStr), e)
+      }
+    }
+  }
+  */
 
-      // 
+  private def ActionOnDistCommit(receivedJsonStr: String): Unit = {
+
+    try {
+      // Perform the action here (STOP or DISTRIBUTE for now)
+      val json = parse(receivedJsonStr)
+      if (json == null || json.values == null) { // Not doing any action if not found valid json
+        LOG.error("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
+        return
+      }
+
+      implicit val jsonFormats: Formats = DefaultFormats
+      val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap1]
+
+      actionOnAdaptersMap.action match {
+        case "stop" => {
+          try {
+            var remInputAdaps = inputAdapters.toArray
+            var failedWaitTime = 15000 // Wait time starts at 15 secs
+            val maxFailedWaitTime = 60000 // Max Wait time 60 secs
+            val maxTries = 5
+            var tryNo = 0
+
+            //     writeAllPartitions to local drive
+            writeAdapPartitionInfoToNodes(allPartitions)
+
+            while (remInputAdaps.size > 0 && tryNo < maxTries) { // maximum trying only 5 times
+              tryNo += 1
+              var failedInputAdaps = ArrayBuffer[InputAdapter]()
+
+              // STOP all Input Adapters on local node
+              remInputAdaps.foreach(ia => {
+                try {
+                  LOG.warn("Stopping adapter " + ia.UniqueName)
+                  ia.StopProcessing
+                  LOG.warn("Stopped adapter " + ia.UniqueName)
+                } catch {
+                  case fae: FatalAdapterException => {
+                    LOG.error("Input adapter " + ia.UniqueName + "failed to stop processing", fae)
+                    failedInputAdaps += ia
+                  }
+                  case e: Exception => {
+                    LOG.error("Input adapter " + ia.UniqueName + "failed to stop processing", e)
+                    failedInputAdaps += ia
+                  }
+                  case e: Throwable => {
+                    LOG.error("Input adapter " + ia.UniqueName + "failed to stop processing", e)
+                    failedInputAdaps += ia
+                  }
+                }
+              })
+
+              remInputAdaps = failedInputAdaps.toArray
+              if (remInputAdaps.size > 0 && distributionExecutor.isShutdown == false) {
+                try {
+                  LOG.error("Failed to stop %d input adapters. Waiting for another %d milli seconds and going to start them again.".format(remInputAdaps.size, failedWaitTime))
+                  Thread.sleep(failedWaitTime)
+                } catch {
+                  case e: Exception => { LOG.warn("", e) }
+                }
+                // Adjust time for next time
+                if (failedWaitTime < maxFailedWaitTime) {
+                  failedWaitTime = failedWaitTime * 2
+                  if (failedWaitTime > maxFailedWaitTime)
+                    failedWaitTime = maxFailedWaitTime
+                }
+              }
+              if (distributionExecutor.isShutdown) // If it is shutting down, no more retries
+                tryNo = maxTries
+            }
+
+            // Sleep for a sec
+            try {
+              Thread.sleep(1000)
+            } catch {
+              case e: Exception => {
+                // Not doing anything
+                LOG.debug("", e)
+              }
+            }
+
+            if (KamanjaManager.instance != null) {
+              if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+                val envCtxts = KamanjaManager.instance.GetEnvCtxts
+                LOG.warn("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts while doing stop")
+                envCtxts.map(ctxt => {
+                  try {
+                    if (ctxt != null)
+                      ctxt.CommitPartitionOffsetIfNeeded(true)
+                  } catch {
+                    case e: Throwable => {
+                      LOG.error("Failed to commit partitions offsets", e)
+                    }
+                  }
+                })
+              }
+              KamanjaManager.instance.ClearExecContext()
+              KamanjaManager.instance.RecreateExecCtxtsCommitPartitionOffsetPool()
+            }
+
+            // Write all adapters end points in case if requested
+            if (saveEndOffsets) {
+              saveEndOffsets = false
+              inputAdapters.foreach(ia => {
+                try {
+                  LOG.warn("Start Writing End Partition Values for adapter " + ia.UniqueName)
+                  val endVals = ia.getAllPartitionEndValues
+                  if (endVals != null) {
+                    endVals.foreach(kv => {
+                      var key: String = null
+                      var value: String = null
+                      if (kv != null && kv._1 != null && kv._2 != null) {
+                        try {
+                          key = kv._1.Serialize
+                          value = kv._2.Serialize
+                          if (key != null && value != null && key.size > 0 && value.size > 0) {
+                            envCtxt.setAdapterUniqueKeyValue(key, value)
+                            // LOG.warn("===============> Partition Key:%s, Partition Value:%s".format(key, value))
+                          }
+                        } catch {
+                          case e: Throwable => {}
+                        }
+                      }
+                    })
+                  }
+                  LOG.warn("Done Writing End Partition Values for adapter " + ia.UniqueName)
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Input adapter " + ia.UniqueName + "failed to write end partition values", e)
+                  }
+                }
+              })
+            }
+
+            if (distributionExecutor.isShutdown == false) {
+              // Save the state and Clear the maps
+              //              ProcessedAdaptersInfo.CommitAdapterValues
+              ProcessedAdaptersInfo.clearInstances
+              // envCtxt.PersistLocalNodeStateEntries
+              //              envCtxt.clearIntermediateResults
+
+              // Set STOPPED action in adaptersStatusPath + "/" + nodeId path
+              val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
+              var sendJson: String = ""
+              if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+                val nodeId: String = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+                val writeLocation = KamanjaConfiguration.adapterInfoWriteLocation
+
+                val localData = AdapterPartitionInfoUtil.readfromFile(nodeId, writeLocation)
+                val act = ("action" -> "stopped") ~ ("PartitionsInfo" -> localData)
+                sendJson = compact(render(act))
+              } else {
+                val act = ("action" -> "stopped")
+                sendJson = compact(render(act))
+              }
+              LOG.warn("New Action Stopped set to " + adaptrStatusPathForNode)
+              SetNewDataToZkc(adaptrStatusPathForNode, sendJson.getBytes("UTF8"))
+            }
+          } catch {
+            case e: Exception => {
+              LOG.error("Failed to get Input Adapters partitions.", e)
+            }
+          }
+        }
+        case "distribute" => {
+          //          envCtxt.clearIntermediateResults // We may not need it here. But anyway safe side
+          // Clear the maps
+          ProcessedAdaptersInfo.clearInstances
+          var distributed = true
+          try {
+            // get Unique Keys for this nodeId
+            // Distribution Map 
+            if (actionOnAdaptersMap.distributionmap != None && actionOnAdaptersMap.distributionmap != null) {
+              val adapMaxPartsMap = GetAdaptersMaxPartitioinsMap(actionOnAdaptersMap.adaptermaxpartitions)
+              val nodeDistMap = GetDistMapForNodeId(actionOnAdaptersMap.distributionmap, envCtxt.getNodeIdAndUUID())
+
+              var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
+
+              //              if (actionOnAdaptersMap.foundKeysInValidation != None && actionOnAdaptersMap.foundKeysInValidation != null) {
+              //                actionOnAdaptersMap.foundKeysInValidation.get.foreach(ks => {
+              //                  foundKeysInVald(ks.K.toLowerCase) = (ks.V1, ks.V2, ks.V3, ks.V4)
+              //                })
+              //
+              //              }
+
+              //populate all paritions with distributemap and write to local drive
+              actionOnAdaptersMap.distributionmap.foreach(distList => {
+                if (distList != null && distList.size > 0) {
+                  distList.foreach(dist => {
+                    if (dist.Node != null && dist.Node.size > 0) {
+                      val nodeJson = parse(dist.Node)
+                      if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
+                        return
+
+                      val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
+                      val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
+
+                      if (dist.Adaps != null && dist.Adaps.size > 0) {
+                        dist.Adaps.foreach(adap => {
+                          val parts = adap.Parts
+                          if (parts != null && parts.size > 0) {
+                            parts.foreach(part => {
+                              allPartitions(part.Key) = (part.KeyValue, nodeid, part.UUID, part.NodeStartTime, part.Counter)
+                            })
+                          }
+                        })
+                      }
+                    }
+                  })
+                }
+              })
+              if (LOG.isDebugEnabled()) LOG.debug("All Paritions" + allPartitions)
+              writeAdapPartitionInfoToNodes(allPartitions)
+              StartNodeKeysMap(nodeDistMap, receivedJsonStr, adapMaxPartsMap, foundKeysInVald.toMap)
+            }
+
+          } catch {
+            case e: Exception => {
+              LOG.error("distribute action failed", e)
+              distributed = false
+            }
+          }
+
+          val adaptrStatusPathForNode = adaptersStatusPath + "/" + envCtxt.getNodeIdAndUUID()
+          var sentDistributed = false
+          if (distributed) {
+            try {
+              // Set DISTRIBUTED action in adaptersStatusPath + "/" + nodeId path
+              val act = ("action" -> "distributed")
+              val sendJson = compact(render(act))
+              SetNewDataToZkc(adaptrStatusPathForNode, sendJson.getBytes("UTF8"))
+              sentDistributed = true
+            } catch {
+              case e: Exception => {
+                LOG.error("distribute action failed", e)
+              }
+            }
+          }
+
+          if (sentDistributed == false) {
+            // Set RE-DISTRIBUTED action in adaptersStatusPath + "/" + nodeId path
+            val act = ("action" -> "re-distribute")
+            val sendJson = compact(render(act))
+            SetNewDataToZkc(adaptrStatusPathForNode, sendJson.getBytes("UTF8"))
+          }
+        }
+        case _ => {
+          LOG.debug("No action performed, because of invalid action %s in json %s".format(actionOnAdaptersMap.action, receivedJsonStr))
+        }
+      }
     } catch {
       case e: Exception => {
         LOG.error("Found invalid JSON: %s".format(receivedJsonStr), e)
       }
     }
 
-    if (LOG.isDebugEnabled)
-      LOG.debug("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
+    // 
+
   }
 
   private def ActionOnAdaptersDistribution(receivedJsonStr: String): Unit = {
@@ -1585,6 +1975,11 @@ object KamanjaLeader {
         CreateClient.CreateNodeIfNotExists(zkConnectString, adaptrStatusPathForNode) // Creating path for Adapter Statues
         CreateClient.CreateNodeIfNotExists(zkConnectString, dataChangeZkNodePath) // Creating 
         zkcForSetData = CreateClient.createSimple(zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs)
+        if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+
+          // "Create Listener for PartitionsInfo
+          KamanjaMetadata.gNodeContext.getEnvCtxt().createListenerForCacheChildern(updatePartitionInfoPath, updatePartitionsFn) // listen to start info
+        }
 
         envCtxt.createZkPathChildrenCacheListener(adaptersStatusPath, false, ParticipentsAdaptersStatus)
         envCtxt.createZkPathListener(engineDistributionZkNodePath, ActionOnAdaptersDistribution)
@@ -1737,6 +2132,8 @@ object KamanjaLeader {
         logger.warn("DistributionCheck:Going to do registerNodesChangeNotification in KamanjaLeader")
         envCtxt.registerNodesChangeNotification(EventChangeCallback)
         logger.warn("DistributionCheck:Done registerNodesChangeNotification in KamanjaLeader")
+
+        PostAdapterParitionInfoToLocalDrive()
 
         // Forcing to distribute
         // SetUpdatePartitionsFlag
@@ -1920,6 +2317,394 @@ object KamanjaLeader {
     CloseSetDataZkc
   }
 
+  private def consolidatePartitionsMap(partitionInfoMap: Map[String, String], keyValueMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+    var consolidatedMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+
+    try {
+
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - partitionInfoMap " + partitionInfoMap)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - keyValueMap " + keyValueMap)
+
+      val initialConsolidatedMap = getConsolidatedInitialMap(partitionInfoMap)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - initialConsolidatedMap " + initialConsolidatedMap)
+
+      val consolidateAllPartitions = getConsolidatedMap(initialConsolidatedMap, allPartitions)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidateAllPartitions " + consolidateAllPartitions)
+
+      consolidatedMap = getConsolidatedMap(consolidateAllPartitions, keyValueMap)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidatedMap " + consolidatedMap)
+
+    } catch {
+      case e: Exception => LOG.error("Consolidated Map" + e.getMessage)
+    }
+    if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidatedMap " + consolidatedMap)
+
+    consolidatedMap
+  }
+
+  private def getConsolidatedMap(initialConsolidatedMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], keyValueMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+    val consolidatedMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+    try {
+
+      if (keyValueMap != null && keyValueMap.keys.size > 0) {
+
+        keyValueMap.foreach(keyVal => {
+          if (initialConsolidatedMap.contains(keyVal._1)) {
+            if (initialConsolidatedMap(keyVal._1) != null) {
+              val keyval = initialConsolidatedMap(keyVal._1)._1
+              val nodeid = initialConsolidatedMap(keyVal._1)._2
+              val uuid = initialConsolidatedMap(keyVal._1)._3
+              val nodestarttime = initialConsolidatedMap(keyVal._1)._4
+              val counter = initialConsolidatedMap(keyVal._1)._5
+
+              // val compUUID = AdapterPartitionInfoUtil.compareUUID(keyVal._2._3, uuid)
+              if (keyVal._2._3.equals(uuid)) {
+                if (LOG.isDebugEnabled()) LOG.debug("getConsolidatedMap - same UUID")
+                if (keyVal._2._5 > counter)
+                  consolidatedMap(keyVal._1) = (keyVal._2._1, keyVal._2._2, keyVal._2._3, keyVal._2._4, keyVal._2._5)
+                else
+                  consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
+              } else {
+                if (keyVal._2._4 > nodestarttime)
+                  consolidatedMap(keyVal._1) = (keyVal._2._1, keyVal._2._2, keyVal._2._3, keyVal._2._4, keyVal._2._5)
+                else consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
+              }
+            }
+          } else {
+            consolidatedMap(keyVal._1) = (keyVal._2._1, keyVal._2._2, keyVal._2._3, keyVal._2._4, keyVal._2._5)
+          }
+        })
+      } else return initialConsolidatedMap
+
+    } catch {
+      case e: Exception => LOG.error("Consolidated Map" + e.getMessage)
+    }
+    if (LOG.isDebugEnabled()) LOG.debug("getConsolidatedMap - consolidatedMap " + consolidatedMap)
+    consolidatedMap
+  }
+
+  private def getConsolidatedInitialMap(partitionInfoMap: Map[String, String]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+    val consolidatedMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+    try {
+      if (partitionInfoMap != null && partitionInfoMap.keys.size > 0) {
+        partitionInfoMap.foreach(partitionInfo => {
+          if (partitionInfo._2 != null && partitionInfo._2.trim().size > 0) {
+            val json = parse(partitionInfo._2)
+            implicit val jsonFormats: Formats = DefaultFormats
+
+            val partitionKeyValues = json.extract[PartKeyValues]
+            val keyvalues = partitionKeyValues.keyvalues
+            if (keyvalues != null && keyvalues.length > 0) {
+              for (i <- 0 until keyvalues.length) {
+                if (consolidatedMap.contains(keyvalues(i).key)) {
+                  val consolidate_keyval = consolidatedMap(keyvalues(i).key)._1
+                  val consolidate_nodeid = consolidatedMap(keyvalues(i).key)._2
+                  val consolidate_uuid = consolidatedMap(keyvalues(i).key)._3
+                  val consolidate_nodestarttime = consolidatedMap(keyvalues(i).key)._4
+                  val consolidate_counter = consolidatedMap(keyvalues(i).key)._5
+                  // val compUUID = AdapterPartitionInfoUtil.compareUUID(keyvalues(i).uuid, consolidate_uuid)
+
+                  if (keyvalues(i).uuid.equals(consolidate_uuid)) {
+                    if (keyvalues(i).uniquecounter > consolidate_counter)
+                      consolidatedMap(keyvalues(i).key) = (keyvalues(i).keyvalue, keyvalues(i).nodeid, keyvalues(i).uuid, keyvalues(i).nodestarttime, keyvalues(i).uniquecounter)
+                    else consolidatedMap(keyvalues(i).key) = (consolidate_keyval, consolidate_nodeid, consolidate_uuid, consolidate_nodestarttime, consolidate_counter)
+                  } else {
+                    if (keyvalues(i).nodestarttime > consolidate_nodestarttime)
+                      consolidatedMap(keyvalues(i).key) = (keyvalues(i).keyvalue, keyvalues(i).nodeid, keyvalues(i).uuid, keyvalues(i).nodestarttime, keyvalues(i).uniquecounter)
+                    else
+                      consolidatedMap(keyvalues(i).key) = (consolidate_keyval, consolidate_nodeid, consolidate_uuid, consolidate_nodestarttime, consolidate_counter)
+                  }
+                } else {
+                  consolidatedMap(keyvalues(i).key) = (keyvalues(i).keyvalue, keyvalues(i).nodeid, keyvalues(i).uuid, keyvalues(i).nodestarttime, keyvalues(i).uniquecounter)
+                }
+              }
+            }
+          }
+        })
+      }
+    } catch {
+      case e: Exception => LOG.error("Consolidated Map" + e.getMessage)
+    }
+    consolidatedMap
+  }
+
+  def PostAdapterParitionInfoToLocalDrive(): Unit = synchronized {
+    if (LOG.isDebugEnabled()) LOG.debug("Called PostAdapterParitionInfoToLocalDrive")
+
+    if (execCtxtsAdapterInfoPool != null) {
+      execCtxtsAdapterInfoPool.shutdownNow()
+      // Not really waiting for termination
+    }
+    var adapInfoMaplocal = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
+
+    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2)
+
+    // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+
+      val postAdapterInfoSvc = new Runnable() {
+        override def run() {
+          val tp = execCtxtsAdapterInfoPool
+          val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
+          while (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated) {
+            try {
+              Thread.sleep(1000) // Sleeping 1000ms more than given interval
+            } catch {
+              case e: Throwable => {}
+            }
+            if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+              val envCtxts = KamanjaManager.instance.GetEnvCtxts
+              if (LOG.isDebugEnabled()) LOG.debug("Running execCtxtsAdapterInfo for " + envCtxts.length + " envCtxts")
+              var idx = 0
+              //keyvalues.clear()
+              while (idx < envCtxts.length && !tp.isShutdown) {
+                try {
+                  if (idx == 0) {
+                    adapInfoMaplocal.clear()
+                  }
+                  var keyvalues = scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]()
+
+                  val (adapterName, key, keyValue) = envCtxts(idx).GetAdapterPartitionKVInfo
+                  if (adapterName != null && key != null && keyValue != null) {
+
+                    if (adapInfoMaplocal.contains(adapterName.trim)) {
+                      val kv = adapInfoMaplocal(adapterName)
+                      if (kv != null && kv.size > 0) {
+                        kv.foreach(a => {
+                          if (a != null && a.isInstanceOf[AdapterPartKeyValues]) {
+                            keyvalues += a
+                          }
+                        })
+                      }
+                    }
+                    keyvalues += new AdapterPartKeyValues(key, keyValue)
+                    adapInfoMaplocal(adapterName.trim) = keyvalues
+                  }
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to commit partitions offsets", e)
+                  }
+                }
+                idx += 1
+              }
+              postAdapterPartitionsInfoToNodes(adapInfoMaplocal)
+            }
+          }
+        }
+      }
+
+      execCtxtsAdapterInfoPool.execute(postAdapterInfoSvc)
+      val writeAdapterInfoTime = KamanjaConfiguration.writeAdapterInfoTime
+
+      val writeAdapterInfoSvc = new Runnable() {
+        override def run() {
+          val tp = execCtxtsAdapterInfoPool
+          val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
+          while (!tp.isShutdown) {
+            try {
+              Thread.sleep(1000) // Sleeping 1000ms more than given interval
+            } catch {
+              case e: Throwable => {}
+            }
+            if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+              while (!tp.isShutdown) {
+                try {
+                  Thread.sleep(writeAdapterInfoTime)
+                  writeAdapPartitionInfoToNodes(allPartitions)
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to commit partitions offsets", e)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      execCtxtsAdapterInfoPool.execute(writeAdapterInfoSvc)
+    }
+  }
+
+  def updatePartitionsFn(eventType: String, eventPath: String, eventPathData: String): Unit = {
+    LOG.debug("Kamanja Leader - " + eventPathData)
+    val pathTokens = eventPath.split("/")
+    val sendingNodeId = pathTokens(pathTokens.length - 1)
+
+    if (eventPathData != null && eventPathData.trim().size > 0) {
+      implicit val jsonFormats: Formats = DefaultFormats
+      val json = parse(eventPathData)
+      val partitionKeyValues = json.extract[PartitionKeyValuesInfo]
+      val partKeyValuesSize = partitionKeyValues.keyvalues.size
+      val partKeyValues = partitionKeyValues.keyvalues
+
+      if (partKeyValuesSize > 0) {
+        try {
+          lock.writeLock().lock()
+
+          if (allPartitions != null && allPartitions.keys.size == 0) {
+            for (i <- 0 until partKeyValuesSize) {
+              if (partKeyValues(i) != null && partKeyValues(i).key != null && partKeyValues(i).key.size > 0 && partKeyValues(i).keyvalue != null && partKeyValues(i).keyvalue.size > 0) {
+                val keyvalue = (partKeyValues(i).keyvalue, partitionKeyValues.nodeid, partitionKeyValues.uuid, partitionKeyValues.nodestarttime, partitionKeyValues.uniquecounter)
+                allPartitions(partKeyValues(i).key) = keyvalue
+              }
+            }
+          } else {
+            allPartitions.foreach(partitionsInfo => {
+
+              if (partitionsInfo != null) {
+                if (partitionKeyValues.nodeid.toLowerCase().equals(partitionsInfo._2._2)) {
+                  //get the highest counter
+                  val appPartcounter = partitionsInfo._2._5
+                  val localCounter = partitionKeyValues.uniquecounter
+                  if (partitionKeyValues.uuid.equals(partitionsInfo._2._3)) {
+                    if (partitionKeyValues.uniquecounter > partitionsInfo._2._5) {
+                      val keyValArray = partitionKeyValues.keyvalues
+                      if (keyValArray != null && keyValArray.length > 0) {
+                        for (i <- 0 until keyValArray.length) {
+                          val allPartKey: String = partitionsInfo._1
+                          if (allPartKey != null && allPartKey.length() > 0) {
+                            if (allPartKey.equals(keyValArray(i).key)) {
+                              val keyvalue = (keyValArray(i).keyvalue, partitionKeyValues.nodeid, partitionKeyValues.uuid, partitionKeyValues.nodestarttime, partitionKeyValues.uniquecounter)
+                              allPartitions(partitionsInfo._1) = keyvalue
+                            }
+                          }
+                        }
+                      }
+                    }
+                  } else {
+                    if (partitionKeyValues.nodestarttime > partitionsInfo._2._5) {
+                      val keyValArray = partitionKeyValues.keyvalues
+                      if (keyValArray != null && keyValArray.length > 0) {
+                        for (i <- 0 until keyValArray.length) {
+                          val allPartKey: String = partitionsInfo._1
+                          if (allPartKey != null && allPartKey.length() > 0) {
+                            if (allPartKey.equals(keyValArray(i).key)) {
+                              val keyvalue = (keyValArray(i).keyvalue, partitionKeyValues.nodeid, partitionKeyValues.uuid, partitionKeyValues.nodestarttime, partitionKeyValues.uniquecounter)
+                              allPartitions(partitionsInfo._1) = keyvalue
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            })
+          }
+        } finally {
+          lock.writeLock().unlock()
+        }
+      }
+    }
+
+    if (LOG.isDebugEnabled()) {
+      if (allPartitions != null && allPartitions.size > 0) {
+        allPartitions.foreach(kv => {
+          LOG.debug("collectAdapterPartitionInfo- key " + kv._1 + " value " + kv._2)
+        })
+      } else LOG.debug("collectAdapterPartitionInfo - allPartitions " + allPartitions)
+    }
+
+  }
+
+  private var allPartitionsInfo = scala.collection.mutable.Map[String, (String, String, Long, String, Long)]()
+
+  def postAdapterPartitionsInfoToNodes(adapterInfoMap: scala.collection.mutable.Map[String, ArrayBuffer[AdapterPartKeyValues]]): Unit = {
+    val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+
+    if (LOG.isDebugEnabled) LOG.debug("Kamanja Leader -postAdapterPartitionsInfoToNodes - nodeId " + nodeId)
+    if (LOG.isDebugEnabled) {
+      if (adapterInfoMap != null && adapterInfoMap.size > 0) {
+        adapterInfoMap.foreach(adapInfo => {
+          LOG.debug(adapInfo._1)
+          adapInfo._2.map(a => LOG.debug("key values: " + a.key + " : " + a.keyvalue))
+        })
+      }
+    }
+
+    val nodeStartTime = System.currentTimeMillis()
+    var keyvalues = new scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]
+    if (adapterInfoMap != null && adapterInfoMap.keys.size > 0) {
+      adapterInfoMap.foreach(adapKeyValues => {
+        if (adapKeyValues != null && adapKeyValues._2 != null && adapKeyValues._2.size > 0) {
+          for (i <- 0 until adapKeyValues._2.size) {
+            val keyval = new AdapterPartKeyValues(adapKeyValues._2(i).key, adapKeyValues._2(i).keyvalue)
+            keyvalues += keyval
+          }
+        }
+      })
+    }
+    counter = increment
+    val localPartitionInfo = new PartitionKeyValuesInfo(nodeId, UUID, nodeStartTime, counter, keyvalues.toArray)
+    adapterJson = AdapterPartitionInfoUtil.generateAdapterInfoJson(localPartitionInfo)
+
+    if (LOG.isDebugEnabled) LOG.debug("Kamanja Leader -postAdapterPartitionsInfoToNodes - adapterJson " + adapterJson)
+    // do this very x millisecs , Get the value from CLusterConfig
+    val postAdapterInfoTime = KamanjaConfiguration.postAdapterInfoTime
+    Thread.sleep(postAdapterInfoTime)
+
+    val UpdatePartitionNodeInfo = updatePartitionInfoPath + "/" + nodeId
+    if (LOG.isDebugEnabled) LOG.debug("Kamanja Leader -postAdapterPartitionsInfoToNodes - SendAdapterInfo " + UpdatePartitionNodeInfo)
+
+    KamanjaMetadata.gNodeContext.getEnvCtxt().setListenerCacheKey(UpdatePartitionNodeInfo, adapterJson) // => Goes to Leader
+
+    if (LOG.isDebugEnabled) {
+      if (allPartitions != null && allPartitions.size > 0) {
+        allPartitions.foreach(kv => {
+          LOG.debug("Kamanja Leader -postAdapterPartitionsInfoToNodes -allPartitions- key " + kv._1)
+          LOG.debug("Kamanja Leader -postAdapterPartitionsInfoToNodes - allPartitions- value " + kv._2)
+        })
+      } else LOG.debug("Kamanja Leader -postAdapterPartitionsInfoToNodes - allPartitions " + allPartitions)
+    }
+  }
+
+  def writeAdapPartitionInfoToNodes(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)]) = {
+    try {
+      if (allPartitions != null && allPartitions.size > 0) {
+        //get the node local drive location
+        //do this every y millisecs
+        val nodeId = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+        var nodepath = KamanjaConfiguration.adapterInfoWriteLocation
+        if (nodepath != null && nodepath.length() > 0) {
+          if (!nodepath.endsWith("/"))
+            nodepath = nodepath + "/"
+          val nodeadapterInfoPath = nodepath + nodeId //Get this info from cluster config
+
+          val nodepathsplit = nodeadapterInfoPath.split("/")
+          var dirpath: String = ""
+          if (nodepathsplit != null && nodepathsplit.length > 0) {
+            for (i <- 0 until nodepathsplit.length) {
+              if (nodepathsplit(i) != null && nodepathsplit(i).length() > 0) {
+                dirpath = dirpath + "/" + nodepathsplit(i)
+                val folder = new File(dirpath)
+                if (!folder.exists()) {
+                  folder.mkdir();
+                }
+              }
+            }
+          }
+          AdapterPartitionInfoUtil.takeBackUpAndWriteToFile(allPartitions, nodeadapterInfoPath)
+        }
+      }
+    } catch {
+      case e: Exception => LOG.error("Kamanja Leader - Write AdapterPartitionInfo to File" + e.getMessage)
+    }
+  }
+
+  def ReadFromLocalDrive(): String = {
+    var adapterJsonFromlocalDrive: String = ""
+    try {
+      if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+        //read to local map from local drive
+        val nodeid = KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId()
+        val localDriveLocation = KamanjaConfiguration.adapterInfoWriteLocation
+        adapterJsonFromlocalDrive = AdapterPartitionInfoUtil.readfromFile(nodeid, localDriveLocation) //allPartitions)
+      }
+    } catch {
+      case e: Exception => LOG.debug("KamanjaLeader - ReadFromLocalDrive " + e.getMessage)
+    }
+    adapterJsonFromlocalDrive
+  }
 }
 
 
