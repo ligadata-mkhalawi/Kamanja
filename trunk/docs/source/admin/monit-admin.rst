@@ -49,9 +49,11 @@ Note the following:
 - If the :ref:`SSH<ssh-term>` connection to the main node fails,
   it is not possible to start/stop nodes from Monit
   but the status of the nodes can still be pulled.
-- Status checks are done once every specified number of seconds so,
-  when turning a node on or off,
+- Status checks are done periodically.
+  When turning a node on or off,
   it may take a few seconds for Monit to display the correct status.
+  The interval between checks is set by a **sleep** statement
+  at the end of each :ref:`shell script<monit-scripts-admin>`.
 - The KamanjaCluster tab in monit prints out the last ERROR line
   in the *KamanjaLog.log*.
   this may not completely explain the cause for failure
@@ -71,7 +73,6 @@ Use your browser to open the monit dashboard:
 The user ID and password can be reset in the
 :ref:`monitrc<monitrc-admin>` file.
 
-The default user and password are admin and monit.
 You will see a display similar to the following:
 
 .. image:: /_images/monit-nodes.png
@@ -175,9 +176,10 @@ To configure Monit:
      - Permissions
      - Description
    * - :ref:`monitrc<monitrc-admin>`
-     - 
+     - `- r w - - - - - - -`
+       (chmod 600)
      - Monit control file
-   * - KamanjaCluster
+   * - :ref:`KamanjaCluster<KamanjaCluster-admin>`
      - `- r w - - - - - - -`
        (chmod 600)
      - One copy for each configured Kamanja cluster;
@@ -254,7 +256,7 @@ These parameters are defined as:
   and Monit checks the services immediately after it starts.
 
 - **set logfile** -- specify the directory where
-  `Syslog <https://linux.die.net/man/8/syslogd>` writes Monit logs.
+  `Syslog <https://linux.die.net/man/8/syslogd>`_ writes Monit logs.
 
 - **set httpd port** -- specify the port to use for HTTP access.
   This is followed by **allow** lines that provide an access control list
@@ -301,11 +303,11 @@ on the Monit dashboard.
   if status != 0 then alert
   
   start program "/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${LEADER_NODE_IP}
-    '${PATH_TO}/StartKamanjaCluster.sh --ClusterId ligadata1
+    '${PATH_TO}/StartKamanjaCluster.sh --ClusterId {ClusterId}
     --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties'"
 
   stop program  "/usr/bin/ssh -i {PATH_TO}/Key.pem ${USER}@${LEADER_NODE_IP}
-    '${PATH_TO}/StopKamanjaCluster.sh --ClusterId ligadata1
+    '${PATH_TO}/StopKamanjaCluster.sh --ClusterId {ClusterId}
     --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties'"
 
 
@@ -319,7 +321,8 @@ are represented in curly brackets:
     the */home/kamanjadev/monit-5.20.0/scripts* directory.
   - For the :ref:`metadataapiconfig-config-ref` file,
     this is typically the *$KAMANJA_HOME/config* directory.
-  - For the Key.pem file, this is typically *$HOME/.ssh*.
+  - For the Key.pem file, this could be *$HOME/.ssh*
+    or a location under $KAMANJA_HOME.
 
 - {NODES_IPS} - IP addresses of each node in the cluster,
   separated with commas.  For example, if this is a four-node cluster,
@@ -330,9 +333,9 @@ are represented in curly brackets:
     127.0.0.1,127.0.0.2,127.0.0.3,127.0.0.4
 
 
-- {USER} -
-- {LEADER_NODE_IP} -
-- **ClusterId <ID>** - name of the cluster as defined in the
+- {USER} - system from which the **ssh** command is issued.
+- {LEADER_NODE_IP} - IP address for Kamanja node 1.
+- {ClusterId} - name of the cluster as defined in the
   :ref:`clusterconfig-config-ref` file.
 
 
@@ -356,7 +359,7 @@ giving it a name that makes sense for your configuration.
 
 Each of these files must then be edited
 to reflect your configuration.
-Most of the strings that need to be supplied
+The strings that need to be supplied
 are represented in curly brackets:
 
 - {PATH_TO} - replace with the full path for the specified file.
@@ -382,16 +385,16 @@ We recommend choosing names that are meaningful in your configuration.
   if status != 0 then alert
 
   start program "/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${LEADER_NODE_IP}
-      '${PATH_TO}/StartKamanjaCluster.sh --ClusterId ligadata1
+      '${PATH_TO}/StartKamanjaCluster.sh --ClusterId {ClusterId}
       --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties --NodeIds 1'"
 
   stop program  "/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${LEADER_NODE_IP}
-      '${PATH_TO}/StopKamanjaCluster.sh --ClusterId ligadata1
-      --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties --NodeIds 1'"
+      '${PATH_TO}/StopKamanjaCluster.sh --ClusterId {ClusterId}
+      --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties --NodeIds {NodeId}'"
 
 Each of these files must then be edited
 to reflect your configuration.
-Most of the strings that need to be supplied
+The strings that need to be supplied
 are represented in curly brackets:
 
 - {PATH_TO} - replace with the full path for the specified file.
@@ -400,14 +403,15 @@ are represented in curly brackets:
     the */home/kamanjadev/monit-5.20.0/scripts* directory.
   - For the :ref:`metadataapiconfig-config-ref` file,
     this is typically the *$KAMANJA_HOME/config* directory.
-  - For the Key.pem file, this is typically *$HOME/.ssh*.
+  - For the Key.pem file, this could be *$HOME/.ssh*
+    or a location under *$KAMANJA_HOME*.
 
 - {NODE_IP} - IP address of this node
-- {USER} -
-- {LEADER_NODE_IP} -
-- **ClusterId <ID>** - ID of the cluster as defined in the
+- {USER} - system from which the **ssh** command is issued
+- {LEADER_NODE_IP} - IP address for Kamanja node 1. 
+- {ClusterId} - ID of the cluster as defined in the
   :ref:`clusterconfig-config-ref` file.
-- **NodeIDs <ID>** - ID defined for this node in the
+- {NodeIds} - NodeId defined for this node in the
   :ref:`clusterconfig-config-ref` file.
 
 
@@ -466,9 +470,8 @@ kamanjaClusterStatusCheck.sh
   else
   ErrorCode=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${NODE_1_IP} 'cat ${PATH_TO}/KamanjaLog.log | grep ERROR | tail -n 1'`
   echo "Cluster is DOWN: $ErrorCode"
-  fi
-
   sleep 29
+  fi
 
 
 kamanjaStatusCheck.sh

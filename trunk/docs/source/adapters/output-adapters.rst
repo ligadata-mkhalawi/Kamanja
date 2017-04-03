@@ -43,6 +43,110 @@ The constructor for this producer must have two arguments:
 The AdapterConfiguration and the CountersAdapter objects
 are described in the Kafka consumer section.
 
+.. _oracle-output-adapter-api:
+
+Oracle Output Adapter API
+-------------------------
+
+The Oracle Output Adapter configuration is documented
+on the :ref:`oracle-output-adapter-ref` reference page.
+This adapter implements
+the same basic interface as other output adapters.
+Details of the API are given here.
+
+::
+
+  trait OutputAdapter{
+    // Configuration
+    val inputConfig: AdapterConfiguration
+    override final def getAdapterName = inputConfig.Name
+    def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit
+    def Shutdown: Unit
+  }
+
+The OracleOutputAdapter uses an Oracle storage adapter component
+that implements the following basic API.
+
+::
+
+  def createAnyTable(containerName: String, columnNames: Array[String],
+     columnTypes: Array[String], keyColumns: Array[String],
+     apiType:String): Unit
+
+::
+
+  def put(containerName: String, columnNames:Array[String],
+     rowColumnValues: Array[Array[(String,String)]]): Unit
+
+::
+
+  def get(containerName: String, selectList: Array[String],
+     filterColumns:Array[(String,String)],
+     callbackFunction: (String, Int, String, String) => Unit
+
+**createAnyTable**: create a table 
+
+- **containerName**: Can be a className of the container object.
+  However, the Oracle table name is restricted to 30 characters
+  so the package name of the class name cannot be used.
+  For example, if the container name is
+  "com.ligadata.messages.ParameterContainer",
+  we recommend passing "ParameterContainer" as the value of this parameter
+  rather than a string such as
+  com_ligadata_messages_ParameterContainer,
+  which exceeds the 30-character limit..
+
+- **columnNames**: Array of strings that represent column names;
+  each column name must be less than 30 characters.
+
+- **columnTypes**: Array of strings that represent column types.
+  These are Oracle data types used in a create table statement
+  such as "number", "varchar2(100)".
+
+- **keyColumns**: Array of string that represents columns
+  that are part of primary key (one or more columns)
+
+- **apiType**: This parameter along with configuration paramter
+  can prevent creation of tables by this API ( where table creation is considered as DBA function)
+
+**put**: insert rows into an Oracle table
+
+- **containerName**: Name of the table that was used
+  in the API "createAnyTable".
+
+- **columnNames**: Array of columns into which we insert the data.
+  A table must have been created before using this API.
+  If the table does not already exist, this API throws an error.
+  This array can be a subset of the all the table columns.
+  Please note that, all the non-null columns should be included.
+
+- **rowColumnValues**: An array of Arrays where the inner array
+  represents a list of columnName/columnValue Tuples
+  (which is equivalent to an array)
+  and the Outer array represents an array of rows
+
+**get**: get the data from the Oracle table
+
+- **containerName**: Name of the table that was used
+  in the API "createAnyTable".
+
+- **selectList**: Array of columns who values are being fetched.
+  It can be null in which case all the columns are fetched.
+
+- **filterColumns**: Array of tuples where each tuple
+  is columnName/columnValue pair.
+  These tuples are used to construct a where clause.
+  At this point, we support only equality condition
+  between columnName and columnValue (operator = )
+  and only  "and" operator between the predicates.
+  It can be null which results in a table scan.
+
+- **callbackFunction**: The API invokes this call back function
+  for every column value fetched by the get operation.
+  Call back function has parameters:
+  table_name, row_number, column_name, column_value
+
+
 Example Output Adapter Configuration
 ------------------------------------
 
