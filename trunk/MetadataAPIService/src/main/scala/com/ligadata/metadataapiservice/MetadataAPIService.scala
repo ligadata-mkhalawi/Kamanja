@@ -246,20 +246,15 @@ trait MetadataAPIService extends HttpService {
                         }
                       }~
                         entity(as[String]) { reqBody =>
-                          pathPrefix("data") {
-                            str => {
-                              pathEndOrSingleSlash {
-                                complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
-                              } ~
-                                path(Rest) {
+                          pathPrefix("data" /Rest) {
                                   str => {
                                     logger.debug("POST reqeust : data" + str)
                                     val toknRoute = str.split("/")
                                     if (toknRoute.size == 0 || toknRoute(0) == null) {
-                                      complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString))
+                                      complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString))
                                     } else {
                                       val searchObj = new SearchUtil(toknRoute(0))
-                                      if (!searchObj.checkMessagExisats(toknRoute(0))) {
+                                      if (!searchObj.checkMessagExists(toknRoute(0))) {
                                         complete(write((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "did not find %s message in metadata".format(toknRoute(0)))).toString))
                                       } else {
                                         parameterMap { params =>
@@ -271,8 +266,6 @@ trait MetadataAPIService extends HttpService {
                                       }
                                     }
                                   }
-                                }
-                            }
                           }
                         }
                     } ~

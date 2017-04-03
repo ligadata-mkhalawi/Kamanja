@@ -1,20 +1,24 @@
 package com.ligadata.dataaccessapi
 
+import java.io.File
+
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.KamanjaBase.{ContainerFactoryInterface, _}
-import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
-import com.ligadata.kamanja.metadata.{AdapterMessageBinding, BaseTypeDef, MdMgr, MessageDef}
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
+import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{DefaultFormats, Formats}
 import org.json4s._
 import org.json4s.JsonDSL._
 
+import scala.collection.mutable.TreeSet
+
 /**
   * Created by Yousef on 3/31/2017.
   */
 
-class SearchUtil(messageName: String) extends ObjectResolver{
+class SearchUtil(messageName: String) extends ObjectResolver {
 
   val searchUtilLoder = new KamanjaLoaderInfo
   var objFullName: String = _
@@ -22,13 +26,46 @@ class SearchUtil(messageName: String) extends ObjectResolver{
   var messageObj: MessageFactoryInterface = _
   var containerObj: ContainerFactoryInterface = _
   typeNameCorrType = mdMgr.ActiveType(messageName.toLowerCase)
+  var nodeInfo: NodeInfo = _
+  var isOk: Boolean = true
 
   if (typeNameCorrType == null || typeNameCorrType == None) {
     objFullName = typeNameCorrType.FullName.toLowerCase
   }
 
+  val cfgfile = "$KAMANJA_HOME/config/Engine1Config.properties"
+  val (loadConfigs, failStr) = Utils.loadConfiguration(cfgfile.toString, true)
+  if (failStr != null && failStr.size > 0) {
+    logger.error(failStr)
+    isOk = false
+  }
+
+  if (isOk) {
+    SearchUtilConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
+    nodeInfo = mdMgr.Nodes.getOrElse(SearchUtilConfiguration.nodeId.toString, null)
+  }
+
+  if (SearchUtilConfiguration.nodeId <= 0) {
+    logger.error("Not found valid nodeId. It should be greater than 0")
+    isOk = false
+  }
+
+  if (isOk) {
+    SearchUtilConfiguration.jarPaths = if (nodeInfo.JarPaths == null) Array[String]().toSet else nodeInfo.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
+    if (SearchUtilConfiguration.jarPaths.size == 0) {
+      logger.error("Not found valid JarPaths.")
+      isOk = false
+    }
+  }
+
+  if(isOk) {
+   isOk= LoadJarIfNeeded(typeNameCorrType, searchUtilLoder.loadedJars, searchUtilLoder.loader)
+  }
+
   var isMsg = false
   var isContainer = false
+
+  if(isOk) {
     var clsName = typeNameCorrType.PhysicalName.trim
     if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') // if no $ at the end we are taking $
       clsName = clsName + "$"
@@ -92,6 +129,7 @@ class SearchUtil(messageName: String) extends ObjectResolver{
     } else {
       logger.error("Failed to instantiate message or conatiner object :" + clsName)
     }
+  }
 
   override def getInstance(MsgContainerType: String): ContainerInterface = {
     if (MsgContainerType.compareToIgnoreCase(objFullName) != 0)
@@ -119,16 +157,64 @@ class SearchUtil(messageName: String) extends ObjectResolver{
 
   override def getMdMgr: MdMgr = mdMgr
 
+  private def LoadJarIfNeeded(elem: BaseElem, loadedJars: TreeSet[String], loader: KamanjaClassLoader): Boolean = {
+    if (SearchUtilConfiguration.jarPaths == null) return false
+
+    var retVal: Boolean = true
+    var allJars: Array[String] = null
+
+    val jarname = if (elem.JarName == null) "" else elem.JarName.trim
+
+    if (elem.DependencyJarNames != null && elem.DependencyJarNames.size > 0 && jarname.size > 0) {
+      allJars = elem.DependencyJarNames :+ jarname
+    } else if (elem.DependencyJarNames != null && elem.DependencyJarNames.size > 0) {
+      allJars = elem.DependencyJarNames
+    } else if (jarname.size > 0) {
+      allJars = Array(jarname)
+    } else {
+      return retVal
+    }
+
+    val jars = allJars.map(j => Utils.GetValidJarFile(SearchUtilConfiguration.jarPaths, j))
+
+    // Loading all jars
+    for (j <- jars) {
+      logger.debug("Processing Jar " + j.trim)
+      val fl = new File(j.trim)
+      if (fl.exists) {
+        try {
+          if (loadedJars(fl.getPath())) {
+            logger.debug("Jar " + j.trim + " already loaded to class path.")
+          } else {
+            loader.addURL(fl.toURI().toURL())
+            logger.debug("Jar " + j.trim + " added to class path.")
+            loadedJars += fl.getPath()
+          }
+        } catch {
+          case e: Exception => {
+            logger.error("Jar " + j.trim + " failed added to class path.", e)
+            return false
+          }
+        }
+      } else {
+        logger.error("Jar " + j.trim + " not found")
+        return false
+      }
+    }
+
+    true
+  }
+
   /**
     * This method used to check if message exists in our metadata
     *
     * @param messageName message name t find
     * @return flag for message if exist
     */
-  def checkMessagExisats(messageName: String): Boolean ={
+  def checkMessagExists(messageName: String): Boolean ={
     val msgDefs: Option[scala.collection.immutable.Set[MessageDef]] = MdMgr.mdMgr.Messages(true, true)
     if (msgDefs.isEmpty) {
-      (false, null)
+      false
     } else {
       for (message <- msgDefs.get) {
         // check if case sensitive
@@ -252,4 +338,10 @@ class SearchUtil(messageName: String) extends ObjectResolver{
       "   }"
     adapterBinding
   }
+}
+
+object SearchUtilConfiguration {
+  var nodeId: Int = _
+  var configFile: String = _
+  var jarPaths: collection.immutable.Set[String] = _
 }
