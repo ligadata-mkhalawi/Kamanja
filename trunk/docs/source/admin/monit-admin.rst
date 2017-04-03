@@ -386,7 +386,7 @@ We recommend choosing names that are meaningful in your configuration.
 
   start program "/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${LEADER_NODE_IP}
       '${PATH_TO}/StartKamanjaCluster.sh --ClusterId {ClusterId}
-      --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties --NodeIds 1'"
+      --MetadataAPIConfig ${PATH_TO}/MetadataAPIConfig.properties --NodeIds {NodeId}'"
 
   stop program  "/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${LEADER_NODE_IP}
       '${PATH_TO}/StopKamanjaCluster.sh --ClusterId {ClusterId}
@@ -456,7 +456,9 @@ kamanjaClusterStatusCheck.sh
   IFS=',' read -ra nodesIPs <<< "$Nodes"
 
   for i in "${nodesIPs[@]}"; do
-     operations=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@$i 'ps aux | grep java | grep com.ligadata.KamanjaManager.KamanjaManager | grep -v "grep" | wc -l'`
+     operations=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@$i
+        'ps aux | grep java | grep com.ligadata.KamanjaManager.KamanjaManager
+        | grep -v "grep" | wc -l'`
      if [ $operations -gt 0 ]
      then
         atLeastOneNodeUp='0'
@@ -468,7 +470,8 @@ kamanjaClusterStatusCheck.sh
   echo "Cluster is UP"
   exit $?
   else
-  ErrorCode=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${NODE_1_IP} 'cat ${PATH_TO}/KamanjaLog.log | grep ERROR | tail -n 1'`
+  ErrorCode=`/usr/bin/ssh -i ${PATH_TO}/Key.pem ${USER}@${NODE_1_IP}
+        'cat ${PATH_TO}/KamanjaLog.log | grep ERROR | tail -n 1'`
   echo "Cluster is DOWN: $ErrorCode"
   sleep 29
   fi

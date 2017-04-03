@@ -14,7 +14,14 @@ Oracle Output Adapter structure
 ::
 
   {
-    "Name" = "<adapter-name>";
+    "Name": "OracleOutputAdapter",
+    "TypeString": "Output",
+    "TenantId": "System",
+    "ClassName": "com.ligadata.outputadapters.OracleOutputAdapter$",
+    "JarName": "oracleoutputadapter_2.11-1.6.2.jar",
+    "DependencyJars": [
+        "ojdbc6.jar"
+    ],
     "adapterSpecificCfg" =
          "{"hostname": "vm002.ligadata.com",
          "instancename":"KAMANJA",
@@ -36,18 +43,29 @@ Oracle Output Adapter structure
 
 
 
+
 Parameters
 ----------
 
 The first few parameters are the standard ones
 used for all adapters and described on the
 :ref:`adapter-def-config-ref` page.
+Note the following:
+
+- **ClassName** - Implementation class of output adapter interface for oracle
+- **JarName** - Name of the jar that contains the implementation class
+- **DependencyJars** - Include Oracle thin jdbc driver
+
+
 In addition, the **AdapterSpecificCfg** parameter
 has the following attributes:
 
-- **hostname** -
-- **instancename** -
-- **portnumber** - port used to connect to the Oracle database
+- **hostname** - URL of the host machine
+  where the Oracle instance is running.
+- **instancename** - Name of the Oracle instance.
+- **portnumber** - Oracle listener port number.
+  Use the `tnspring <http://www.orafaq.com/wiki/Tnsping>`_ command
+  to show the port number
 - **user**, **password** - user name and password used
   to connect to the Oracle database
   if you do not use the encrypted/encoded password feature.
@@ -61,17 +79,39 @@ has the following attributes:
   You can use :ref:`generatekeys-command-ref` to create this file
   for testing.
 - **SchemaName** - name of the Oracle schema to which the data is being output.
-  The names and types specified
-  in the :ref:`message definition<message-def-config-ref>`
-  must match what is defined in the Oracle schema.
-- **jarpaths** -
-- **jdbcJar** -
-- **autoCreateTables** -
-- **appendOnly**
-  
+- **jarpaths** - full pathname of the directory that contains
+  the Oracle jdbc driver jar file.
+- **jdbcJar** - name of the Oracle jdbc thin driver file
+- **autoCreateTables** - set to NO to prevent Kamanja from creating tables
+- **appendOnly** - set to YES if new data is just appended to existing data;
+  set to NO  if duplicates can not be allowed (expensive)
+
 
 Usage
 -----
+
+The names and types specified
+in the :ref:`message definition<message-def-config-ref>`
+must match what is defined in the Oracle schema
+identified by the **SchemaName** parameter,
+with the following caveats:
+
+- All Kamanja decimal types are mapped to NUMBER type in Oracle.
+- A Kamanja Boolean type is mapped to varchar2(5)
+  because Kamanja ouputs a Boolean value as "true" or "false"
+- A String type is mapped to varchar2(100)
+  because, while the Kamanja :ref:`message definition<message-def-config-ref>`
+  does not limit the size of the string,
+  the Oracle VARCHAR2 type requires a size when a table is being created.
+
+Note the following limitations:
+
+- Only Basic :ref:`Types<types-term>` are supported;
+  this includes Integer, double, Float, String, and Boolean
+- The tableName in oracle is restricted to 30 characters,
+  so all API functions should use a plain className
+  (without the package name)
+
 
 
 See also
