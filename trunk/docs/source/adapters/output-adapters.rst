@@ -45,14 +45,12 @@ are described in the Kafka consumer section.
 
 .. _oracle-output-adapter-api:
 
-Oracle Output Adapter API
--------------------------
+Oracle Adapter API
+------------------
 
-The Oracle Output Adapter configuration is documented
-on the :ref:`oracle-output-adapter-ref` reference page.
-This adapter implements
-the same basic interface as other output adapters.
-Details of the API are given here.
+The :ref:`Oracle Output Adapter<oracle-output-adapter-ref>`
+uses a :ref:`storage adapter<adapters-storage-guide>` component
+that implements the following basic API.
 
 ::
 
@@ -69,7 +67,7 @@ that implements the following basic API.
 
 ::
 
-  def createAnyTable(containerName: String, columnNames: Array[String],
+  def createTable(containerName: String, columnNames: Array[String],
      columnTypes: Array[String], keyColumns: Array[String],
      apiType:String): Unit
 
@@ -84,7 +82,7 @@ that implements the following basic API.
      filterColumns:Array[(String,String)],
      callbackFunction: (String, Int, String, String) => Unit
 
-**createAnyTable**: create a table 
+**createTable**: create a table 
 
 - **containerName**: Can be a className of the container object.
   However, the Oracle table name is restricted to 30 characters
@@ -112,7 +110,7 @@ that implements the following basic API.
 **put**: insert rows into an Oracle table
 
 - **containerName**: Name of the table that was used
-  in the API "createAnyTable".
+  in the API "createTable".
 
 - **columnNames**: Array of columns into which we insert the data.
   A table must have been created before using this API.
@@ -128,7 +126,7 @@ that implements the following basic API.
 **get**: get the data from the Oracle table
 
 - **containerName**: Name of the table that was used
-  in the API "createAnyTable".
+  in the API "createTable".
 
 - **selectList**: Array of columns who values are being fetched.
   It can be null in which case all the columns are fetched.

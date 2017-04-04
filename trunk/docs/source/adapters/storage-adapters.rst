@@ -14,7 +14,7 @@ where it can save information such as :ref:`messages<messages-term>`,
 :ref:`model<model-term>` results, and some information saved from models.
 Multiple storage adapters means the same information
 can be saved to different databases.
-Here is a sample :ref`clusterconfig-config-ref>`
+Here is a sample :ref`clusterconfig-config-ref`
 with different storage adapters, to support HBase, Cassandra,
 and Microsoft SQL Server.
 
