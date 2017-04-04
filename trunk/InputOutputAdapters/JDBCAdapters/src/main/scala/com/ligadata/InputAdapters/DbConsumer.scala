@@ -1,28 +1,18 @@
-
-
 package com.ligadata.InputAdapters
 
-import java.sql.{Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, ResultSetMetaData, SQLException, Statement}
-import java.util.{ArrayList, Date, Properties}
+import java.sql.{Connection, Driver, DriverManager, DriverPropertyInfo, ResultSet, SQLException, Statement}
+import java.util.{Properties}
 
 import scala.actors.threadpool.{ExecutorService, Executors}
-import scala.util.control.Breaks.{break, breakable}
 import org.apache.logging.log4j.LogManager
-import com.ligadata.AdaptersConfiguration.{DbAdapterConfiguration, DbPartitionUniqueRecordKey, DbPartitionUniqueRecordValue}
+import com.ligadata.AdaptersConfiguration.{DbSerializeFormat, DbAdapterConfiguration, DbPartitionUniqueRecordKey, DbPartitionUniqueRecordValue, QueryInfo}
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.NodeContext
 import org.apache.commons.dbcp2.BasicDataSource
 import java.util.concurrent.atomic.AtomicLong
+import scala.collection.mutable.ArrayBuffer
 
 import com.ligadata.HeartBeat.MonitorComponentInfo
-import org.json4s.jackson.Serialization
-
-// import javax.sql.DataSource
-// import org.apache.commons.csv.CSVFormat
-// import java.io.StringWriter
-// import org.apache.commons.csv.CSVPrinter
-// import com.thoughtworks.xstream.XStream
-// import com.ligadata.adapters.xstream.CustomMapConverter
 
 object DbConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "JDBC_Consumer"
@@ -60,10 +50,10 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
   // private[this] val kvs = scala.collection.mutable.Map[String, (DbPartitionUniqueRecordKey, DbPartitionUniqueRecordValue, DbPartitionUniqueRecordValue)]()
 
-  private[this] var maxActiveConnections = 128
-  private[this] var maxIdleConnections = 4
+  private[this] var maxActiveConnections = 256
+  private[this] var maxIdleConnections = 8
   private[this] var initialSize = 5
-  private[this] var maxWaitMillis = 5000
+  private[this] var maxWaitMillis = 10000
 
   private[this] var isShutdown = false
   private[this] var isStopProcessing = false
@@ -72,6 +62,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   private var dataSource: BasicDataSource = _
   private var executor: ExecutorService = _
   private val input = this
+  private var driver: DbConsumerDriverShim = null
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeenStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(lastSeen))
@@ -113,7 +104,8 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       if (LOG.isInfoEnabled) LOG.info("Loading the Driver..")
       val d = Class.forName(dcConf.DriverName).newInstance.asInstanceOf[Driver]
       if (LOG.isInfoEnabled) LOG.info("Registering Driver..")
-      DriverManager.registerDriver(new DbConsumerDriverShim(d));
+      driver = new DbConsumerDriverShim(d)
+      DriverManager.registerDriver(driver);
     } catch {
       case e: Exception => {
         LOG.error("Failed to load/register jdbc driver name:%s.".format(dcConf.DriverName), e)
@@ -127,7 +119,10 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       //Create a DBCP based Connection Pool Here
       var dataSrc = new BasicDataSource
 
+      if (driver != null)
+        dataSrc.setDriver(driver)
       dataSrc.setDriverClassName(dcConf.DriverName)
+      // dataSrc.setDriverClassLoader()
       dataSrc.setUrl(dcConf.URLString)
       dataSrc.setUsername(dcConf.UserId);
       dataSrc.setPassword(dcConf.Password);
@@ -159,6 +154,177 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       case e: Exception => {
         LOG.error("Failed to get connection", e)
         throw e
+      }
+    }
+  }
+
+  private def serializeData(rowData: ArrayBuffer[String], dataBuf: StringBuilder, quotedType: ArrayBuffer[Boolean], columnNames: ArrayBuffer[String]): Unit = {
+    var addFldDelimiter = false
+    val sz = rowData.length
+    if (dcConf.format == DbSerializeFormat.kv) {
+      for (i <- 0 until sz) {
+        if (addFldDelimiter)
+          dataBuf.append(dcConf.fieldDelimiter)
+        dataBuf.append(columnNames(i))
+        dataBuf.append(dcConf.keyDelimiter)
+        dataBuf.append(rowData(i))
+        addFldDelimiter = true
+      }
+    } else if (dcConf.format == DbSerializeFormat.json) {
+      dataBuf.append("{")
+      for (i <- 0 until sz) {
+        if (addFldDelimiter)
+          dataBuf.append(",")
+        if (quotedType(i))
+          dataBuf.append(""""%s":"%s""".format(columnNames(i), rowData(i)))
+        else
+          dataBuf.append(""""%s":%s""".format(columnNames(i), rowData(i)))
+        addFldDelimiter = true
+      }
+      dataBuf.append("}")
+    } else if (dcConf.format == DbSerializeFormat.delimited) {
+      for (i <- 0 until sz) {
+        if (addFldDelimiter)
+          dataBuf.append(dcConf.fieldDelimiter)
+        dataBuf.append(rowData(i))
+        addFldDelimiter = true
+      }
+    } else {
+      throw new Exception("Unhandled format:" + dcConf.format.toString)
+    }
+  }
+
+  private def isQuotedType(columnType: Int): Boolean = {
+    // BUGBUG:: java.sql.Types.DECIMAL & java.sql.Types.NUMERIC are also treaded quoted data for now. Is it correct?
+    return (columnType != java.sql.Types.BIGINT &&
+      columnType != java.sql.Types.DOUBLE &&
+      columnType != java.sql.Types.FLOAT &&
+      columnType != java.sql.Types.INTEGER &&
+      columnType != java.sql.Types.ROWID &&
+      columnType != java.sql.Types.SMALLINT &&
+      columnType != java.sql.Types.TINYINT)
+  }
+
+  private def readData(partitionKey: DbPartitionUniqueRecordKey, partitionVal: DbPartitionUniqueRecordValue,
+                       execThread: ExecContext, qryUniqId: String, queryInfo: QueryInfo): Unit = {
+    var con: Connection = null
+    var stmt: Statement = null
+    var rs: ResultSet = null
+    // BUGBUG:: Yet to prepare query
+
+    val prevVal = partitionVal.QueryId2Primary.getOrElse(qryUniqId, null)
+
+    var primaryKeyExpression: String = null
+    if (prevVal != null)
+      primaryKeyExpression = queryInfo.PrimaryKeyExpression.replace("${PreviousPrimaryKeyValue}", prevVal)
+
+    val partitionExpression0 = queryInfo.PartitionExpression.replace("${MaxPartitions}", dcConf.Consumers.toString)
+    val partitionExpression = partitionExpression0.replace("${PartitionId}", partitionKey.PartitionId.toString)
+
+    val primaryAndPartitionSubstitution =
+      if (primaryKeyExpression != null)
+        " ((%s) AND (%s)) ".format(primaryKeyExpression, partitionExpression)
+      else
+        " (%s) ".format(partitionExpression)
+
+    val query = queryInfo.Query.replace("${PrimaryAndPartitionSubstitution}", primaryAndPartitionSubstitution)
+
+    if (LOG.isDebugEnabled()) LOG.debug("Fetch the results of " + query)
+    try {
+      con = getConnection
+      if (isStopProcessing || isShutdown) throw new Exception("Adapter is shutting down")
+      stmt = con.createStatement()
+      if (isStopProcessing || isShutdown) throw new Exception("Adapter is shutting down")
+      rs = stmt.executeQuery(query);
+
+      // This is for JSON type
+      val quotedType = ArrayBuffer[Boolean]()
+      val columnNames = ArrayBuffer[String]()
+      val columns = rs.getMetaData
+      var primaryKeyOrd = -1
+      for (i <- 1 to columns.getColumnCount) {
+        val colNm = columns.getColumnName(i)
+        // val colNm = columns.getColumnLabel(i)
+        columnNames += colNm
+        if (primaryKeyOrd <= 0 && colNm.equalsIgnoreCase(queryInfo.PrimaryKeyColumn)) {
+          primaryKeyOrd = i
+        }
+        if (dcConf.format == DbSerializeFormat.json) {
+          quotedType += isQuotedType(columns.getColumnType(i))
+        }
+      }
+
+      val colsSize = columnNames.size
+      val rowData = ArrayBuffer[String]()
+      val dataBuf = new StringBuilder()
+
+      if (primaryKeyOrd <= 0) {
+        LOG.error("Primary key: %s is not found in columns:{%s} for QueryUniqueId:%s. So, every time query will be restarted from beginning".format(queryInfo.PrimaryKeyColumn, columnNames.mkString(","), qryUniqId))
+      }
+
+      var foundFailure = false
+
+      while (!isStopProcessing && !isShutdown && !foundFailure && rs.next()) {
+        try {
+          val readTmMs = System.currentTimeMillis
+          rowData.clear
+          var primaryKeyValue: String = null
+          for (i <- 1 to colsSize) {
+            val fld = rs.getString(i)
+            var fldVal: String = "" // Default value if value is null/empty
+            if (fld != null && !fld.isEmpty)
+              fldVal = fld.toString
+            if (primaryKeyOrd == i)
+              primaryKeyValue = fldVal
+            rowData += fldVal
+          }
+
+          if (!isStopProcessing && !isShutdown) {
+            dataBuf.clear()
+            serializeData(rowData, dataBuf, quotedType, columnNames)
+            val message = dataBuf.toString()
+            if (LOG.isDebugEnabled) LOG.debug("Processing message:" + message)
+            var prevVal: String = null
+            if (primaryKeyValue != null) {
+              prevVal = partitionVal.QueryId2Primary.getOrElse(qryUniqId, null)
+              partitionVal.QueryId2Primary(qryUniqId) = primaryKeyValue
+            }
+            try {
+              execThread.execute(message.getBytes("UTF-8"), partitionKey, partitionVal, readTmMs)
+            } catch {
+              case e: Throwable => {
+                if (primaryKeyValue != null) {
+                  if (prevVal != null)
+                    partitionVal.QueryId2Primary(qryUniqId) = prevVal
+                  else
+                    partitionVal.QueryId2Primary.remove(qryUniqId)
+                }
+                throw e
+              }
+            }
+          }
+        } catch {
+          case e: Throwable => {
+            LOG.error("Failed to process messages. Existing current rowset and going to start again from previous point", e)
+            foundFailure = true
+          }
+        }
+      }
+    } catch {
+      case e: Exception => {
+        LOG.error("Failed to fetch data using query:" + query + " for QueryUniqueId:" + qryUniqId, e)
+        printFailure(e)
+        throw e
+      }
+    } finally {
+      if (rs != null) {
+        rs.close
+      }
+      if (stmt != null) {
+        stmt.close
+      }
+      if (con != null) {
+        con.close
       }
     }
   }
@@ -240,157 +406,35 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
           executor.execute(new Runnable() {
             private val partitionKey = k
             private val partitionVal = if (v != null) v else new DbPartitionUniqueRecordValue
-            // private val execThread = execCtxtObj.CreateExecContext(input, partitionKey, nodeContext)
+            private val execThread = execCtxtObj.CreateExecContext(input, partitionKey, nodeContext)
 
-            override def run() {
-              /*
-                      //For CSV Format
-                      var csvFormat = CSVFormat.DEFAULT.withSkipHeaderRecord().withIgnoreSurroundingSpaces()
-                      var stringWriter = new StringWriter
-                      var csvPrinter = new CSVPrinter(stringWriter, csvFormat)
-            */
-              if (LOG.isDebugEnabled) LOG.debug("Started the executor. Thread:%s, PartitionId:%d".format(Thread.currentThread().getName, partitionKey.PartitionId));
-
-              var connection: Connection = null
-              var statement: Statement = null
-              var preparedStatement: PreparedStatement = null
-              var resultset: ResultSet = null
-              var resultSetMetaData: ResultSetMetaData = null
-
-              LOG.debug("Before starting....");
-
-              //connection = dataSource.getConnection
-              connection = DriverManager.getConnection(dcConf.URLString, dcConf.UserId, dcConf.Password)
-              LOG.debug("Got the connection from the datasource");
-
-              statement = connection.createStatement
-              LOG.debug("Created the statement");
-
-              var queryToExec = ""
-
-              LOG.debug("Executing Query:" + queryToExec);
-              statement.execute(queryToExec)
-
-              LOG.debug("Executed Query....");
-
-              resultset = statement.getResultSet
-              resultSetMetaData = resultset.getMetaData
-
-              var cntr: Long = 0
-
-              breakable {
-                LOG.debug("Start execution at " + new Date)
-
-                while (resultset.next) {
-                  val readTmNs = System.nanoTime
-                  val readTmMs = System.currentTimeMillis
-
-                  var cols: Int = 0
-
-                  var listData = new ArrayList[Object]
-                  var map = scala.collection.mutable.Map[String, Object]()
-
-                  for (cols <- 1 to resultSetMetaData.getColumnCount) {
-                    /*
-                  if (resultSetMetaData.getColumnName(cols).equalsIgnoreCase(dcConf.partitionColumn))
-                    uniqueValue.PrimaryKeyValue = resultset.getObject(cols).toString()
-
-                  if (resultSetMetaData.getColumnName(cols).equalsIgnoreCase(dcConf.temporalColumn))
-                    uniqueValue.AddedDate = resultset.getTimestamp(cols)
-                  */
-                    /*
-                  if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")) {
-                    listData.add(resultset.getObject(cols))
-                  } else if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("JSON") || dcConf.formatOrInputAdapterName.equalsIgnoreCase("XML")) {
-                    map + (resultSetMetaData.getColumnName(cols) -> resultset.getObject(cols))
-                  } else {
-                    //Handle other formats
-                    map + (resultSetMetaData.getColumnName(cols) -> resultset.getObject(cols))
-                  }
-                  */
-                  }
-
-                  var sb = new StringBuilder;
-                  /*
-                if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")) {
-                  csvPrinter.printRecord(listData)
-                  sb.append(stringWriter.getBuffer.toString())
-                  LOG.debug("CSV Message - " + sb.toString())
-                  listData.clear()
-                  stringWriter.getBuffer.setLength(0)
-                } else if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("JSON")) {
-                  sb.append(JSONValue.toJSONString(map))
-                  LOG.debug("JSON Message - " + sb.toString())
-                  map.empty
-                } else {
-                  //Handle other types
-                  if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("KV") || dcConf.formatOrInputAdapterName.equalsIgnoreCase("Delimited")) {
-                    //Need to see if the same logic applies for both KV and Delimited
-                    var i: Int = 0;
-                    for ((k, v) <- map) {
-                      sb.append(k)
-                      sb.append(dcConf.keyAndValueDelimiter)
-                      sb.append(v)
-                      i += 1
-                      if (i != map.size) {
-                        sb.append(dcConf.fieldDelimiter)
+            override def run(): Unit = {
+              try {
+                var canContinueToSend = true
+                while (canContinueToSend && !isStopProcessing && !isShutdown) {
+                  canContinueToSend = dcConf.RefreshInterval > 0
+                  dcConf.queriesInfo.foreach(kv => {
+                    try {
+                      if (!isStopProcessing && !isShutdown)
+                        readData(partitionKey, partitionVal, execThread, kv._1, kv._2)
+                    } catch {
+                      case e: Throwable => {
+                        LOG.error("Failed to execute query for queryid :" + kv._1, e)
                       }
                     }
-                    LOG.debug("Delimited/KV Message - " + sb.toString())
+                  })
+
+                  if (!isStopProcessing && !isShutdown && dcConf.RefreshInterval > 0) {
+                    try {
+                      Thread.sleep(dcConf.RefreshInterval * 1000)
+                    } catch {
+                      case e: Throwable => {}
+                    }
                   }
-                }
-                */
-                  // execThread.execute(sb.toString().getBytes, uniqueKey, uniqueValue, readTmNs)
-
-                  cntr += 1
-
-                  if (isShutdown || isStopProcessing || executor.isShutdown) {
-                    break
-                  }
-                }
-              }
-              //breakable ends here
-              LOG.debug("Complete execution at " + new Date)
-
-              try {
-                if (resultset != null) {
-                  resultset.close
-                  resultset = null
-                }
-                if (statement != null) {
-                  statement.close
-                  statement = null
-                }
-                if (preparedStatement != null) {
-                  preparedStatement.close
-                  preparedStatement = null
-                }
-                if (connection != null) {
-                  connection.close
-                  connection = null
                 }
               } catch {
-                case exc: SQLException => LOG.error("Error while closing resources ".concat(exc.getMessage))
-              } finally {
-                try {
-                  if (resultset != null) {
-                    resultset.close
-                    resultset = null
-                  }
-                  if (statement != null) {
-                    statement.close
-                    statement = null
-                  }
-                  if (preparedStatement != null) {
-                    preparedStatement.close
-                    preparedStatement = null
-                  }
-                  if (connection != null) {
-                    connection.close
-                    connection = null
-                  }
-                } catch {
-                  case exc: SQLException => LOG.error("Error while closing resources ".concat(exc.getMessage))
+                case e: Throwable => {
+                  LOG.error("Failed to execute in partition:" + partitionKey.Serialize + ". Terminating this partition execution", e)
                 }
               }
             }
@@ -399,7 +443,6 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       } catch {
         case e: Exception => {
           failedToCreateTasks = true
-          printFailure(e)
           LOG.error("Failed to create tasks", e)
         }
       }

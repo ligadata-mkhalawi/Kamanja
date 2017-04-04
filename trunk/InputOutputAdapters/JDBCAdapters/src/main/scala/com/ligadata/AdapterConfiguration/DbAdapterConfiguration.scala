@@ -8,6 +8,26 @@ import org.apache.logging.log4j.LogManager
 
 case class QueryInfo(Query: String, PrimaryKeyColumn: String, PartitionExpression: String, PrimaryKeyExpression: String)
 
+object DbSerializeFormat extends Enumeration {
+  type DbSerializeFormatType = Value
+  val none, kv, json, delimited  = Value
+
+  def asString(typ: DbSerializeFormatType): String = {
+    typ.toString
+  }
+  def fromString(typeStr: String): DbSerializeFormatType = {
+    val typ: DbSerializeFormatType = typeStr.toLowerCase match {
+      case "none" => none
+      case "kv" => kv
+      case "json" => json
+      case "delimited" => delimited
+      case _ => none
+    }
+    typ
+  }
+
+}
+
 class DbAdapterConfiguration extends AdapterConfiguration {
   //Name of the driver class
   var DriverName: String = _
@@ -35,7 +55,7 @@ class DbAdapterConfiguration extends AdapterConfiguration {
   var queriesInfo = scala.collection.mutable.Map[String, QueryInfo]()
 
   // For now supporting only KV, JSON & delimited.
-  var format = "kv"
+  var format = DbSerializeFormat.kv
 
   // fieldDelimiter is only for kv & delimited. default fieldDelimiter is , for both kv and delimited
   var fieldDelimiter = ","
@@ -49,7 +69,7 @@ class DbAdapterConfiguration extends AdapterConfiguration {
   override def toString(): String = {
     "(DriverName " + DriverName + "," + "URLString " + URLString + "," + "UserId " + UserId + "," +
       "Password " + Password + "," + "Consumers " + Consumers + "," + "Timeout " + Timeout + "," +
-      "RefreshInterval " + RefreshInterval + "," + "format " + format + "," + "fieldDelimiter " + fieldDelimiter + "," +
+      "RefreshInterval " + RefreshInterval + "," + "format " + format.toString + "," + "fieldDelimiter " + fieldDelimiter + "," +
       "alwaysQuoteFields " + alwaysQuoteFields + "," + "keyDelimiter " + keyDelimiter + "," + "queriesInfo " + queriesInfo.mkString("~") + "," +
       "dependencyJars " + dependencyJars + "," + "jarName " + jarName + ")";
   }
@@ -93,10 +113,20 @@ object DbAdapterConfiguration {
         dbAdpt.URLString = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("Consumers") == 0) {
         dbAdpt.Consumers = kv._2.toString.trim.toInt
+        if (dbAdpt.Consumers <= 0)
+          dbAdpt.Consumers = 1
       } else if (kv._1.compareToIgnoreCase("Timeout") == 0) {
-        dbAdpt.Timeout = kv._2.toString.trim.toLong
+        val timeout = kv._2.toString.trim.toLong
+        if (timeout > 0)
+          dbAdpt.Timeout = timeout
+        else
+          LOG.error("Gave Timeout <= 0. Taking default value as " + dbAdpt.Timeout)
       } else if (kv._1.compareToIgnoreCase("RefreshInterval") == 0) {
-        dbAdpt.RefreshInterval = kv._2.toString.trim.toLong
+        val refreshInterval = kv._2.toString.trim.toLong
+        if (refreshInterval > 0)
+          dbAdpt.RefreshInterval = refreshInterval
+        else
+          LOG.error("Gave RefreshInterval <= 0. Taking default value as " + dbAdpt.RefreshInterval)
       } else if (kv._1.compareToIgnoreCase("Queries") == 0) {
         val qs = if (kv._2.isInstanceOf[Map[String, Any]]) kv._2.asInstanceOf[Map[String, Any]] else null
         if (qs != null) {
@@ -141,12 +171,9 @@ object DbAdapterConfiguration {
 
           if (formatVal != null) {
             val fmt = formatVal.toString.trim.toLowerCase
-            val isKV = (fmt.equals("kv"))
-            val isDelimited = (fmt.equals("delimited"))
-            val isJSON = (fmt.equals("json"))
-            if (isDelimited || isJSON || isKV) {
-              dbAdpt.format = fmt
-              if (isKV || isDelimited) {
+            dbAdpt.format = DbSerializeFormat.fromString(fmt)
+            if (dbAdpt.format != DbSerializeFormat.none) {
+              if (dbAdpt.format == DbSerializeFormat.kv || dbAdpt.format == DbSerializeFormat.delimited) {
                 var fdSet = false
                 var kdSet = false
                 var qfSet = false
@@ -154,7 +181,7 @@ object DbAdapterConfiguration {
                   val opts = options.asInstanceOf[Map[String, String]]
                   val qteFlds = opts.getOrElse("AlwaysQuoteFields", null)
                   val fldDelim = opts.getOrElse("FieldDelimiter", null)
-                  val keyDelim = if (isKV) opts.getOrElse("KeyDelimiter", null) else null
+                  val keyDelim = if (dbAdpt.format == DbSerializeFormat.kv) opts.getOrElse("KeyDelimiter", null) else null
                   if (qteFlds != null) {
                     qfSet = true
                     dbAdpt.alwaysQuoteFields = qteFlds.toString.toBoolean
@@ -172,7 +199,7 @@ object DbAdapterConfiguration {
                   dbAdpt.alwaysQuoteFields = false
                 if (! fdSet)
                   dbAdpt.fieldDelimiter = ","
-                if (isKV && ! kdSet)
+                if (dbAdpt.format == DbSerializeFormat.kv && ! kdSet)
                   dbAdpt.keyDelimiter = ":"
               }
             } else {
