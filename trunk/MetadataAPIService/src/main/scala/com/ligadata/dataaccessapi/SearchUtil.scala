@@ -259,7 +259,6 @@ class SearchUtil(messageName: String) extends ObjectResolver {
         }
       }
       ser.configure(this, map)
-      ser.configure(this, map)
       ser.setObjectResolver(this)
       return MsgBindingInfo(deserializer, options, optionsjson, ser)
     } catch {
@@ -355,14 +354,30 @@ class SearchUtil(messageName: String) extends ObjectResolver {
     * create message data
     *
     * @param Messagename message full name
-    * @param formatOption deserializer type
+    * @param quoteFields
+    * @param fieldDel
+    * @param valueDel
+    * @param formatType
     * @param payLoad data to insert
     * @return message data as json format
     */
-  def makeMessage(Messagename: String, formatOption: String, payLoad: String): String ={ //push to kafka
+  def makeMessage(Messagename: String, payLoad: String, quoteFields: String, fieldDel: String, valueDel: String, formatType: String): String ={ //push to kafka
   val json = (
       ("MsgType" -> Messagename)~
-        ("FormatOption" -> formatOption)~
+        ("FormatOption" -> ("formatType" -> getDeserializerType(formatType))~
+          ("alwaysQuoteFields" -> getAlwaysQuoteFields(quoteFields))~
+          ("fieldDelimiter" -> getFieldDelimiter(fieldDel))~
+          ("valueDelimiter" -> getValueDelimiter(valueDel))
+          )~
+        ("PayLoad" -> payLoad)
+      )
+    compact(render(json))
+  }
+
+  def makeMessage1(Messagename: String, payLoad: String,  options: String): String ={ //push to kafka
+  val json = (
+      ("MsgType" -> Messagename)~
+        ("FormatOption" -> options)~
         ("PayLoad" -> payLoad)
       )
     compact(render(json))
@@ -376,7 +391,7 @@ class SearchUtil(messageName: String) extends ObjectResolver {
   }
 
   def getDeserializeOptionWithFormatType(quoteFields: String, fieldDel: String, valueDel: String, formatType: String): String ={
-      "{\"formatType\" : " + getDeserializerType(formatType) + "\"alwaysQuoteFields\":" + getAlwaysQuoteFields(quoteFields) +",\"fieldDelimiter\":\""+ getFieldDelimiter(fieldDel) + "\",\"valueDelimiter\":\""+ getValueDelimiter(valueDel) + "\"}"
+    """ {"formatType": "%s", "alwaysQuoteFields": "%s", "fieldDelimiter": "%s", "valueDelimiter":"%s"} """.format(getDeserializerType(formatType), getAlwaysQuoteFields(quoteFields), getFieldDelimiter(fieldDel), getValueDelimiter(valueDel))
   }
 }
 

@@ -1,0 +1,23 @@
+{
+  "Message": {
+	"NameSpace": "com.ligadata.kamanja",
+	"Name": "daasinputmessage",
+	"Version": "00.01.00",
+	"Description": "dass input Message",
+	"Fixed": "true",
+	"Persist": "false",
+	"Fields": [
+	  {
+		"Name": "MsgType",
+		"Type": "System.String"
+	  },
+	  {
+		"Name": "FormatOption",
+		"Type": "System.String"
+	  },
+	  {
+		"Name": "PayLoad",
+		"Type": "System.String"
+	  }	]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "daasmodelconfig": {
+    "Dependencies": ["kamanjamanager_2.11-1.5.3.jar"],
+    "MessageAndContainers": [
+      "com.ligadata.kamanja.daasinputmessage"
+    ],
+    "InputTypesSets": [
+      [
+        "com.ligadata.kamanja.daasinputmessage"
+      ]
+    ]
+  }
+}

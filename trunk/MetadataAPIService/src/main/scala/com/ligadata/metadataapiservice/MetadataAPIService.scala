@@ -263,7 +263,8 @@ trait MetadataAPIService extends HttpService {
                                           val msgBindingInfo = searchObj.ResolveDeserializer(toknRoute(0), DeserializerFormat,  options)
                                           val partitionKey = searchObj.getMessageKey(toknRoute(0), reqBody, msgBindingInfo)
                                           val optionsWithFormatType = searchObj.getDeserializeOptionWithFormatType(params.getOrElse("alwaysQuoteFields", ""),params.getOrElse("fieldDelimiter", ""),params.getOrElse("valueDelimiter", ""), DeserializerFormat)
-                                          val message = searchObj.makeMessage(toknRoute(0), optionsWithFormatType, reqBody)
+                                          //val message = searchObj.makeMessage(toknRoute(0), reqBody, params.getOrElse("alwaysQuoteFields", ""),params.getOrElse("fieldDelimiter", ""),params.getOrElse("valueDelimiter", ""), DeserializerFormat)
+                                          val message = searchObj.makeMessage1(toknRoute(0), reqBody, optionsWithFormatType)
                                           requestContext => processSetDataRequest(toknRoute(0), message, partitionKey)
                                             requestContext.complete(write(new DataApiResult("success" , "0", "Sent Data", None, None)))
                                         }
