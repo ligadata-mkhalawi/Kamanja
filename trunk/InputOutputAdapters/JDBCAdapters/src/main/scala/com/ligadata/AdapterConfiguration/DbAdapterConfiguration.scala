@@ -41,6 +41,8 @@ class DbAdapterConfiguration extends AdapterConfiguration {
   //Db User Password for connectivity
   var Password: String = _
 
+  var validationQuery = ""
+
   //Partition Column for splitting the extraction work into partitions
   //Number of partitions (will be defaulted to 1)
   var Consumers: Int = 1
@@ -68,7 +70,7 @@ class DbAdapterConfiguration extends AdapterConfiguration {
 
   override def toString(): String = {
     "(DriverName " + DriverName + "," + "URLString " + URLString + "," + "UserId " + UserId + "," +
-      "Password " + Password + "," + "Consumers " + Consumers + "," + "Timeout " + Timeout + "," +
+      "Password " + Password + "," + "ValidationQuery " + validationQuery + "," + Consumers " + Consumers + "," + "Timeout " + Timeout + "," +
       "RefreshInterval " + RefreshInterval + "," + "format " + format.toString + "," + "fieldDelimiter " + fieldDelimiter + "," +
       "alwaysQuoteFields " + alwaysQuoteFields + "," + "keyDelimiter " + keyDelimiter + "," + "queriesInfo " + queriesInfo.mkString("~") + "," +
       "dependencyJars " + dependencyJars + "," + "jarName " + jarName + ")";
@@ -111,6 +113,8 @@ object DbAdapterConfiguration {
         dbAdpt.Password = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("URLString") == 0) {
         dbAdpt.URLString = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("ValidationQuery") == 0) {
+        dbAdpt.validationQuery = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("Consumers") == 0) {
         dbAdpt.Consumers = kv._2.toString.trim.toInt
         if (dbAdpt.Consumers <= 0)

@@ -135,8 +135,11 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       dataSrc.setMaxWaitMillis(maxWaitMillis);
 
       dataSrc.setTestWhileIdle(false);
-      dataSrc.setTestOnBorrow(true);
-      dataSrc.setValidationQuery("Select 1");
+
+      if (dcConf.validationQuery != null && !dcConf.validationQuery.trim.isEmpty) {
+        dataSrc.setTestOnBorrow(true);
+        dataSrc.setValidationQuery(dcConf.validationQuery);
+      }
       dataSrc.setTestOnReturn(false);
 
       return dataSrc
