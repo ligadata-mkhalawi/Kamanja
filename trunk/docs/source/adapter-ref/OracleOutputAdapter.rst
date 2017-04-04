@@ -18,15 +18,13 @@ Oracle Output Adapter structure
     "TypeString": "Output",
     "TenantId": "System",
     "ClassName": "com.ligadata.outputadapters.OracleOutputAdapter$",
-    "JarName": "oracleoutputadapter_2.11-1.6.2.jar",
+    "JarName": "oracleoutputadapter_2.11-1.5.3.jar",
     "DependencyJars": [
         "ojdbc6.jar"
     ],
     "adapterSpecificCfg" =
-         "{"hostname": "vm002.ligadata.com",
-         "instancename":"KAMANJA",
-         "portnumber":"1521",
-         "user":"<user-name>",
+         "jdbcUrl":"jdbc:oracle:thin:@vm002.ligadata.com:1521:KAMANJA",
+         "user":"digicell",
          "password":"Carribean2",
          "Encrypted.Encoded.Password":
               "HlC3OVDz5gC+HbDnmN8BUJ41MO9+ofHIlvm0sgFmmG4hKw+xB5hvrHpJ9vMQKOVECwTephZB222OH/
@@ -34,10 +32,10 @@ Oracle Output Adapter structure
               ViVjEddEfTjwkw=",
          "PrivateKeyFile": "/home/kamanja/programs/kamanja/config/private.key"
          "SchemaName":"<schema-name>",
-         "jarpaths":"/media/home2/jdbc",
+         "jarpaths":"/media/home2/installKamanja153/Kamanja-1.5.3_2.11/lib/system",
          "jdbcJar":"ojdbc6.jar",
          "autoCreateTables":"YES",
-         "appendOnly":"NO"}"
+         "appendOnly":"YES"}"
   }
 
 
@@ -53,7 +51,8 @@ Note the following:
 
 - **ClassName** - `com.ligadata.outputadapters.OracleOutputAdapter$`
   is the implementation class of the output adapter interface for Oracle.
-- **JarName** - `oracleoutputadapter_2.11-1.6.2.jar`
+- **JarName** - `oracleoutputadapter_2.11-1.6.2.jar` (for Release 1.6.2)
+  or `oracleoutputadapter_2.11-1.5.3.jar` (for Release 1.5.3).
   is the name of the jar that contains the implementation class.
 - **DependencyJars** - must include `ojdbc6.jar`,
   the Oracle thin jdbc driver.
@@ -62,12 +61,10 @@ Note the following:
 In addition, the **AdapterSpecificCfg** parameter
 has the following attributes:
 
-- **hostname** - Full name (including domain) of the host machine
-  where the Oracle instance is running.
-- **instancename** - Name of the Oracle instance.
-- **portnumber** - Oracle listener port number.
+- **jdbcUrl** - Complete Url string for connecting
+  to oracle database, including the port number.
   Use the `tnspring <http://www.orafaq.com/wiki/Tnsping>`_ command
-  to show the port number
+  to show the port number.
 - **user**, **password** - user name and password used
   to connect to the Oracle database
   if you do not use the encrypted/encoded password feature.
@@ -83,8 +80,6 @@ has the following attributes:
 - **PrivateKeyFile** - private.key file to use for your application.
   You can use :ref:`generatekeys-command-ref` to create this file
   for testing.
-- **SchemaName** - name of the Oracle schema to which the data is being output.
-  If not populated, this defaults to user name.
 - **jarpaths** - full pathname of the directory that contains
   the Oracle jdbc driver jar file.
 - **jdbcJar** - name of the Oracle jdbc thin driver file
@@ -104,7 +99,7 @@ with the following caveats:
 - All Kamanja decimal types are mapped to NUMBER type in Oracle.
 - A Kamanja Boolean type is mapped to varchar2(5)
   because Kamanja ouputs a Boolean value as "true" or "false"
-- A String type is mapped to varchar2(4000)
+- A String type is mapped to varchar2(100)
   because, while the Kamanja :ref:`message definition<message-def-config-ref>`
   does not limit the size of the string,
   the Oracle VARCHAR2 type requires a size when a table is being created.
@@ -112,12 +107,10 @@ with the following caveats:
 Note the following limitations:
 
 - Only Basic :ref:`Types<types-term>` are supported;
-  this includes Integer, double, Float, String, and Boolean
+  this includes Integer, double, Float, String, and Boolean.
 - The tableName in oracle is restricted to 30 characters,
   so all API functions should use a plain className
-  (without the package name)
-
-
+  (without the package name).
 
 See also
 --------
