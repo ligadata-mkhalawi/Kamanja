@@ -48,7 +48,7 @@ class DbAdapterConfiguration extends AdapterConfiguration {
   var Consumers: Int = 1
 
   //Timeout
-  var Timeout: Long = 86400000L
+  var Timeout = 86400
 
   // <= 0 means run once, any greater value, will run continuously
   var RefreshInterval: Long = 30000L
@@ -120,7 +120,7 @@ object DbAdapterConfiguration {
         if (dbAdpt.Consumers <= 0)
           dbAdpt.Consumers = 1
       } else if (kv._1.compareToIgnoreCase("Timeout") == 0) {
-        val timeout = kv._2.toString.trim.toLong
+        val timeout = kv._2.toString.trim.toInt
         if (timeout > 0)
           dbAdpt.Timeout = timeout
         else

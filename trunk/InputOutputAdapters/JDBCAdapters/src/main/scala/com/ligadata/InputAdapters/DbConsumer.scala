@@ -245,6 +245,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       if (isStopProcessing || isShutdown) throw new Exception("Adapter is shutting down")
       stmt = con.createStatement()
       if (isStopProcessing || isShutdown) throw new Exception("Adapter is shutting down")
+      stmt.setQueryTimeout(dcConf.Timeout)
       rs = stmt.executeQuery(query);
 
       // This is for JSON type
@@ -307,7 +308,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
               partitionVal.QueryId2Primary(qryUniqId) = primaryKeyValue
             }
             try {
-              if (LOG.isTraceEnabled()) LOG.trace("ExecNo:%d, QueryNo:%d. sending message {%s}".format(execNo, queryNo, message))
+              if (LOG.isTraceEnabled()) LOG.trace("ExecNo:%d, QueryNo:%d. sending message %s".format(execNo, queryNo, message))
               execThread.execute(message.getBytes("UTF-8"), partitionKey, partitionVal, readTmMs)
             } catch {
               case e: Throwable => {
