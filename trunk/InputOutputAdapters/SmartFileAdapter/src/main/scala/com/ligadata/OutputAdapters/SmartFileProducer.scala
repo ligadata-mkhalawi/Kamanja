@@ -60,11 +60,13 @@ object SmartFileProducer extends OutputAdapterFactory {
 
 object PartitionFileFactory {
   def createPartitionFile(fc: SmartFileProducerConfiguration, key: String, avroSchema: Option[String], ignoreFields: Array[String]): PartitionFile = {
-    if (fc.isParquet) new ParquetPartitionFile(fc, key, avroSchema.get, ignoreFields)
-    else new StreamPartitionFile(fc, key)
-
+    if (fc.isParquet) {
+      new ParquetPartitionFile(fc, key, avroSchema.get, ignoreFields)
+    }
+    else {
+      new StreamPartitionFile(fc, key, avroSchema.get)
+    }
   }
-
 }
 
 object SendStatus {
@@ -460,14 +462,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     fc.uri = fc.uri.substring("file://".length() - 1)
 
   val isParquet = fc.isParquet
+  val isAvro = fc.isAvro
   val parquetCompression = if (fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
   if (isParquet)
     LOG.info(">>>>>>>>> using parquet with compression: " + parquetCompression)
   else LOG.info(">>>>>>>>> compression: " + fc.compressionString)
 
-  val defaultExtension = if (isParquet) "" else fc.compressionString
+  val defaultExtension = if (isParquet || isAvro) "" else fc.compressionString
 
-  val compress = (fc.compressionString != null && !isParquet)
+  val compress = (fc.compressionString != null && !isParquet && !isAvro)
   if (compress) {
     if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(fc.compressionString) ||
       CompressorStreamFactory.GZIP.equalsIgnoreCase(fc.compressionString) ||
@@ -683,7 +686,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
-          val initialFileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(defaultExtension, ""))
+          val baseFileExt = if (isAvro) ".avro" else ".dat"
+          val finalExtn = "%s%s".format(baseFileExt, extensions.getOrElse(defaultExtension, ""))
+          val initialFileName = "%s/%s/%s%s-%d-%s%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, finalExtn)
           val fileName =
             if (isParquet) {
               //cannot use already existing parquet file
@@ -696,12 +701,23 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 val newDt = System.currentTimeMillis
                 nextRolloverTime = newDt + (fc.rolloverInterval * 60 * 1000)
                 val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
-                "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, extensions.getOrElse(defaultExtension, ""))
+                "%s/%s/%s%s-%d-%s%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, finalExtn)
+              } else initialFileName
+            } else if (isAvro) {
+              // BUGBUG:: Does not want to append the data for the same file for now. Later we can use appendTo while creating the file
+              val curTm = System.currentTimeMillis
+              val extLen = baseFileExt.length
+              var flPath = initialFileName
+              var cntr = 1L
+              while (isFileExists(fc, flPath)) {
+                val flWithoutExtn = flPath.substring(0, flPath.length - extLen)
+                flPath = flWithoutExtn + "_" + curTm + "_" + cntr + baseFileExt
+                cntr += 1
               }
-              else initialFileName
+              flPath
+            } else {
+              initialFileName
             }
-            else initialFileName
-
 
           if (isParquet) {
             //TODO : is it better to cache parsed schemas in a map ?
@@ -777,6 +793,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
     // Not implemented yet
+    throw new Exception("Not yet implemented")
   }
 
 

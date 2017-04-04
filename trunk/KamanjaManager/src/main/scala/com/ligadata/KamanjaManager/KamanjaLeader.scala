@@ -127,7 +127,7 @@ object KamanjaLeader {
     clusterStatus = ClusterStatus("", false, "", null)
     newClusterStatusChangedTime = 0L
     newClusterStatusCopiedTime = 0L
-    //    zkLeaderLatch = null
+//    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
     engineLeaderZkNodePath = null
@@ -645,7 +645,8 @@ object KamanjaLeader {
       if (newClusterStatusCopiedTime == 0 && newClusterStatusChangedTime > 0) {
         logger.warn("First time - Copy ClusterStatus")
         true
-      } else {
+      }
+      else {
         val curTm = System.currentTimeMillis
         var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < curTm))
         if (canCopyClusterStatus) {
@@ -662,7 +663,7 @@ object KamanjaLeader {
               // clusterStatus.nodeId != newClusterStatus.nodeId ||
               curParticipents.size != newParticipents.size ||
               diff1.size > 0 || diff2.size > 0)
-          if (!canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
+          if (! canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
             // Resetting newClusterStatusCopiedTime from newClusterStatusChangedTime. Because no need to change ClusterStatus/ClusterDistribution
             logger.warn("Found canCopyClusterStatus as true, but there is no real change in ClusterStatus.")
             newClusterStatusCopiedTime = newClusterStatusChangedTime
@@ -1951,6 +1952,19 @@ object KamanjaLeader {
     saveEndOffsets = true
     SetUpdatePartitionsFlag
   }
+  
+  private def extractNodeIdAndUUId(nodeIdAndUUIdStr: String): (String, String) = {
+    var nodeId: String = null
+    var uuId: String = null
+
+    if (nodeIdAndUUIdStr.startsWith("NodeId-")) {
+      val uuidKeyWordIdx = nodeIdAndUUIdStr.indexOf("-UUID-")
+      nodeId = nodeIdAndUUIdStr.substring("NodeId-".length, uuidKeyWordIdx)
+      uuId = nodeIdAndUUIdStr.substring(uuidKeyWordIdx + "-UUID-".length)
+    }
+
+    (nodeId, uuId)
+  }
 
   def Init(nodeId1: String, zkConnectString1: String, engineLeaderZkNodePath1: String, engineDistributionZkNodePath1: String, adaptersStatusPath1: String, inputAdap: ArrayBuffer[InputAdapter], outputAdap: ArrayBuffer[OutputAdapter],
            storageAdap: ArrayBuffer[DataStore], enviCxt: EnvContext, zkSessionTimeoutMs1: Int, zkConnectionTimeoutMs1: Int, dataChangeZkNodePath1: String): Unit = {
@@ -2045,15 +2059,11 @@ object KamanjaLeader {
                     if (nodes == null) {
                       LOG.warn("Got Redistribution request and not able to get nodes from metadata manager for cluster %s. Not going to check whether all nodes came up or not in participents {%s}.".format(KamanjaConfiguration.clusterId, cs.participantsNodeIds.mkString(",")))
                     } else {
-                      val participentNodeIds = cs.participantsNodeIds.map(nd => {
-                        var ndId = ""
-                        val json = parse(nd)
-                        if (json != null && json.values != null) {
-                          val values = json.values.asInstanceOf[Map[String, Any]]
-                          ndId = values.getOrElse("NodeId", "").toString.trim
-                        }
-                        ndId
-                      }).filter(nd => nd.size > 0).toSet
+                      val allParticipentNodeIds = cs.participantsNodeIds.map(nd => {
+		        val (nodeId, uuId) = extractNodeIdAndUUId(nd)
+                        nodeId
+                      }).filter(nd => nd.size > 0)
+                      val participentNodeIds = allParticipentNodeIds.toSet
                       // Check for nodes in participents now
                       allNodesUp = true
                       var i = 0
@@ -2063,7 +2073,7 @@ object KamanjaLeader {
                         i += 1
                       }
 
-                      val dupNodes = participentNodeIds.groupBy(x => x).filter(kv => (kv._2.size > 1)).map(kv => kv._1)
+                      val dupNodes = allParticipentNodeIds.groupBy(x => x).filter(kv => (kv._2.size > 1)).map(kv => kv._1)
                       if (dupNodes.size > 0) {
                         LOG.warn("Found duplicate %s in %s.".format(dupNodes.mkString(","), cs.participantsNodeIds.mkString(" ~ ")))
                       }
