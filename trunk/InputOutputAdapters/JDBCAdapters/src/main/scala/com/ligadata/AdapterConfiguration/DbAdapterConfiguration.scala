@@ -70,7 +70,7 @@ class DbAdapterConfiguration extends AdapterConfiguration {
 
   override def toString(): String = {
     "(DriverName " + DriverName + "," + "URLString " + URLString + "," + "UserId " + UserId + "," +
-      "Password " + Password + "," + "ValidationQuery " + validationQuery + "," + Consumers " + Consumers + "," + "Timeout " + Timeout + "," +
+      "Password " + Password + "," + "ValidationQuery " + validationQuery + "," + "Consumers " + Consumers + "," + "Timeout " + Timeout + "," +
       "RefreshInterval " + RefreshInterval + "," + "format " + format.toString + "," + "fieldDelimiter " + fieldDelimiter + "," +
       "alwaysQuoteFields " + alwaysQuoteFields + "," + "keyDelimiter " + keyDelimiter + "," + "queriesInfo " + queriesInfo.mkString("~") + "," +
       "dependencyJars " + dependencyJars + "," + "jarName " + jarName + ")";
