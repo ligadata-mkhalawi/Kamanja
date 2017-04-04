@@ -1,0 +1,21 @@
+[
+  {
+    "AdapterName": "TestIn_1",
+    "MessageName": "com.ligadata.flare.daas.DataAccessRequest",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "fieldDelimiter": "\\x01"
+    }
+  },
+  {
+    "AdapterName": "testout_1",
+    "MessageNames": [
+      "com.ligadata.flare.daas.DataAccessResponse"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "fieldDelimiter": "\\x01"
+    }
+  }
+]
+
