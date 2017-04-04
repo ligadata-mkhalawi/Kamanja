@@ -218,7 +218,7 @@ object DbAdapterConfiguration {
   }
 }
 
-case class DbKeyData(Version: Int, Type: String, Name: String, QueryUniqStr: String, PartitionId: Int)
+case class DbKeyData(Version: Int, Type: String, Name: String, PartitionId: Int)
 
 class DbPartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
