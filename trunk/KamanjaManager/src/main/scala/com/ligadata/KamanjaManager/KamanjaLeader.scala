@@ -56,7 +56,7 @@ case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List
 case class PartitionKeyVal(Key: String, KeyValue: String, UUID: String, NodeStartTime: Long, Counter: Long)
 case class NodeDistMap(Adap: String, Parts: List[PartitionKeyVal])
 case class DistributionMap(Node: String, Adaps: List[NodeDistMap])
-case class ActionOnAdaptersMap1(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap]])
+case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], distributionmap: Option[List[DistributionMap]])
 
 case class KeyValue(var keyValue: String, var nodeid: String, var uuid: String, var nodestarttime: Long, var counter: Long)
 
@@ -127,7 +127,7 @@ object KamanjaLeader {
     clusterStatus = ClusterStatus("", false, "", null)
     newClusterStatusChangedTime = 0L
     newClusterStatusCopiedTime = 0L
-//    zkLeaderLatch = null
+    //    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
     engineLeaderZkNodePath = null
@@ -249,14 +249,16 @@ object KamanjaLeader {
             if (expectedNodesAction.compareToIgnoreCase(action) == 0) {
               nodesStatus += extractedNode
 
-              val nodeJson = parse(extractedNode)
+              // val nodeJson = parse(extractedNode)
 
-              if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
-                return
+              // if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
+              //  return
 
-              val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
+              //   val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
 
-              val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
+              //  val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
+
+              val (nodeid, uuid) = extractNodeIdAndUUId(extractedNode)
 
               var partKeyValueMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
 
@@ -645,8 +647,7 @@ object KamanjaLeader {
       if (newClusterStatusCopiedTime == 0 && newClusterStatusChangedTime > 0) {
         logger.warn("First time - Copy ClusterStatus")
         true
-      }
-      else {
+      } else {
         val curTm = System.currentTimeMillis
         var canCopyClusterStatus = (newClusterStatusCopiedTime < newClusterStatusChangedTime && ((newClusterStatusChangedTime + waitTmBeforeRedistribute) < curTm))
         if (canCopyClusterStatus) {
@@ -663,7 +664,7 @@ object KamanjaLeader {
               // clusterStatus.nodeId != newClusterStatus.nodeId ||
               curParticipents.size != newParticipents.size ||
               diff1.size > 0 || diff2.size > 0)
-          if (! canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
+          if (!canCopyClusterStatus && newClusterStatusCopiedTime != newClusterStatusChangedTime) {
             // Resetting newClusterStatusCopiedTime from newClusterStatusChangedTime. Because no need to change ClusterStatus/ClusterDistribution
             logger.warn("Found canCopyClusterStatus as true, but there is no real change in ClusterStatus.")
             newClusterStatusCopiedTime = newClusterStatusChangedTime
@@ -1306,7 +1307,7 @@ object KamanjaLeader {
       }
 
       implicit val jsonFormats: Formats = DefaultFormats
-      val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap1]
+      val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap]
 
       actionOnAdaptersMap.action match {
         case "stop" => {
@@ -1484,13 +1485,14 @@ object KamanjaLeader {
                 if (distList != null && distList.size > 0) {
                   distList.foreach(dist => {
                     if (dist.Node != null && dist.Node.size > 0) {
-                      val nodeJson = parse(dist.Node)
-                      if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
-                        return
+                      // val nodeJson = parse(dist.Node)
+                      // if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
+                      //   return
 
-                      val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
-                      val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
+                      //  val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
+                      //  val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
 
+                      val (nodeid, uuid) = extractNodeIdAndUUId(dist.Node)
                       if (dist.Adaps != null && dist.Adaps.size > 0) {
                         dist.Adaps.foreach(adap => {
                           val parts = adap.Parts
@@ -1952,7 +1954,7 @@ object KamanjaLeader {
     saveEndOffsets = true
     SetUpdatePartitionsFlag
   }
-  
+
   private def extractNodeIdAndUUId(nodeIdAndUUIdStr: String): (String, String) = {
     var nodeId: String = null
     var uuId: String = null
@@ -2060,7 +2062,7 @@ object KamanjaLeader {
                       LOG.warn("Got Redistribution request and not able to get nodes from metadata manager for cluster %s. Not going to check whether all nodes came up or not in participents {%s}.".format(KamanjaConfiguration.clusterId, cs.participantsNodeIds.mkString(",")))
                     } else {
                       val allParticipentNodeIds = cs.participantsNodeIds.map(nd => {
-		        val (nodeId, uuId) = extractNodeIdAndUUId(nd)
+                        val (nodeId, uuId) = extractNodeIdAndUUId(nd)
                         nodeId
                       }).filter(nd => nd.size > 0)
                       val participentNodeIds = allParticipentNodeIds.toSet
