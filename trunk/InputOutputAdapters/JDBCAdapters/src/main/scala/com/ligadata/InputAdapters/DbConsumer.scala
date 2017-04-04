@@ -211,7 +211,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   }
 
   private def readData(partitionKey: DbPartitionUniqueRecordKey, partitionVal: DbPartitionUniqueRecordValue,
-                       execThread: ExecContext, qryUniqId: String, queryInfo: QueryInfo): Unit = {
+                       execThread: ExecContext, qryUniqId: String, queryInfo: QueryInfo, execNo: Long, queryNo: Int): Unit = {
     var con: Connection = null
     var stmt: Statement = null
     var rs: ResultSet = null
@@ -234,7 +234,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
     val query = queryInfo.Query.replace("${PrimaryAndPartitionSubstitution}", primaryAndPartitionSubstitution)
 
-    if (LOG.isDebugEnabled()) LOG.debug("Fetch the results of " + query)
+    if (LOG.isDebugEnabled()) LOG.debug("ExecNo:%d, QueryNo:%d. Fetch the results of query:%s".format(execNo, queryNo, query))
     try {
       con = getConnection
       if (isStopProcessing || isShutdown) throw new Exception("Adapter is shutting down")
@@ -263,11 +263,14 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       val rowData = ArrayBuffer[String]()
       val dataBuf = new StringBuilder()
 
+      if (LOG.isDebugEnabled()) LOG.debug("ExecNo:%d, QueryNo:%d. Found columns {%s} for query:%s and primary key ordinal:%d".format(execNo, queryNo, columnNames.mkString(","), query, primaryKeyOrd))
+
       if (primaryKeyOrd <= 0) {
-        LOG.error("Primary key: %s is not found in columns:{%s} for QueryUniqueId:%s. So, every time query will be restarted from beginning".format(queryInfo.PrimaryKeyColumn, columnNames.mkString(","), qryUniqId))
+        LOG.error("ExecNo:%d, QueryNo:%d. Primary key: %s is not found in columns:{%s} for QueryUniqueId:%s. So, every time query will be restarted from beginning".format(execNo, queryNo, queryInfo.PrimaryKeyColumn, columnNames.mkString(","), qryUniqId))
       }
 
       var foundFailure = false
+      var rows = 0
 
       while (!isStopProcessing && !isShutdown && !foundFailure && rs.next()) {
         try {
@@ -284,6 +287,8 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
             rowData += fldVal
           }
 
+          if (LOG.isTraceEnabled()) LOG.trace("ExecNo:%d, QueryNo:%d. Found row data {%s} of columns {%s} for query:%s and primary key ordinal:%d".format(execNo, queryNo, rowData.mkString(","), columnNames.mkString(","), query, primaryKeyOrd))
+
           if (!isStopProcessing && !isShutdown) {
             dataBuf.clear()
             serializeData(rowData, dataBuf, quotedType, columnNames)
@@ -295,6 +300,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
               partitionVal.QueryId2Primary(qryUniqId) = primaryKeyValue
             }
             try {
+              if (LOG.isTraceEnabled()) LOG.trace("ExecNo:%d, QueryNo:%d. sending message {%s}".format(execNo, queryNo, message))
               execThread.execute(message.getBytes("UTF-8"), partitionKey, partitionVal, readTmMs)
             } catch {
               case e: Throwable => {
@@ -308,6 +314,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
               }
             }
           }
+          rows += 1
         } catch {
           case e: Throwable => {
             LOG.error("Failed to process messages. Existing current rowset and going to start again from previous point", e)
@@ -315,9 +322,12 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
           }
         }
       }
+
+      if (LOG.isDebugEnabled()) LOG.debug("ExecNo:%d, QueryNo:%d. Processed %d rows for query:%s".format(execNo, queryNo, rows, query))
+
     } catch {
       case e: Exception => {
-        LOG.error("Failed to fetch data using query:" + query + " for QueryUniqueId:" + qryUniqId, e)
+        LOG.error("ExecNo:%d, QueryNo:%d. Failed to fetch data using query:%s for QueryUniqueId:%s".format(execNo, queryNo, query, qryUniqId), e)
         printFailure(e)
         throw e
       }
@@ -434,12 +444,16 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
             override def run(): Unit = {
               try {
                 var canContinueToSend = true
+                var execNo = 0L
                 while (canContinueToSend && !isStopProcessing && !isShutdown) {
                   canContinueToSend = dcConf.RefreshInterval > 0
+                  execNo += 1
+                  var queryNo = 0
                   dcConf.queriesInfo.foreach(kv => {
                     try {
+                      queryNo += 1
                       if (!isStopProcessing && !isShutdown)
-                        readData(partitionKey, partitionVal, execThread, kv._1, kv._2)
+                        readData(partitionKey, partitionVal, execThread, kv._1, kv._2, execNo, queryNo)
                     } catch {
                       case e: Throwable => {
                         LOG.error("Failed to execute query for queryid :" + kv._1, e)
