@@ -51,7 +51,7 @@ class DbAdapterConfiguration extends AdapterConfiguration {
   var Timeout: Long = 86400000L
 
   // <= 0 means run once, any greater value, will run continuously
-  var RefreshInterval: Long = 30L
+  var RefreshInterval: Long = 30000L
 
   //Queries
   var queriesInfo = scala.collection.mutable.Map[String, QueryInfo]()

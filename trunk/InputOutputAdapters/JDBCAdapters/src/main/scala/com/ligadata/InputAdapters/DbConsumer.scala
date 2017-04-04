@@ -463,7 +463,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
                   if (!isStopProcessing && !isShutdown && dcConf.RefreshInterval > 0) {
                     try {
-                      Thread.sleep(dcConf.RefreshInterval * 1000)
+                      Thread.sleep(dcConf.RefreshInterval)
                     } catch {
                       case e: Throwable => {}
                     }
