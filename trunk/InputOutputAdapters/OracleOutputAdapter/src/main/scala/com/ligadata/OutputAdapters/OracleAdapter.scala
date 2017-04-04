@@ -154,43 +154,13 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   }
 
   // Read all oracle parameters
-  var hostname: String = null;
-  if (parsed_json.contains("hostname")) {
-    hostname = parsed_json.get("hostname").get.toString.trim
-  } else {
-    throw CreateConnectionException("Unable to find hostname in adapterConfig ", new Exception("Invalid adapterConfig"))
-  }
-
   var user: String = null;
   if (parsed_json.contains("user")) {
     user = parsed_json.get("user").get.toString.trim
   } else {
     throw CreateConnectionException("Unable to find user in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
-
-  var sid: String = null;
-  if (parsed_json.contains("instancename")) {
-    sid = parsed_json.get("instancename").get.toString.trim
-  }
-  else {
-    throw CreateConnectionException("Unable to find instancename in adapterConfig ", new Exception("Invalid adapterConfig"))
-  }
-
-  var portNumber: String = null;
-  if (parsed_json.contains("portnumber")) {
-    portNumber = parsed_json.get("portnumber").get.toString.trim
-  }
-  else{
-    portNumber = "1521";
-  }
-
-  var schemaName: String = null;
-  if (parsed_json.contains("schemaName")) {
-    schemaName = parsed_json.get("schemaName").get.toString.trim
-  } else {
-    logger.info("The schemaName is not supplied in adapterConfig, defaults to " + user)
-    schemaName = user
-  }
+  var schemaName = user;
 
   var password: String = null;
   if (parsed_json.contains("password")) {
@@ -212,6 +182,13 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     jdbcJar = parsed_json.get("jdbcJar").get.toString.trim
   } else {
     throw CreateConnectionException("Unable to find jdbcJar in adapterConfig ", new Exception("Invalid adapterConfig"))
+  }
+
+  var jdbcUrl: String = null;
+  if (parsed_json.contains("jdbcUrl")) {
+    jdbcUrl = parsed_json.get("jdbcUrl").get.toString.trim
+  } else {
+    throw CreateConnectionException("Unable to find jdbcUrl in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
 
   // The following three properties are used for connection pooling
@@ -251,12 +228,8 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     appendOnly = parsed_json.get("appendOnly").get.toString.trim
   }
 
-  var jdbcUrl = "jdbc:oracle:thin:@" + hostname + ":" + portNumber + ":" + sid;
 
-
-  logger.info("hostname => " + hostname)
   logger.info("username => " + user)
-  logger.info("schemaName => " + schemaName)
   logger.info("jarpaths => " + jarpaths)
   logger.info("jdbcJar  => " + jdbcJar)
   logger.info("jdbcUrl  => " + jdbcUrl)

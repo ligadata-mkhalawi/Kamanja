@@ -302,7 +302,7 @@ class TestOracleOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAnd
     // setup AdapterConfiguration object
     var adapterConfig = new AdapterConfiguration;
     adapterConfig.Name = "OracleOutputAdapter";
-    adapterConfig.adapterSpecificCfg = s"""{"hostname": "vm002.ligadata.com","instancename":"KAMANJA","portnumber":"1521","user":"digicell","SchemaName":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"NO"}"""
+    adapterConfig.adapterSpecificCfg = s"""{"jdbcUrl":"jdbc:oracle:thin:@vm002.ligadata.com:1521:KAMANJA","user":"digicell","password":"Carribean2","jarpaths":"/media/home2/jdbc","jdbcJar":"ojdbc6.jar","autoCreateTables":"YES","appendOnly":"YES"}"""
     oa = OracleOutputAdapter.CreateOutputAdapter(adapterConfig, null);
   }
 
