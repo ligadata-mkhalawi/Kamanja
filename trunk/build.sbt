@@ -257,6 +257,8 @@ lazy val KafkaAdapters_v9 = project.in(file("InputOutputAdapters/KafkaAdapters_v
 
 lazy val KafkaAdapters_v10 = project.in(file("InputOutputAdapters/KafkaAdapters_v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaSimpleInputOutputAdapters % "provided")
 
+lazy val OracleOutputAdapter = project.in(file("InputOutputAdapters/OracleOutputAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, InputOutputAdapterBase, Exceptions, DataDelimiters, JsonSerDeser % "test")
+
 /*
 val commonSettings = Seq(
     scalaVersion := "2.11.7",

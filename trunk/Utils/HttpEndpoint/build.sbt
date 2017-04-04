@@ -18,7 +18,7 @@ libraryDependencies += "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.4.1"
 libraryDependencies += "commons-io" % "commons-io" % "2.4"
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
-libraryDependencies += "joda-time" % "joda-time" % "2.9.3"
+libraryDependencies += "joda-time" % "joda-time" % "2.9.4"
 
 // Kafka
 resolvers += "Apache repo" at "https://repository.apache.org/content/repositories/releases"
