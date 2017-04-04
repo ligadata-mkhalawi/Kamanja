@@ -13,7 +13,7 @@ object KafkaDataAccessAdapter {
   var api: KafkaDataAccessAdapter = null
 
   def Init(configJson: String) = synchronized {
-    if(api == null) {
+    if(api == null && configJson != null) {
       api = new KafkaDataAccessAdapter(configJson)
       api.start
     }
@@ -32,20 +32,15 @@ class KafkaDataAccessAdapter(configJson: String) extends DataAccessAPI {
   //implicit val formats = DefaultFormats
   
   val pendingRequests = scala.collection.mutable.Map[String, (Any, (Any, Any, String) => Unit)]()
+  val config = parse(configJson).values.asInstanceOf[Map[String, Any]]
 
-  var config: Map[String, Any]=_
-  try {
-    config = parse(configJson).values.asInstanceOf[Map[String, Any]]
-  } catch{
-    case e: Exception => log.warn("Did not pass DaasConig in MetadataAPIConfig.properties")
-  }
   val requestConfig = config.getOrElse("requestTopic", null)
   if(requestConfig == null)
     throw new Exception("Error in configuration: requestTopic needs to be specified.")
 
   val inputConfig = config.getOrElse("inputTopic", null)
   if(inputConfig == null)
-    throw new Exception("Error in configuration: inputTopic needs to be specified.")
+    log.warn("Error in configuration: inputTopic needs to be specified.")
 
   val responseConfig = config.getOrElse("responseTopic", null)
   if(responseConfig == null)
@@ -121,7 +116,7 @@ class KafkaDataAccessAdapter(configJson: String) extends DataAccessAPI {
     }
   }
 
-  def sendToKafka(key: Array[String], message: String): Unit ={ // check context
+  def sendToKafka(key: Array[String], message: String): Unit ={
     if(key.length == 0) {
       val reqId = java.util.UUID.randomUUID().toString
       inputTopic.send(Array(reqId), Array(message.getBytes("UTF8")))

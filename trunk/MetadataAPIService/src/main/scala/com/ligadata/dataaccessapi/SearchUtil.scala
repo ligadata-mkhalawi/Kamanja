@@ -38,7 +38,7 @@ class SearchUtil(messageName: String) extends ObjectResolver {
   }
 
   if (isOk) {
-    SearchUtilConfiguration.nodeId = MetadataAPIImpl.getMetadataAPI.GetMetadataAPIConfig.getProperty("NODE_ID".toLowerCase, "0").replace("\"", "").trim.toInt
+    SearchUtilConfiguration.nodeId = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("NODE_ID", "0").replace("\"", "").trim.toInt
     nodeInfo = mdMgr.Nodes.getOrElse(SearchUtilConfiguration.nodeId.toString, null)
   }
 
@@ -298,6 +298,57 @@ class SearchUtil(messageName: String) extends ObjectResolver {
     } else {
       "com.ligadata.kamanja.serializer.csvserdeser"
     }
+  }
+
+  /**
+    * check the value delimiter
+    * @param valueDel valueDelimiter
+    * @return valueDelimiter
+    */
+  def getValueDelimiter(valueDel: String): String ={
+    if(valueDel.length == 0)
+      "~"
+    else
+      valueDel
+  }
+
+  /**
+    * check the field delimiter
+    * @param fieldDel  fieldDelimiter
+    * @return fieldDelimiter
+    */
+  def getFieldDelimiter(fieldDel: String): String ={
+    if(fieldDel.length == 0)
+      ","
+    else
+      fieldDel
+  }
+
+  /**
+    * check if always quote fields
+    * @param quoteFields alwaysQuoteFields
+    * @return alwaysQuoteFields
+    */
+  def getAlwaysQuoteFields(quoteFields: String): String ={
+    if(quoteFields.equalsIgnoreCase("false") || quoteFields.equalsIgnoreCase("true"))
+      quoteFields
+    else
+      "false"
+  }
+
+  /**
+    * get deserializer option
+    * @param quoteFields alwaysQuoteFields
+    * @param fieldDel fieldDelimiter
+    * @param valueDel valueDelimiter
+    * @param options deseializer option
+    * @return deserializer option
+    */
+  def getDeserializeOpion(quoteFields: String, fieldDel: String, valueDel: String, options: String): String ={
+    if (options.length !=0)
+      options
+    else
+      "{\"alwaysQuoteFields\":" + getAlwaysQuoteFields(quoteFields) +",\"fieldDelimiter\":\""+ getFieldDelimiter(fieldDel) + "\",\"valueDelimiter\":\""+ getValueDelimiter(valueDel) + "\"}"
   }
 }
 
