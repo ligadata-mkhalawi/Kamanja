@@ -255,6 +255,8 @@ cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
 
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.10/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 #copy jars for kamanjainstallapplib
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system/
@@ -575,6 +577,9 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/target/*.jar $systemli
 cp $srcPath/Utils/ClusterInstaller/InstallDriver/target/scala-2.11/*.jar $systemlib
 cp $srcPath/Utils/ClusterInstaller/InstallDriverBase/target/*.jar $systemlib
 cp $srcPath/Utils/ClusterInstaller/GetComponent/target/scala-2.11/*.jar $systemlib
+
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.11/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 # cp $srcPath/Utils/SaveContainerDataComponent/target/scala-2.11/SaveContainerDataComponent* $systemlib
 #cp $srcPath/Utils/UtilsForModels/target/scala-2.11/utilsformodels*.jar $systemlib

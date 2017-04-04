@@ -293,6 +293,8 @@ cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/mi
 cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.10/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 
 #copy jars for kamanjainstallapplib
@@ -616,6 +618,8 @@ cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.11/mi
 cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.11/migrateto_v_1_5_0_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.11/generateadapterbindings_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.11/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 # copy 2.11 migrate libraries into 2.10 install directories, useful just in case of reverse migration
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
