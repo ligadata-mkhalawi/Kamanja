@@ -201,13 +201,18 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
   private def isQuotedType(columnType: Int): Boolean = {
     // BUGBUG:: java.sql.Types.DECIMAL & java.sql.Types.NUMERIC are also treaded quoted data for now. Is it correct?
-    return (columnType != java.sql.Types.BIGINT &&
-      columnType != java.sql.Types.DOUBLE &&
-      columnType != java.sql.Types.FLOAT &&
-      columnType != java.sql.Types.INTEGER &&
-      columnType != java.sql.Types.ROWID &&
-      columnType != java.sql.Types.SMALLINT &&
-      columnType != java.sql.Types.TINYINT)
+    return (
+      columnType != java.sql.Types.TINYINT &&
+        columnType != java.sql.Types.SMALLINT &&
+        columnType != java.sql.Types.INTEGER &&
+        columnType != java.sql.Types.ROWID &&
+        columnType != java.sql.Types.BIGINT &&
+        columnType != java.sql.Types.FLOAT &&
+        columnType != java.sql.Types.REAL &&
+        columnType != java.sql.Types.DOUBLE &&
+        columnType != java.sql.Types.NUMERIC &&
+        columnType != java.sql.Types.DECIMAL
+      )
   }
 
   private def readData(partitionKey: DbPartitionUniqueRecordKey, partitionVal: DbPartitionUniqueRecordValue,
