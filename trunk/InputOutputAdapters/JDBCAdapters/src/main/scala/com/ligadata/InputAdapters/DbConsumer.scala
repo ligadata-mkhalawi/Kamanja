@@ -181,7 +181,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
         if (addFldDelimiter)
           dataBuf.append(",")
         if (quotedType(i))
-          dataBuf.append(""""%s":"%s""".format(columnNames(i), rowData(i)))
+          dataBuf.append(""""%s":"%s"""".format(columnNames(i), rowData(i)))
         else
           dataBuf.append(""""%s":%s""".format(columnNames(i), rowData(i)))
         addFldDelimiter = true
@@ -255,7 +255,9 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
           primaryKeyOrd = i
         }
         if (dcConf.format == DbSerializeFormat.json) {
-          quotedType += isQuotedType(columns.getColumnType(i))
+          val colType = columns.getColumnType(i)
+          if (LOG.isTraceEnabled) LOG.trace("ExecNo:%d, QueryNo:%d. Columns %s, ColumnType:%d in query: %s".format(execNo, queryNo, colNm, colType, query))
+          quotedType += isQuotedType(colType)
         }
       }
 
@@ -263,7 +265,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
       val rowData = ArrayBuffer[String]()
       val dataBuf = new StringBuilder()
 
-      if (LOG.isDebugEnabled()) LOG.debug("ExecNo:%d, QueryNo:%d. Found columns {%s} for query:%s and primary key ordinal:%d".format(execNo, queryNo, columnNames.mkString(","), query, primaryKeyOrd))
+      if (LOG.isDebugEnabled()) LOG.debug("ExecNo:%d, QueryNo:%d. Found columns {%s} (QuoteTypes:{%s}) for query:%s and primary key ordinal:%d".format(execNo, queryNo, columnNames.mkString(","), quotedType.map(v => v.toString).mkString(","), query, primaryKeyOrd))
 
       if (primaryKeyOrd <= 0) {
         LOG.error("ExecNo:%d, QueryNo:%d. Primary key: %s is not found in columns:{%s} for QueryUniqueId:%s. So, every time query will be restarted from beginning".format(execNo, queryNo, queryInfo.PrimaryKeyColumn, columnNames.mkString(","), qryUniqId))
