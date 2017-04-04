@@ -782,7 +782,6 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
     var tableName = toTableName(containerName)
     var query = new StringBuilder();
     var values_str = new StringBuilder("values(");
-    var totalRowsInserted = 0;
 
     try {
       con = getConnection
@@ -810,6 +809,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
       pstmt = con.prepareStatement(query.toString())
 
 
+      var totalBytes = 0;
       rowColumnValues.foreach( row => {
 	var colIndex = 0;
 	row.foreach( x => {
@@ -818,6 +818,7 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 	  val colType = columnTypes(tableName.toUpperCase() + "." + x._1.toUpperCase());
 	  colIndex += 1;
 	  logger.debug("colName => %s, colValue => %s, colType => %s, colIndex => %d".format(colName,colValue,colType,colIndex));
+	  totalBytes = totalBytes + colValue.length;
           colType match{
 	    case "NUMBER" => {
 	      val f = java.lang.Double.parseDouble(colValue);
@@ -842,7 +843,10 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
 
       logger.debug("Executing bulk insert...")
       var insertCount = pstmt.executeBatch();
-      insertCount.foreach(cnt => { totalRowsInserted += cnt });
+      updateOpStats("put",tableName,1);
+      updateObjStats("put",tableName,rowColumnValues.length);
+      updateByteStats("put",tableName,totalBytes);
+      
       if (pstmt != null) {
         pstmt.clearBatch();
         pstmt.close
@@ -1050,6 +1054,22 @@ class OracleAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig:
   private def DropContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
     dropTable(tableName)
+  }
+
+  def getComponentSimpleStats(adapterName:String): String = {
+    var s:String = " "
+    if(_putOps.size > 0 ){
+      _putOps.keys.foreach( k => { 
+	s = s + "Storage/"+adapterName+"/putOps" + "->" + "("+ k + ":" + _putOps(k) +")"
+      })
+      _putObjs.keys.foreach( k => { 
+	s = s + ",Storage/"+adapterName+"/putObjs" + "->" + "("+ k + ":" + _putObjs(k) +")"
+      })
+      _putBytes.keys.foreach( k => { 
+	s= s + ",Storage/"+adapterName+"/putBytes" + "->" + "("+ k + ":" + _putBytes(k) +")"
+      })
+    }
+    s
   }
 
   def DropContainer(containerNames: Array[String]): Unit = {

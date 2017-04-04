@@ -328,7 +328,8 @@ class TestOracleOutputAdapter extends FunSpec with BeforeAndAfter with BeforeAnd
 	inst.set("alterid",i.asInstanceOf[Double])
 	instances += inst
       }
-      oa.send(null, instances.toArray)
+      oa.send(null, instances.toArray);
+      val mci = oa.getComponentStatusAndMetrics;
     }
   }
   override def afterAll = {

@@ -56,6 +56,10 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
   private var oracleAdapter: OracleAdapter = null;
   private val maxConnectionAttempts = 10;
   private var isShutdown = false
+
+  val _TYPE_STORAGE = "Storage_Adapter"
+  val _startTime: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
+  val adapterName = if (inputConfig.Name != null) inputConfig.Name else "OracleOutputAdapter";
   
   // 1. Write function(s) to create ORACLE connectivity
   private def CreateOracleAdapter(dataStoreInfo: String): OracleAdapter = {
@@ -87,29 +91,35 @@ class OracleOutputAdapter(val inputConfig: AdapterConfiguration, val nodeContext
     return reportDate;
   }
 
+  override def getComponentSimpleStats: String = {
+    if( oracleAdapter != null ){
+      oracleAdapter.getComponentSimpleStats(adapterName);
+    }
+    else{
+      return " ";
+    }
+  }
+
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeen = getCurrentTimeAsString;
-    val startTime = getCurrentTimeAsString;
-    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, inputConfig.Name, "", startTime, lastSeen, "")
+    logger.info("component stats => " + getComponentSimpleStats)
+    MonitorComponentInfo(_TYPE_STORAGE, adapterName,adapterName, _startTime, lastSeen, "{" + getComponentSimpleStats + "}")
   }
 
-  override def getComponentSimpleStats: String = {
-    return ""
-  }
 
   /*
-   			case 0: TypeCategory.INT;
-			case 1: TypeCategory.STRING;
-			case 2: TypeCategory.FLOAT;
-			case 3: TypeCategory.DOUBLE;
-			case 4: TypeCategory.LONG;
-			case 5: TypeCategory.BYTE;
-			case 6: TypeCategory.CHAR;
-			case 7: TypeCategory.BOOLEAN;
-			case 1001: TypeCategory.CONTAINER;
-			case 1002: TypeCategory.MESSAGE;
-			case 1003: TypeCategory.ARRAY;
-			default: TypeCategory.NONE;
+   case 0: TypeCategory.INT;
+   case 1: TypeCategory.STRING;
+   case 2: TypeCategory.FLOAT;
+   case 3: TypeCategory.DOUBLE;
+   case 4: TypeCategory.LONG;
+   case 5: TypeCategory.BYTE;
+   case 6: TypeCategory.CHAR;
+   case 7: TypeCategory.BOOLEAN;
+   case 1001: TypeCategory.CONTAINER;
+   case 1002: TypeCategory.MESSAGE;
+   case 1003: TypeCategory.ARRAY;
+   default: TypeCategory.NONE;
   */
 
   private def typeCategoryToOracleType(typeCategoryValue: Int) : String = {
