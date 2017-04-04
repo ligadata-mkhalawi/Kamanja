@@ -12,6 +12,7 @@ The following output file formats are supported:
 - Linux text file
 - HDFS
 - Parquet
+- Avro
 
 Smart File Output Adapter definition
 ------------------------------------
@@ -24,15 +25,17 @@ Smart File Output Adapter definition
   "TenantId": "tenant1",
   "ClassName": "com.ligadata.OutputAdapters.SmartFileProducer$",
   "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
-  "DependencyJars": [],
+  "DependencyJars": [
+  ],
   "AdapterSpecificCfg": {
          "Uri": "hdfs://nameservice/folder/to/save",
          "FileNamePrefix": "Data",
          "MessageSeparator": "\n",
-         "Compression": "gz",
+         "Compression": "gz" | "bzip2" | "xz" | "avro" | "avro/snappy"
          "RolloverInterval": "60",
          "TimePartitionFormat": "${yyyy}/${MM}/${dd}",
          "PartitionBuckets": "10",
+         "UseTypeFullNameForPartition": false,
          "Kerberos": {
              "Principal": "user@domain.com",
              "Keytab": "/path/to/keytab/user.keytab"
@@ -63,7 +66,10 @@ has the following attributes:
   If not specified, no prefix is used.
 - **MessageSeparator** – if specified, is written after every message.
 - **Compression** – specifies the compression codec to use
-  when generating files. It can be gz, bzip2, or xz.
+  when generating files.
+  This can specify traditional compression (gz, bzip2, or xz)
+  or :ref:`Avro<avro-term>` compression (with or without the
+  `snappy <https://avro.apache.org/docs/1.8.1/spec.html#snappy>`_ codec).
   If not specified, the data is not compressed.
 - **RolloverInterval** – interview, in minutes, at which files can be rolled.
   The smart file producer creates a new file every RolloverInterval minutes,
@@ -83,11 +89,16 @@ has the following attributes:
 Usage
 -----
 
+Differences between versions
+----------------------------
+
+Avro is supported only for Kamanja 1.6.3 and later releases.
+
 See also
 --------
 
 - :ref:`adapter-def-config-ref` gives details about adapter definitions
 - :ref:`adapter-binding-config-ref` describes the structure
   used to link adapters to :ref:`messages<messages-term>`
-  and :ref:`serializers<serial-deserial-term>`
+  and :ref:`serializers<serial-deserial-term>`.
 

@@ -30,10 +30,13 @@ Kamanja currently provides three built-in serializers:
        that is designed principally for
        the storage representation of message data.
 
-Support for other formats such as AVRO is under development.
-
 The serialization system to use is defined in the
-:ref:adapter message binding`adapter-binding-config-ref>` definition.
+:ref:`adapter message binding<adapter-binding-config-ref>` definition.
+
+In Kamanja 1.6.3 and later releases,
+the :ref:`smart-output-config-ref` supports
+:ref:`Avro<avro-term>` compression (with or without the
+`snappy <https://avro.apache.org/docs/1.8.1/spec.html#snappy>`_ codec).
 
 
 For more information, see:
