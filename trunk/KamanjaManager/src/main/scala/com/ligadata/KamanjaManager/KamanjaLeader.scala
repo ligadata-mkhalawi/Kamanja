@@ -2301,7 +2301,9 @@ object KamanjaLeader {
   }
 
   def Shutdown: Unit = {
+    execCtxtsAdapterInfoPool.shutdown()
     distributionExecutor.shutdown
+
     //    if (zkLeaderLatch != null)
     //      zkLeaderLatch.Shutdown
     //    zkLeaderLatch = null
@@ -2634,7 +2636,8 @@ object KamanjaLeader {
         }
       })
     }
-    counter = increment
+    if (keyvalues != null && keyvalues.size > 0)
+      counter = increment
     val localPartitionInfo = new PartitionKeyValuesInfo(nodeId, UUID, nodeStartTime, counter, keyvalues.toArray)
     adapterJson = AdapterPartitionInfoUtil.generateAdapterInfoJson(localPartitionInfo)
 
