@@ -358,10 +358,12 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
     var startActionTime = System.currentTimeMillis
     var waitTime = 5000
+    var tryAction = true
 
-    while (!isShutdown && !isStopProcessing) {
+    while (tryAction && !isShutdown && !isStopProcessing) {
       try {
         loadDriver
+        tryAction = false
       } catch {
         case e: Throwable => {
           val timeDiff = System.currentTimeMillis - startActionTime
@@ -385,10 +387,12 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
     startActionTime = System.currentTimeMillis
     waitTime = 5000
+    tryAction = true
 
-    while (!isShutdown && !isStopProcessing) {
+    while (tryAction && !isShutdown && !isStopProcessing) {
       try {
         dataSource = getBasicDataSource
+        tryAction = false
       } catch {
         case e: Throwable => {
           val timeDiff = System.currentTimeMillis - startActionTime
