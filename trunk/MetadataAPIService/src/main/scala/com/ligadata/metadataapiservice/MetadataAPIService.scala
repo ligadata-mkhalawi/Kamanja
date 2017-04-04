@@ -258,11 +258,13 @@ trait MetadataAPIService extends HttpService {
                                         complete(write(new DataApiResult("-1" , APIName, "did not find %s message in metadata".format(toknRoute(0)), None, None)))
                                       } else {
                                         parameterMap { params =>
-                                          val options = searchObj.getDeserializeOpion(params.getOrElse("alwaysQuoteFields", ""),params.getOrElse("fieldDelimiter", ""),params.getOrElse("valueDelimiter", ""),params.getOrElse("options", ""))
                                           val DeserializerFormat = searchObj.getDeserializerType(params.getOrElse("format", "").toString)
+                                          val options = searchObj.getDeserializeOption(params.getOrElse("alwaysQuoteFields", ""),params.getOrElse("fieldDelimiter", ""),params.getOrElse("valueDelimiter", ""), params.getOrElse("options", ""))
                                           val msgBindingInfo = searchObj.ResolveDeserializer(toknRoute(0), DeserializerFormat,  options)
                                           val partitionKey = searchObj.getMessageKey(toknRoute(0), reqBody, msgBindingInfo)
-                                          requestContext => processSetDataRequest(toknRoute(0), reqBody, partitionKey)
+                                          val optionsWithFormatType = searchObj.getDeserializeOptionWithFormatType(params.getOrElse("alwaysQuoteFields", ""),params.getOrElse("fieldDelimiter", ""),params.getOrElse("valueDelimiter", ""), DeserializerFormat)
+                                          val message = searchObj.makeMessage(toknRoute(0), optionsWithFormatType, reqBody)
+                                          requestContext => processSetDataRequest(toknRoute(0), message, partitionKey)
                                             requestContext.complete(write(new DataApiResult("success" , "0", "Sent Data", None, None)))
                                         }
                                       }

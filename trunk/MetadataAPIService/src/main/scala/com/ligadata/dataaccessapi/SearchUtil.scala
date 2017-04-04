@@ -344,11 +344,39 @@ class SearchUtil(messageName: String) extends ObjectResolver {
     * @param options deseializer option
     * @return deserializer option
     */
-  def getDeserializeOpion(quoteFields: String, fieldDel: String, valueDel: String, options: String): String ={
+  def getDeserializeOption(quoteFields: String, fieldDel: String, valueDel: String, options: String): String ={
     if (options.length !=0)
       options
     else
       "{\"alwaysQuoteFields\":" + getAlwaysQuoteFields(quoteFields) +",\"fieldDelimiter\":\""+ getFieldDelimiter(fieldDel) + "\",\"valueDelimiter\":\""+ getValueDelimiter(valueDel) + "\"}"
+  }
+
+  /**
+    * create message data
+    *
+    * @param Messagename message full name
+    * @param formatOption deserializer type
+    * @param payLoad data to insert
+    * @return message data as json format
+    */
+  def makeMessage(Messagename: String, formatOption: String, payLoad: String): String ={ //push to kafka
+  val json = (
+      ("MsgType" -> Messagename)~
+        ("FormatOption" -> formatOption)~
+        ("PayLoad" -> payLoad)
+      )
+    compact(render(json))
+  }
+
+  def getFormatOption(formatOption: String): String ={
+    if(formatOption.equalsIgnoreCase("json"))
+      "json"
+    else
+      "delimited"
+  }
+
+  def getDeserializeOptionWithFormatType(quoteFields: String, fieldDel: String, valueDel: String, formatType: String): String ={
+      "{\"formatType\" : " + getDeserializerType(formatType) + "\"alwaysQuoteFields\":" + getAlwaysQuoteFields(quoteFields) +",\"fieldDelimiter\":\""+ getFieldDelimiter(fieldDel) + "\",\"valueDelimiter\":\""+ getValueDelimiter(valueDel) + "\"}"
   }
 }
 
