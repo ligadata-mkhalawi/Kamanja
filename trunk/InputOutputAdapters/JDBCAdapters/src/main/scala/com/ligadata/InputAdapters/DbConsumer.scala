@@ -1,18 +1,19 @@
 package com.ligadata.InputAdapters
 
 import java.sql.{Connection, Driver, DriverManager, DriverPropertyInfo, ResultSet, SQLException, Statement}
-import java.util.{Properties}
+import java.util.Properties
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import org.apache.logging.log4j.LogManager
-import com.ligadata.AdaptersConfiguration.{DbSerializeFormat, DbAdapterConfiguration, DbPartitionUniqueRecordKey, DbPartitionUniqueRecordValue, QueryInfo}
+import com.ligadata.AdaptersConfiguration.{DbAdapterConfiguration, DbPartitionUniqueRecordKey, DbPartitionUniqueRecordValue, DbSerializeFormat, QueryInfo}
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.NodeContext
 import org.apache.commons.dbcp2.BasicDataSource
 import java.util.concurrent.atomic.AtomicLong
-import scala.collection.mutable.ArrayBuffer
 
+import scala.collection.mutable.ArrayBuffer
 import com.ligadata.HeartBeat.MonitorComponentInfo
+import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 
 object DbConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "JDBC_Consumer"
@@ -63,6 +64,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   private var executor: ExecutorService = _
   private val input = this
   private var driver: DbConsumerDriverShim = null
+  private val clsLoader = new KamanjaLoaderInfo()
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeenStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(lastSeen))
@@ -102,7 +104,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
   private def loadDriver: Unit = {
     try {
       if (LOG.isInfoEnabled) LOG.info("Loading the Driver..")
-      val d = Class.forName(dcConf.DriverName).newInstance.asInstanceOf[Driver]
+      val d = Class.forName(dcConf.DriverName, true, clsLoader.loader).newInstance.asInstanceOf[Driver]
       if (LOG.isInfoEnabled) LOG.info("Registering Driver..")
       driver = new DbConsumerDriverShim(d)
       DriverManager.registerDriver(driver);
@@ -339,6 +341,20 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
     if (partitionInfo == null || partitionInfo.size == 0)
       return
+
+    val jars = ArrayBuffer[String]()
+
+    if (dcConf.jarName != null && !dcConf.jarName.trim.isEmpty)
+      jars += dcConf.jarName.trim
+
+    if (dcConf.dependencyJars != null && !dcConf.dependencyJars.isEmpty)
+      jars ++= dcConf.dependencyJars
+
+    if (!jars.isEmpty) {
+      val jarPaths = nodeContext.getEnvCtxt().getJarPaths()
+      if (jarPaths != null && !jarPaths.isEmpty)
+        Utils.LoadJars(jars.map(j => Utils.GetValidJarFile(jarPaths, j)).toArray, clsLoader.loadedJars, clsLoader.loader)
+    }
 
     var startActionTime = System.currentTimeMillis
     var waitTime = 5000
