@@ -1,6 +1,6 @@
 [
   {
-    "AdapterName": "TestIn_1",
+    "AdapterName": "Request",
     "MessageName": "com.ligadata.flare.daas.DataAccessRequest",
     "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
     "Options": {
@@ -8,7 +8,7 @@
     }
   },
   {
-    "AdapterName": "testout_1",
+    "AdapterName": "Response",
     "MessageNames": [
       "com.ligadata.flare.daas.DataAccessResponse"
     ],

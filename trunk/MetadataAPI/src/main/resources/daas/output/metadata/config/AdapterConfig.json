@@ -1,5 +1,5 @@
         {
-          "Name": "TestIn_1",
+          "Name": "Request",
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
@@ -10,11 +10,11 @@
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
-            "TopicName": "testin_1"
+            "TopicName": "requesttopic"
           }
         },
         {
-          "Name": "TestOut_1",
+          "Name": "Response",
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
@@ -25,7 +25,7 @@
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
-            "TopicName": "testout_1"
+            "TopicName": "responsetopic"
           }
         }
 
