@@ -30,6 +30,9 @@ Kamanja 1.6.3 includes a number of new input and output adapters:
 - :ref:`oracle-output-adapter-ref` to feed data
   from Kamanja to an Oracle database.
 
+- :ref:`daas-input-adapter-ref` enables you to ingest data
+  using the REST API.
+
 Click on the embedded links above
 for more details about using each of these new features.
 

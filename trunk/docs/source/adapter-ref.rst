@@ -14,6 +14,8 @@ Adapter Reference Pages
 
    * - Adapter
      - Description
+   * - :ref:`daas-input-adapter-ref`
+     - Input adapter used to ingest data using the REST API
    * - :ref:`dbconsumer-input-adapter-ref`
      - Input adapter used to ingest data from an Oracle database
    * - :ref:`elastic-output-adapter-ref`
@@ -36,6 +38,7 @@ Adapter Reference Pages
    :titlesonly:
    :maxdepth: 1
 
+   adapter-ref/daasinputadapter.rst
    adapter-ref/DbConsumer-input
    adapter-ref/elastic-output
    adapter-ref/OracleOutputAdapter
