@@ -629,7 +629,9 @@ trait MetadataAPIService extends HttpService {
 
             val attributes = attribs.map(a => new AttributeDef(a.name, a.typeDef.Name))
             c.cType.partitionKey
-            results.put(c.name, new DataContainerDef(c.name, c.FullName, attributes.toArray, Map[String, AttributeGroupDef](), c.cType.partitionKey))
+            val dc = new DataContainerDef(c.name, c.FullName, attributes.toArray, Map[String, AttributeGroupDef](), c.cType.partitionKey)
+            results.put(c.name, dc)
+            results.put(c.FullName, dc)
           })
       }
     } catch {
