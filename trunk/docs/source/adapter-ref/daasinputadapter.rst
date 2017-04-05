@@ -9,6 +9,7 @@ using the REST API.
 
 
 Daas Input Adapter structure
+----------------------------
 
 ::
 
