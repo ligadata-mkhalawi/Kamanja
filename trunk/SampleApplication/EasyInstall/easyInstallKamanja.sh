@@ -67,7 +67,7 @@ mkdir -p $installPath/Kamanja-$ver210/template/script
 mkdir -p $installPath/Kamanja-$ver210/ClusterInstall
 mkdir -p $installPath/Kamanja-$ver210/KamanjaUI
 mkdir -p $installPath/Kamanja-$ver210/DaaS
-mkdir -p $installPath/Kamanja-$ver210/DaaS/bin
+mkdir -p $installPath/Kamanja-$ver210/DaaS/input/bin
 #new one
 #mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/bin
@@ -105,7 +105,7 @@ mkdir -p $installPath/Kamanja-$ver211/template/script
 mkdir -p $installPath/Kamanja-$ver211/ClusterInstall
 mkdir -p $installPath/Kamanja-$ver211/KamanjaUI
 mkdir -p $installPath/Kamanja-$ver211/DaaS
-mkdir -p $installPath/Kamanja-$ver211/DaaS/bin
+mkdir -p $installPath/Kamanja-$ver211/DaaS/input/bin
 #new one
 #mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/bin
@@ -305,6 +305,8 @@ cp -rf * $installPath/Kamanja-$ver210/documentation
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/NodeInfoExtract* $installPath/Kamanja-$ver210/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.sh $kamanjainstallbin
 cp -rf $srcPath/MetadataAPI/src/main/resources/daas/* $installPath/Kamanja-$ver210/DaaS/
+cd $srcPath/MetadataAPI/src/main/resources/daas/input/metadata/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/DaaS/input/metadata/template/
 
 #Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
 mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
@@ -616,6 +618,8 @@ cp -rf * $installPath/Kamanja-$ver211/documentation
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/NodeInfoExtract* $installPath/Kamanja-$ver211/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.sh $kamanjainstallbin
 cp -rf $srcPath/MetadataAPI/src/main/resources/daas/* $installPath/Kamanja-$ver211/DaaS/
+cd $srcPath/MetadataAPI/src/main/resources/daas/input/metadata/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/DaaS/input/metadata/template/
 
 #Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
 mv $kamanjainstallbin/StartKamanjaCluster.sh $bin

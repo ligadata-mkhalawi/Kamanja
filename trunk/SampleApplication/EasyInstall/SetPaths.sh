@@ -91,7 +91,7 @@ sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_h
 
 #new one
 #Daas
-sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/DaaS/input/template/script/DaasApp_Template.sh > $install_dir/DaaS/input/bin/DaasApp.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/DaaS/input/metadata/template/DaasApp_Template.sh > $install_dir/DaaS/input/bin/DaasApp.sh
 #Daas
 # logfile
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/config/log4j2_Template.xml > $install_dir/config/log4j2.xml
@@ -137,5 +137,6 @@ fi
 
 chmod 777 $install_dir/bin/*.*
 chmod 777 $install_dir/bin/kamanja
+chmod 777 $install_dir/DaaS/input/bin/*.*
 
 cd $pwdnm
