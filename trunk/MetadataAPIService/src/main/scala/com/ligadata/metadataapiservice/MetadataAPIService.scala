@@ -675,7 +675,7 @@ trait MetadataAPIService extends HttpService {
           logger.debug("No Messages found ")
         case Some(cs) =>
           cs.foreach(c => {
-            val msgDef = c.cType.asInstanceOf[ContainerTypeDef]
+            val containerDef = c.cType.asInstanceOf[ContainerTypeDef]
             val attribs =
               if (containerDef.IsFixed) {
                 containerDef.asInstanceOf[StructTypeDef].memberDefs.toList
