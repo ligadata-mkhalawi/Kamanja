@@ -112,9 +112,9 @@ HBase failover parameters
   for posting the updated partition information.
 - **WriteAdapterInfoTime** - interval, in milliseconds,
   for writing the partition information to the local drive
-- **AdapterInfoWriteLocation** - directory where the *nodename* JSON file
-  that contains the adapter partition distribution information
-  as well as the five most recent JSON files.
+- **AdapterInfoWriteLocation** - directory where
+  the *adapterinfo.json* file is written.
+  This file is described below.
 
 
 Usage
@@ -129,7 +129,7 @@ to prevent data loss while a standby node is activated.
 How HBase failover works
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-HBase failover is implemented by creating a JSON file called *nodename*
+HBase failover is implemented by creating a JSON file called *adapterinfo.json*
 in the directory specified to the **AdapterInfoWriteLocation** parameter.
 This file  contains the adapter partition distribution information
 (key, key value, node id, uuid, nodestartime and unique counter).
@@ -154,8 +154,8 @@ If a node fails,
 the Kamanja engine can process these messages after it is restarted
 by picking up the key and key values from this locally stored file.
 
-Example nodename file
----------------------
+Example adapterinfo.json file
+-----------------------------
 
 ::
 
