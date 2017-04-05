@@ -19,4 +19,5 @@ Output API
   The quotes are causing a malformed JSON.
   Messages and containers that do not include quotes in the data
   are parsed and returned correctly.
+  (`Github-1566 <https://github.com/LigaData/Kamanja/issues/1566>`_)
 
