@@ -20,8 +20,11 @@ where it can save information such as :ref:`messages<messages-term>`,
 Multiple storage adapters means the same information
 is saved to different databases.
 
+HBase failover can be implemented in the storage adapter
+to prevent against data loss.
+
 Storage adapters are configured in
-the "Adapters" section of the :ref`clusterconfig-config-ref` file.
+the "Adapters" section of the :ref:`clusterconfig-config-ref` file.
 
 Storage Adapter structure
 -------------------------
@@ -92,9 +95,18 @@ Parameters
 HBase failover parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **CommitOffsetsMsgCnt** -
-- **CommitOffsetsTimeInterval** -
-- **EnableEachTransactionCommit** - If set to true, ???;
+- **CommitOffsetsMsgCnt** - number of transactions to queue
+  and then write to local disk.
+  When this number of transactions are queued,
+  they are committed even if the **CommitOffsetsTimeInterval** interval
+  has not expired.
+- **CommitOffsetsTimeInterval** - interval (in milliseconds)
+  between writing the queued transactions to disk.
+  All transactions that are queued are committed at this interval,
+  whether or not the **CommitOffsetsMsgCnt** limit has been reached.
+- **EnableEachTransactionCommit** - If set to true,
+  each individual transaction is committed rather than being
+  queued for a batch commit.
   default value is false.
 - **PostAdapterInfoTime** - interval, in milliseconds,
   for posting the updated partition information.
@@ -107,6 +119,10 @@ HBase failover parameters
 
 Usage
 -----
+
+The HBase failover feature is used in conjunction
+with the :ref:`failover-nodes-term` feature
+to prevent data loss while a standby node is activated.
 
 .. _hbase-failover-description:
 
@@ -131,15 +147,95 @@ One record looks like the following:
 
 It also contains a backup of the most five most recent JSON files processed.
 
-While messages are being processed the parition information json file
-will be created in the given AdapterInfoWriteLocation/nodename
-(/data/node/nodename/),
-when the partition information is written to local drive
-for every WriteAdapterInfoTime milli secs ,
-the updated partition information is posted
-for every PostAdapterInfoTime millisecs,
-inorder to process messages when the Kamanja Engine is started,
-the engine picks up the key and key values from the local stored below file.
+This partition distribution information is written to local drive
+for **WriteAdapterInfoTime** milliseconds,
+then posted for every **PostAdapterInfoTime** millisecs.
+If a node fails,
+the Kamanja engine can process these messages after it is restarted
+by picking up the key and key values from this locally stored file.
+
+Example nodename file
+---------------------
+
+::
+
+  {
+    "keyvalues": [
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":3}",
+        "keyvalue": "{\"Version\":1,\"Offset\":14}",
+        "nodeid": "2",
+        "uuid": "aa075745-a267-4253-bb46-32934556f89e",
+        "nodestarttime": 1491209137977,
+        "uniquecounter": 64
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":6}",
+        "keyvalue": "{\"Version\":1,\"Offset\":20}",
+        "nodeid": "1",
+        "uuid": "06383c9a-7d9d-4507-aa36-77caa3f3ee23",
+        "nodestarttime": 1491208422285,
+        "uniquecounter": 5
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":0}",
+        "keyvalue": "{\"Version\":1,\"Offset\":23}",
+        "nodeid": "2",
+        "uuid": "aa075745-a267-4253-bb46-32934556f89e",
+        "nodestarttime": 1491209137977,
+        "uniquecounter": 64
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":5}",
+        "keyvalue": "{\"Version\":1,\"Offset\":17}",
+        "nodeid": "2",
+        "uuid": "aa075745-a267-4253-bb46-32934556f89e",
+        "nodestarttime": 1491209137977,
+        "uniquecounter": 64
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":2}",
+        "keyvalue": "{\"Version\":1,\"Offset\":17}",
+        "nodeid": "1",
+        "uuid": "06383c9a-7d9d-4507-aa36-77caa3f3ee23",
+        "nodestarttime": 1491208422285,
+        "uniquecounter": 5
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":7}",
+        "keyvalue": "{\"Version\":1,\"Offset\":20}",
+        "nodeid": "2",
+        "uuid": "aa075745-a267-4253-bb46-32934556f89e",
+        "nodestarttime": 1491209137977,
+        "uniquecounter": 64
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":4}",
+        "keyvalue": "{\"Version\":1,\"Offset\":17}",
+        "nodeid": "1",
+        "uuid": "06383c9a-7d9d-4507-aa36-77caa3f3ee23",
+        "nodestarttime": 1491208422285,
+        "uniquecounter": 5
+      },
+      {
+        "key": "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"helloworldinput\",
+              \"TopicName\":\"helloworldinput\",\"PartitionId\":1}",
+        "keyvalue": "{\"Version\":1,\"Offset\":17}",
+        "nodeid": "1",
+        "uuid": "06383c9a-7d9d-4507-aa36-77caa3f3ee23",
+        "nodestarttime": 1491208422285,
+        "uniquecounter": 5
+      }
+    ]
+  }
+
 
 Differences between versions
 ----------------------------
