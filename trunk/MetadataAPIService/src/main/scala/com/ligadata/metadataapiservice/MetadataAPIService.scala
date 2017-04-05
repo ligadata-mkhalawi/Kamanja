@@ -666,6 +666,33 @@ trait MetadataAPIService extends HttpService {
     } catch {
       case e: Throwable => logger.error("Error retrieving container definitions ", e)
     }
+    // Adding msgs also into the list
+    try {
+      val msgDefs = MdMgr.mdMgr.Messages(true, true)
+      msgDefs match {
+        case None =>
+          //None
+          logger.debug("No Messages found ")
+        case Some(cs) =>
+          cs.foreach(c => {
+            val containerDef = c.cType.asInstanceOf[ContainerTypeDef]
+            val attribs =
+              if (containerDef.IsFixed) {
+                containerDef.asInstanceOf[StructTypeDef].memberDefs.toList
+              } else {
+                containerDef.asInstanceOf[MappedMsgTypeDef].attrMap.map(kv => kv._2).toList
+              }
+
+            val attributes = attribs.map(a => new AttributeDef(a.name, a.typeDef.Name))
+            c.cType.partitionKey
+            val dc = new DataContainerDef(c.name, c.FullName, attributes.toArray, Map[String, AttributeGroupDef](), c.cType.partitionKey)
+            results.put(c.name, dc)
+            results.put(c.FullName, dc)
+          })
+      }
+    } catch {
+      case e: Throwable => logger.error("Error retrieving message definitions ", e)
+    }
     return results.toMap
   }
 
