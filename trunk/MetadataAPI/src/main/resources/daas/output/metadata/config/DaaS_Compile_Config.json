@@ -1,0 +1,16 @@
+{
+  "DataAccessModel": {
+    "Dependencies": [],
+    "MessageAndContainers": [
+    ],
+    "InputTypesSets": [
+      [
+        "com.ligadata.flare.daas.DataAccessRequest"
+      ]
+    ],
+    "OutputTypes": [
+      "com.ligadata.flare.daas.DataAccessResponse"
+    ]
+  }
+}
+

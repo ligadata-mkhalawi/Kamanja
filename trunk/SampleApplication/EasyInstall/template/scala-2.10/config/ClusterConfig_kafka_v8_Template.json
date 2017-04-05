@@ -233,6 +233,21 @@
             "HostList": "localhost:9092",
             "TopicName": "teststatus_1"
           }
+        },
+        {
+          "Name": "daasinputadapter",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v8.KafkaSimpleConsumer$",
+          "JarName": "kamanjakafkaadapters_0_8_2.10-1.5.3.jar",
+          "DependencyJars": [
+            "kafka_2.10-0.8.2.2.jar",
+            "kafka-clients-0.8.2.2.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "inputtopic"
+          }
         }
       ]
     }

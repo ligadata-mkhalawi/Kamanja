@@ -1,0 +1,13 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.flare.daas",
+    "Name": "DataAccessResponse",
+    "Version": "00.01.00",
+    "Description": "Data access response",
+    "Fixed": "true",
+    "Persist": "false",
+    "Fields": [
+      { "Name": "response", "Type" : "System.String" }
+    ]
+  }
+}
