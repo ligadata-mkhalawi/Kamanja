@@ -11,7 +11,7 @@ object KafkaRequestSender {
 
   val maxRetries = 3
   val retryInterval = 1000
-  val kafkaTimeout = 4000
+  val kafkaTimeout = 60000
 
   def get(config: Map[String, String]): KafkaRequestSender = {
       return new KafkaRequestSender(config)
