@@ -51,6 +51,7 @@ import scala.collection.JavaConverters._
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.routing.RoundRobinPool
+import java.util.UUID
 
 trait LogTrait {
   val loggerName = this.getClass.getName()
@@ -172,7 +173,9 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   private val STORAGE_READ_COUNT = "READS"
   private val STORAGE_WRITE_COUNT = "WRITES"
 
-  private var _nodeId: String = _
+  private var _nodeId: String = ""
+  private val _nodeUUID = UUID.randomUUID().toString();
+  private var _nodeIdAndUUID = createNodeIdAndUUID
   private var _clusterId: String = _
   private val _setZk_reent_lock = new ReentrantReadWriteLock(true)
   private var _setZkData: CuratorFramework = _
@@ -2247,7 +2250,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     try {
       if (_zkLeaderLatch == null) {
         logger.warn("DistributionCheck:registerNodesChangeNotification. Registering as new listener and starting leader")
-        _zkLeaderLatch = new ZkLeaderLatch(_zkConnectString, _zkleaderNodePath, _nodeId, EnvCtxtEventChangeCallback, _zkSessionTimeoutMs, _zkConnectionTimeoutMs)
+        _zkLeaderLatch = new ZkLeaderLatch(_zkConnectString, _zkleaderNodePath, _nodeIdAndUUID, EnvCtxtEventChangeCallback, _zkSessionTimeoutMs, _zkConnectionTimeoutMs)
         _zkLeaderListeners += LeaderListenerCallback(EventChangeCallback)
         _zkLeaderLatch.SelectLeader
       } else {
@@ -2285,6 +2288,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   override def setNodeInfo(nodeId: String, clusterId: String): Unit = {
     _nodeId = nodeId
     _clusterId = clusterId
+    _nodeIdAndUUID = createNodeIdAndUUID
   }
 
   // This post the message into where ever these messages are associated immediately
