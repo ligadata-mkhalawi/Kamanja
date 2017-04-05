@@ -279,8 +279,11 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
 
       var foundFailure = false
       var rows = 0
+      var hasNext = rs.next()
 
-      while (!isStopProcessing && !isShutdown && !foundFailure && rs.next()) {
+      if (LOG.isTraceEnabled()) LOG.trace("ExecNo:%d, QueryNo:%d. rows:%d, isStopProcessing:%s, isShutdown: %s, foundFailure: %s, hasNext:%s".format(execNo, queryNo, rows, isStopProcessing.toString, isShutdown.toString, foundFailure.toString, hasNext.toString))
+
+      while (!isStopProcessing && !isShutdown && !foundFailure && hasNext) {
         try {
           val readTmMs = System.currentTimeMillis
           rowData.clear
@@ -329,6 +332,8 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
             foundFailure = true
           }
         }
+        hasNext = rs.next()
+        if (LOG.isTraceEnabled()) LOG.trace("ExecNo:%d, QueryNo:%d. rows:%d, isStopProcessing:%s, isShutdown: %s, foundFailure: %s, hasNext:%s".format(execNo, queryNo, rows, isStopProcessing.toString, isShutdown.toString, foundFailure.toString, hasNext.toString))
       }
 
       if (LOG.isDebugEnabled()) LOG.debug("ExecNo:%d, QueryNo:%d. Processed %d rows for query:%s".format(execNo, queryNo, rows, query))
