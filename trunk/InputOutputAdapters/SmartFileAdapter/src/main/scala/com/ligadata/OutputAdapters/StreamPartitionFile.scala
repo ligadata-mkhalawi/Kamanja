@@ -10,11 +10,13 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.logging.log4j.LogManager
+import org.apache.avro.generic.{GenericDatumWriter, GenericRecord, GenericRecordBuilder}
+import org.apache.avro.file.{DataFileWriter, CodecFactory}
 
 import scala.collection.mutable.ArrayBuffer
 
 
-class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) extends PartitionFile{
+class StreamPartitionFile(fc: SmartFileProducerConfiguration, key: String, val avroSchemaStr: String) extends PartitionFile {
 
   private[this] val LOG = LogManager.getLogger(getClass)
   private val FAIL_WAIT = 2000
@@ -32,6 +34,12 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
 
   val canAppend = true
 
+  val isAvroFile = fc.isAvro
+  val avroSchema = if (isAvroFile) Utils.getAvroSchema(avroSchemaStr, Array[String]()) else null
+
+  var writer: GenericDatumWriter[GenericRecord] = null
+  var dataFileWriter: DataFileWriter[GenericRecord] = null
+
   def init(filePath: String, flushBufferSize: Long) = {
     this.flushBufferSize = flushBufferSize
     this.filePath = filePath
@@ -47,14 +55,41 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
     var originalStream : OutputStream = null
     //os = openFile(fc, fileName)
     val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+
+    // BUGBUG:: Need to use appendTo later if file already exists. At this moment we can not use it with outStream.
+    // BUGBUG:: At this moment we are making sure we don't get existing file from caller.
+    if (isAvroFile) {
+      var fp = filePath
+      while (osWriter.isFileExists(fc, fp)) {
+        fp = fp + "_1"
+      }
+      filePath = fp
+    }
+
     originalStream = osWriter.openFile(fc, filePath, canAppend)
 
-    if (compress)
+    if (!isAvroFile && compress)
       os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, originalStream)
     else
       os = originalStream
 
     outStream = new PartitionStream(os, originalStream)
+
+    if (isAvroFile) {
+      writer = new GenericDatumWriter[GenericRecord](avroSchema)
+      dataFileWriter = new DataFileWriter[GenericRecord](writer)
+      val codec: String = fc.avroCodec
+      if(codec == null || "".equals(codec)) {
+        LOG.info("Not using compression for avro file.");
+        dataFileWriter.setCodec(CodecFactory.fromString("null"));
+      } else {
+        LOG.info("Using " + codec + " compression for avro file.");
+        dataFileWriter.setCodec(CodecFactory.fromString(codec));
+      }
+
+      // BUGBUG:: Need to use appendTo later if file already exists. At this moment we can not use it with outStream.
+      dataFileWriter.create(avroSchema, outStream)
+    }
   }
 
   def getKey: String = key
@@ -66,8 +101,12 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
   def getSize: Long = size
 
   def close() : Unit = {
-    if(outStream != null)
+    if (dataFileWriter != null)
+      dataFileWriter.close()
+    dataFileWriter = null
+    if (outStream != null)
       outStream.close()
+    outStream = null
   }
 
   def getFlushBufferSize: Long = flushBufferSize
@@ -192,6 +231,30 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
   def send(tnxCtxt: TransactionContext, record: ContainerInterface,
            serializer : SmartFileProducer) : Int = {
 
+    if (isAvroFile) {
+      var retVal = SendStatus.FAILURE
+      try {
+        this.synchronized {
+          val recBuilder = new GenericRecordBuilder(avroSchema)
+          val attrs = record.getAllAttributeValues
+
+          attrs.foreach(att => {
+            recBuilder.set(att.getValueType().getName, att.getValue)
+          })
+
+          val rec = recBuilder.build
+          dataFileWriter.append(rec)
+        }
+        retVal = SendStatus.SUCCESS
+      } catch {
+        case e: Throwable => {
+          LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message into avro", e)
+          throw e
+        }
+      }
+      return retVal
+    }
+
     val (outContainers, serializedContainerData, serializerNames) = serializer.serialize(tnxCtxt, Array(record))
 
     if (1 != serializedContainerData.length || 1 != serializerNames.length) {
@@ -281,7 +344,9 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
     while (!isSuccess) {
       try {
         this.synchronized {
-
+          if (isAvroFile) {
+            dataFileWriter.flush()
+          } else {
             if (flushBufferSize > 0 && streamBuffer.size > 0) {
               writeStream(fc, streamBuffer.toArray)
               size += streamBuffer.size
@@ -289,6 +354,7 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
               streamBuffer.clear()
               recordsInBuffer = 0
             }
+          }
         }
         isSuccess = true
       } catch {

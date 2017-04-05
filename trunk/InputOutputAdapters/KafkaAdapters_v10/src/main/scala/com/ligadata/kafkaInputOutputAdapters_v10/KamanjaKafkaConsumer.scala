@@ -1,13 +1,15 @@
 package com.ligadata.kafkaInputOutputAdapters_v10
 
+import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.util
 import java.util.Properties
 
-import com.ligadata.AdaptersConfiguration.{KafkaQueueAdapterConfiguration, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordKey}
+import com.ligadata.AdaptersConfiguration.{KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaQueueAdapterConfiguration}
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
-import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
+import com.ligadata.KamanjaBase.{DataDelimiters, NodeContext}
+import com.ligadata.Utils.Utils
 //import kafka.api.{FetchResponse, FetchRequestBuilder}
 //import kafka.consumer.SimpleConsumer
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
@@ -823,7 +825,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       case e: Throwable => {}
     }
 
-    if (readExecutor != null) readExecutor.shutdownNow
+    if (readExecutor != null) { Utils.shutdownAndAwaitTermination(readExecutor,"KAFKA_ADAPTER read thread",3600000) }
     var cntr = 0
     while (readExecutor != null && readExecutor.isTerminated == false && cntr < 1001) {
       cntr += 1

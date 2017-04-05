@@ -2274,6 +2274,14 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
 
   override def getClusterId(): String = _clusterId
 
+  private def createNodeIdAndUUID: String = {
+    "NodeId-%s-UUID-%s".format(_nodeId, _nodeUUID)
+  }
+
+  override def getNodeIdAndUUID(): String = _nodeIdAndUUID
+
+  override def getNodeUUID(): String = _nodeUUID
+
   override def setNodeInfo(nodeId: String, clusterId: String): Unit = {
     _nodeId = nodeId
     _clusterId = clusterId

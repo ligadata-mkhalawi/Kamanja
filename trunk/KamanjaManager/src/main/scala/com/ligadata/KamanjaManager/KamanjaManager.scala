@@ -3,30 +3,33 @@ package com.ligadata.KamanjaManager
 
 import com.ligadata.HeartBeat.MonitoringContext
 import com.ligadata.KamanjaBase._
-import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
+import com.ligadata.InputOutputAdapterInfo.{ ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue }
 import com.ligadata.StorageBase.{ DataStore }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata.{ ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo }
 import org.json4s.jackson.JsonMethods._
 
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{ universe => ru }
 import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
-import collection.mutable.{MultiMap, Set}
-import java.io.{PrintWriter, File, PrintStream, BufferedReader, InputStreamReader}
+import collection.mutable.{ MultiMap, Set }
+import java.io.{ PrintWriter, File, PrintStream, BufferedReader, InputStreamReader }
 import scala.util.Random
 import scala.Array.canBuildFrom
-import java.util.{Properties, Observer, Observable}
+import java.util.{ Properties, Observer, Observable }
 import java.sql.Connection
 import scala.collection.mutable.TreeSet
-import java.net.{Socket, ServerSocket}
-import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
-import org.apache.logging.log4j.{Logger, LogManager}
-import com.ligadata.Exceptions.{FatalAdapterException}
-import scala.actors.threadpool.{ExecutorService}
+import java.net.{ Socket, ServerSocket }
+import java.util.concurrent.{ Executors, ScheduledExecutorService, TimeUnit }
+import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
+import org.apache.logging.log4j.{ Logger, LogManager }
+import com.ligadata.Exceptions.{ FatalAdapterException }
+import scala.actors.threadpool.{ ExecutorService }
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import org.json4s._
 
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
@@ -129,6 +132,10 @@ object KamanjaConfiguration {
   var commitOffsetsMsgCnt = 0
   var commitOffsetsTimeInterval = 0
 
+  var postAdapterInfoTime = 0
+  var writeAdapterInfoTime = 0
+  var adapterInfoWriteLocation = ""
+
   var shutdown = false
   var participentsChangedCntr: Long = 0
   var baseLoader = new KamanjaLoaderInfo
@@ -158,6 +165,10 @@ object KamanjaConfiguration {
 
     commitOffsetsMsgCnt = 0
     commitOffsetsTimeInterval = 0
+
+    postAdapterInfoTime = 0
+    writeAdapterInfoTime = 0
+    adapterInfoWriteLocation = ""
 
     shutdown = false
     participentsChangedCntr = 0
@@ -273,6 +284,11 @@ class KamanjaManager extends Observer {
   private var msgChangedCntr: Long = 0
   private var msg2TenantId = scala.collection.immutable.Map[String, String]()
   private var msg2TentIdResolvedCntr: Long = -1
+  private var nodestarttime: Long = System.currentTimeMillis()
+
+  var adapInfoMap = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
+  var adapInfoMapFRomStorage = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
+  var adapInfoMapFromLeader = scala.collection.immutable.Map[String, Array[(String, String)]]()
 
   def incrAdapterChangedCntr(): Unit = {
     adapterChangedCntr += 1
@@ -385,7 +401,7 @@ class KamanjaManager extends Observer {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
-          while (!KamanjaConfiguration.shutdown && ! tp.isShutdown && ! tp.isTerminated) {
+          while (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated) {
             // Sleeping upto 1000ms more than given interval
             val tmMs = commitOffsetsTimeInterval + 1000
             val nSecs = tmMs / 1000
@@ -396,7 +412,7 @@ class KamanjaManager extends Observer {
                 Thread.sleep(1000)
               } catch {
                 case e: InterruptedException => {}
-                case e: Throwable => {}
+                case e: Throwable            => {}
               }
             }
             if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
@@ -418,8 +434,6 @@ class KamanjaManager extends Observer {
       })
     }
   }
-
-
 
   private def PrintUsage(): Unit = {
     LOG.warn("Available commands:")
@@ -458,7 +472,7 @@ class KamanjaManager extends Observer {
         }
       })
     }
-    
+
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.Shutdown
     if (serviceObj != null)
@@ -654,6 +668,39 @@ class KamanjaManager extends Observer {
         }
       }
 
+      try {
+        val postAdapterInfoTime = loadConfigs.getProperty("PostAdapterInfoTime".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (postAdapterInfoTime > 0) {
+          KamanjaConfiguration.postAdapterInfoTime = postAdapterInfoTime
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      try {
+        val writeAdapterInfoTime = loadConfigs.getProperty("WriteAdapterInfoTime".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (writeAdapterInfoTime > 0) {
+          KamanjaConfiguration.writeAdapterInfoTime = writeAdapterInfoTime
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      try {
+        val adapterInfoWriteLocation = loadConfigs.getProperty("AdapterInfoWriteLocation".toLowerCase, "").replace("\"", "").trim.toString
+        if (adapterInfoWriteLocation.trim.size > 0) {
+          KamanjaConfiguration.adapterInfoWriteLocation = adapterInfoWriteLocation
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
       //      try {
       //        val adapterCommitTime = loadConfigs.getProperty("AdapterCommitTime".toLowerCase, "0").replace("\"", "").trim.toInt
       //        if (adapterCommitTime > 0) {
@@ -691,7 +738,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt").replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -706,7 +753,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -718,11 +765,10 @@ class KamanjaManager extends Observer {
         }
       }
 
-
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval").replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -737,10 +783,96 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.postAdapterInfoTime == 0) {
+        try {
+          val postAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PostAdapterInfoTime").replace("\"", "").trim
+          if (!postAdapterInfoTimeStr.isEmpty) {
+            val postAdapterInfoTime = postAdapterInfoTimeStr.toInt
+            if (postAdapterInfoTime > 0)
+              KamanjaConfiguration.postAdapterInfoTime = postAdapterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.postAdapterInfoTime == 0) {
+        try {
+          val postAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PostAdapterInfoTime".toLowerCase).replace("\"", "").trim
+          if (!postAdapterInfoTimeStr.isEmpty) {
+            val postAdapterInfoTime = postAdapterInfoTimeStr.toInt
+            if (postAdapterInfoTime > 0)
+              KamanjaConfiguration.postAdapterInfoTime = postAdapterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      if (KamanjaConfiguration.writeAdapterInfoTime == 0) {
+        try {
+          val writeAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdapterInfoTime").replace("\"", "").trim
+          if (!writeAdapterInfoTimeStr.isEmpty) {
+            val writeAdapterInfoTime = writeAdapterInfoTimeStr.toInt
+            if (writeAdapterInfoTime > 0)
+              KamanjaConfiguration.writeAdapterInfoTime = writeAdapterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.writeAdapterInfoTime == 0) {
+        try {
+          val writeAdapterInfoTimeStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "WriteAdapterInfoTime".toLowerCase).replace("\"", "").trim
+          if (!writeAdapterInfoTimeStr.isEmpty) {
+            val writeAdapterInfoTime = writeAdapterInfoTimeStr.toInt
+            if (writeAdapterInfoTime > 0)
+              KamanjaConfiguration.writeAdapterInfoTime = writeAdapterInfoTime
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+      if (KamanjaConfiguration.adapterInfoWriteLocation == "") {
+        try {
+          val adapterInfoWriteLocationStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "AdapterInfoWriteLocation").replace("\"", "").trim
+          if (!adapterInfoWriteLocationStr.isEmpty) {
+            val adapterInfoWriteLocation = adapterInfoWriteLocationStr.toString
+            if (adapterInfoWriteLocation.size > 0)
+              KamanjaConfiguration.adapterInfoWriteLocation = adapterInfoWriteLocation
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      if (KamanjaConfiguration.adapterInfoWriteLocation == 0) {
+        try {
+          val adapterInfoWriteLocationStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "AdapterInfoWriteLocation".toLowerCase).replace("\"", "").trim
+          if (!adapterInfoWriteLocationStr.isEmpty) {
+            val adapterInfoWriteLocation = adapterInfoWriteLocationStr.toString
+            if (adapterInfoWriteLocation.size > 0)
+              KamanjaConfiguration.adapterInfoWriteLocation = adapterInfoWriteLocation
           }
         } catch {
           case e: Exception => {
@@ -828,8 +960,9 @@ class KamanjaManager extends Observer {
             retval = false
           }
         }
-        if (retval)
+        if (retval) {
           RecreateExecCtxtsCommitPartitionOffsetPool()
+        }
       }
     } catch {
       case e: Exception => {
@@ -851,8 +984,7 @@ class KamanjaManager extends Observer {
           return true
         if (trmln.compareToIgnoreCase("forceAdapterRebalance") == 0) {
           KamanjaLeader.forceAdapterRebalance
-        }
-        else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
+        } else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
           KamanjaLeader.forceAdapterRebalanceAndSetEndOffsets
         }
       }
@@ -1207,7 +1339,6 @@ class KamanjaManager extends Observer {
       LOG.debug("KamanjaManager " + KamanjaConfiguration.nodeId.toString + " externalized metrics for UID: " + thisEngineInfo.uniqueId)
   }
 
-
   private def processConfigChange(objType: String, action: String, objectName: String, adapter: Any): Boolean = {
     // For now we are only handling adapters.
     if (objType.equalsIgnoreCase("adapterdef")) {
@@ -1347,6 +1478,7 @@ object KamanjaManager {
         KamanjaConfiguration.shutdown = true // Setting the global shutdown
       }
     })
+    println("Kamanja Manager Started")
     val kmResult = instance.run(args)
     if (kmResult != 0) {
       LOG.error(s"KAMANJA-MANAGER: Kamanja shutdown with error code $kmResult")

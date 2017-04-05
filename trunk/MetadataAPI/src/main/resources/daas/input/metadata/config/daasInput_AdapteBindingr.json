@@ -1,0 +1,7 @@
+[
+  {
+    "AdapterName": "daasinputadapter",
+    "MessageName": "com.ligadata.kamanja.daasinputmessage",
+    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser"
+  }
+]

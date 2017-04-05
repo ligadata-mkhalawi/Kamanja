@@ -99,6 +99,7 @@ mkdir -p $installPath/Kamanja-$ver210/template/script
 #mkdir -p $installPath/Kamanja-$ver210/input/
 mkdir -p $installPath/Kamanja-$ver210/ClusterInstall
 mkdir -p $installPath/Kamanja-$ver210/KamanjaUI
+mkdir -p $installPath/Kamanja-$ver210/DaaS
 #new one
 #mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/bin
@@ -135,6 +136,7 @@ mkdir -p $installPath/Kamanja-$ver211/template/script
 #mkdir -p $installPath/Kamanja-$ver211/input
 mkdir -p $installPath/Kamanja-$ver211/ClusterInstall
 mkdir -p $installPath/Kamanja-$ver211/KamanjaUI
+mkdir -p $installPath/Kamanja-$ver211/DaaS
 #new one
 #mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/bin
@@ -293,6 +295,8 @@ cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/mi
 cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.10/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 
 #copy jars for kamanjainstallapplib
@@ -339,6 +343,7 @@ cp -rf * $installPath/Kamanja-$ver210/documentation
 # cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/* $installPath/Kamanja-$ver210/ClusterInstall/
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/NodeInfoExtract* $installPath/Kamanja-$ver210/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.sh $kamanjainstallbin
+cp -rf $srcPath/MetadataAPI/src/main/resources/daas/* $installPath/Kamanja-$ver210/DaaS/
 
 #Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
 mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
@@ -616,6 +621,8 @@ cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.11/mi
 cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.11/migrateto_v_1_5_0_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.11/generateadapterbindings_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/target/scala-2.11/oracleoutputadapter_*.jar $systemlib
+cp InputOutputAdapters/OracleOutputAdapter/src/main/resources/ojdbc6.jar $systemlib
 
 # copy 2.11 migrate libraries into 2.10 install directories, useful just in case of reverse migration
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
@@ -661,6 +668,7 @@ cp -rf * $installPath/Kamanja-$ver211/documentation
 # cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/* $installPath/Kamanja-$ver211/ClusterInstall/
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/NodeInfoExtract* $installPath/Kamanja-$ver211/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.sh $kamanjainstallbin
+cp -rf $srcPath/MetadataAPI/src/main/resources/daas/* $installPath/Kamanja-$ver211/DaaS/
 
 #Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
 mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
