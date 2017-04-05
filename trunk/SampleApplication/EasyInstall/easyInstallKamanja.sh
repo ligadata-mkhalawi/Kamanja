@@ -67,6 +67,7 @@ mkdir -p $installPath/Kamanja-$ver210/template/script
 mkdir -p $installPath/Kamanja-$ver210/ClusterInstall
 mkdir -p $installPath/Kamanja-$ver210/KamanjaUI
 mkdir -p $installPath/Kamanja-$ver210/DaaS
+mkdir -p $installPath/Kamanja-$ver210/DaaS/bin
 #new one
 #mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/bin
@@ -104,6 +105,7 @@ mkdir -p $installPath/Kamanja-$ver211/template/script
 mkdir -p $installPath/Kamanja-$ver211/ClusterInstall
 mkdir -p $installPath/Kamanja-$ver211/KamanjaUI
 mkdir -p $installPath/Kamanja-$ver211/DaaS
+mkdir -p $installPath/Kamanja-$ver211/DaaS/bin
 #new one
 #mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/bin
