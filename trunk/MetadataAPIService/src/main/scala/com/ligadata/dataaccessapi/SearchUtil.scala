@@ -38,17 +38,8 @@ class SearchUtil(messageName: String) extends ObjectResolver {
   }
 
   if (isOk) {
-    SearchUtilConfiguration.nodeId = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("NODE_ID", "0").replace("\"", "").trim.toInt
-    nodeInfo = mdMgr.Nodes.getOrElse(SearchUtilConfiguration.nodeId.toString, null)
-  }
-
-  if (SearchUtilConfiguration.nodeId <= 0) {
-    logger.error("Not found valid nodeId. It should be greater than 0")
-    isOk = false
-  }
-
-  if (isOk) {
-    SearchUtilConfiguration.jarPaths = if (nodeInfo.JarPaths == null) Array[String]().toSet else nodeInfo.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
+    val jarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",")
+    SearchUtilConfiguration.jarPaths = if (jarPaths == null) Array[String]().toSet else  jarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     if (SearchUtilConfiguration.jarPaths.size == 0) {
       logger.error("Not found valid JarPaths.")
       isOk = false
