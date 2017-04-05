@@ -22,21 +22,24 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KvBase.Key
 import com.ligadata.StorageBase.DataStore
-import com.ligadata.kamanja.metadata.{AdapterMessageBinding, ContainerDef, MessageDef}
+import com.ligadata.kamanja.metadata.{ AdapterMessageBinding, ContainerDef, MessageDef }
 import com.ligadata.kamanja.metadata.MdMgr._
-import org.apache.logging.log4j.{LogManager, Logger}
+import org.apache.logging.log4j.{ LogManager, Logger }
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 
 //import org.json4s._
 //import org.json4s.JsonDSL._
 //import org.json4s.jackson.JsonMethods._
 import scala.collection.mutable.ArrayBuffer
-import com.ligadata.Exceptions.{FatalAdapterException, MessagePopulationException, StackTrace}
+import com.ligadata.Exceptions.{ FatalAdapterException, MessagePopulationException, StackTrace }
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.ligadata.transactions._
 
 import com.ligadata.transactions._
-import scala.actors.threadpool.{ExecutorService}
+import scala.actors.threadpool.{ ExecutorService }
 
 // There are no locks at this moment. Make sure we don't call this with multiple threads for same object
 class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
@@ -82,7 +85,8 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             lastEventOrigin = nullEventOrigin
             lastTimeCommitOffsets = System.currentTimeMillis
             eventsCntr = 0
-            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, prevEventOrigin.value)
+            WriteAdpterInfo(prevEventOrigin.key, prevEventOrigin.value)
+            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, MaskedParitionKeyValue(prevEventOrigin.value))
           } catch {
             case e: Throwable => {
               lastEventOrigin = prevEventOrigin
@@ -91,12 +95,66 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             }
           }
         }
-     } finally {
+      } finally {
         WriteUnlock(execCtxt_reent_lock)
       }
     }
   }
 
+  private def WriteAdpterInfo(key: String, keyVal: String): Unit = {
+    try {
+      if (key != null && key.length() > 0 && keyVal != null && keyVal.length() > 0) {
+        var allParts = KamanjaLeader.allPartitions
+        if (allParts != null && allParts.size > 0 && allParts.contains(key)) {
+          val value = allParts(key)
+          allParts(key) = (keyVal, value._2, value._3, value._4, value._5)
+        }
+        KamanjaLeader.writeAdapPartitionInfoToNodes(allParts)
+      }
+    } catch {
+      case e: Exception => LOG.error("WriteAdpterInfo " + e.getMessage)
+    }
+
+  }
+
+  private def MaskedParitionKeyValue(keyValue: String): String = {
+    var maskedKeyValue: String = keyValue
+    if (keyValue != null && keyValue.size > 0) {
+      val uuid = KamanjaLeader.UUID
+      val versionstr = KamanjaLeader.versionStr
+      val counter = KamanjaLeader.counter
+      maskedKeyValue = generateMaskedKeyValue(keyValue, versionstr, KamanjaLeader.UUID, KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId(), KamanjaLeader.nodeStartTime, counter)
+    }
+    return maskedKeyValue
+  }
+
+  private def generateMaskedKeyValue(keyValue: String, versionStr: String, uuid: String, nodeId: String, nodestarttime: Long, counter: Long): String = {
+    var partitionKeyValue: String = ""
+
+    val json = ("versionstr" -> versionStr) ~
+      ("keyvalue" -> keyValue) ~
+      ("uuid" -> uuid) ~
+      ("nodestarttime" -> nodestarttime) ~
+      ("nodeid" -> nodeId) ~
+      ("uniquecounter" -> counter)
+
+    partitionKeyValue = compact(render(json))
+    partitionKeyValue
+  }
+
+  def GetAdapterPartitionKVInfo: (String, String, String) = {
+    try {
+      var evnt = lastEventOrigin
+      if (evnt == null)
+        evnt = lastEventOrigin
+      if (evnt == null)
+        return (input.getAdapterName, null, null)
+      return (input.getAdapterName, evnt.key, evnt.value);
+    } catch {
+      case e: Exception => LOG.error("GetAdapterPartitionKVInfo: " + e.getMessage)
+    }
+    return (input.getAdapterName, null, null)
+  }
   //  private var adapterChangedCntr: Long = -1
   //
   //  // Mapping Adapter to Msgs
@@ -266,7 +324,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
           val cData = containerAndData._2.filter(cInfo => (cInfo != null && cInfo.container.isInstanceOf[ContainerInterface])).map(cInfo => cInfo.container.asInstanceOf[ContainerInterface])
           if (cData.size > 0) {
             val modData =
-              if (cData(0).hasPrimaryKey /* && cData(0).hasPartitionKey */) {
+              if (cData(0).hasPrimaryKey /* && cData(0).hasPartitionKey */ ) {
                 cData.map(d => {
                   // Get RDD and replace the transactionId & rowNumber from old one
                   val partKey = d.PartitionKeyData().toList
@@ -359,7 +417,8 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                   lastEventOrigin = nullEventOrigin
                   lastTimeCommitOffsets = System.currentTimeMillis
                   eventsCntr = 0
-                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+                  WriteAdpterInfo(prevEventOrigin.key, prevEventOrigin.value)
+                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, MaskedParitionKeyValue(txnCtxt.origin.value))
                   prevTimeCommitOffsets = lastTimeCommitOffsets
                   prevEventsCntr = eventsCntr
                   prevEventOrigin = lastEventOrigin
@@ -376,7 +435,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                 lastEventOrigin = nullEventOrigin
                 eventsCntr = 0
                 lastTimeCommitOffsets = System.currentTimeMillis
-                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, MaskedParitionKeyValue(txnCtxt.origin.value))
               }
             } catch {
               case e: Exception => {
@@ -396,11 +455,10 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             lastEventOrigin = EventOriginInfo(txnCtxt.origin.key, txnCtxt.origin.value)
           }
         }
-      }
-      else {
+      } else {
         if (logger.isDebugEnabled) {
           val key = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.key != null) txnCtxt.origin.key else ""
-          val value = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.value != null) txnCtxt.origin.value  else ""
+          val value = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.value != null) txnCtxt.origin.value else ""
           logger.debug(s"Not Saving AdapterUniqKvData key:${key}, value:${value}. txnCtxt: ${txnCtxt}, nodeContext: ${nodeContext}")
         }
       }
@@ -751,7 +809,6 @@ object ValidateExecContextFactoryImpl extends ExecContextFactory {
 }
 */
 
-
 object PostMessageExecutionQueue {
   private val LOG = LogManager.getLogger(getClass);
   //  private val engine = new LearningEngine
@@ -852,8 +909,7 @@ object PostMessageExecutionQueue {
           val msg = deQMsg
           if (msg != null) {
             execCtxt.execute(msg, emptyStrBytes, null, null, System.currentTimeMillis)
-          }
-          else {
+          } else {
             // If no messages found in the queue, simply sleep for sometime
             try {
               if (!isShutdown)
