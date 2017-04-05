@@ -35,7 +35,7 @@ or a Hadoop stack.
 Kamanja has been tested on the following operating systems:
 
 - Linux OS: Redhat, CentOS
-- MAC OS: 10.9 and 10.10
+- MAC OS: 10.9 and later
 
 Kamanja has also been tested on the following Hadoop stacks:
 

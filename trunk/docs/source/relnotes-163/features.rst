@@ -14,6 +14,22 @@ plus the following new features:
   as well as for :ref:`Smart File Input Adapters<smart-input-config-ref>`
   and :ref:`metadataapiconfig-config-ref`.
 
+New adapters
+------------
+
+Kamanja 1.6.3 includes a number of new input and output adapters:
+
+- :ref:`dbconsumer-input-adapter-ref` to ingest data
+  into Kamanja from an Oracle database.
+  Note that, in support of this adapter,
+  the :ref:`clusterinstallerdriver-command-ref` command
+  now includes the **-externalJarsDir** argument
+  to specify the external jars directory from which
+  data is ingested.
+
+- :ref:`oracle-output-adapter-ref` to feed data
+  from Kamanja to an Oracle database.
+
 Click on the embedded links above
 for more details about using each of these new features.
 

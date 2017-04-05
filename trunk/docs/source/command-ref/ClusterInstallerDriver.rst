@@ -44,16 +44,18 @@ default location is */tmp*.
       -install|upgrade
       -apiConfig <path-to-MetadataAPIConfig.properties>
       -clusterConfig <path-to-ClusterConfig.json>
-      -tarballPath <tarball-path>
+      [-tarballPath <tarball-path>]
+      [-fromKamanja "<old-release>"]
       -toScala "2.11" | "2.10"
       -tenantID <tenantID>
-      [-adapterMessageBindings <path-to-adapterMessageBindings-file>]
+      -adapterMessageBindings <path-to-adapterMessageBindings-file>
       [-workingDir <workingdirectory>]
       [-clusterId <id>]
       [-logDir <logDir>]
       [-migrationTemplate <MigrationTemplate>]
       [-skipPrerequisites "scala,java,hbase,kafka,zookeeper,all"]
       [-preRequisitesCheckOnly]
+      [-externalJarsDir <external jars directory to ingest>]
 
 
 Options and arguments
@@ -69,6 +71,13 @@ Options and arguments
   - Specify -upgrade on a system with no existing installation of Kamanja
   - Specify both -upgrade and -install
    
+  If **-upgrade** is specified, you must also supply the following arguments:
+
+  - **-fromKamanja "1.x"** -- specify the Kamanja release from which
+    you are upgrading such as "1.6.2" or "1.5.3".
+  - **-fromScala "2.10"** -- specify the Scala release used
+    on the system from which you are upgrading.
+
 - **–apiConfig <MetadataAPIConfig.properties file>** -
   Full pathname of the :ref:`metadataapiconfig-config-ref` file.
   Note that the same location is used for all nodes in the cluster.
@@ -141,6 +150,13 @@ Options and arguments
   If both **–skipPrerequisites** and **–preRequisitesCheckOnly**
   are specified, the command only checks the components
   that are not listed in the skip list.
+
+- **-externalJarsDir** - (Optional)
+  Specify the external directory that contains the jars
+  to be copied to installation lib/binding.
+  This argument is required when installing a system
+  that will use the :ref:`dbconsumer-input-adapter-ref`
+  to ingest data from an Oracle database.
 
 Usage
 -----

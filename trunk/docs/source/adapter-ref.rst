@@ -8,12 +8,14 @@ Adapter Reference Pages
 
 
 .. list-table::
+   :class: ld-wrap-fixed-table
    :widths: 20 80
-   :class: lg-wrap-fixed-table
    :header-rows: 1
 
    * - Adapter
      - Description
+   * - :ref:`dbconsumer-input-adapter-ref`
+     - Input adapter used to ingest data from an Oracle database
    * - :ref:`elastic-output-adapter-ref`
      - Output JSON data to :ref:`elasticsearch-term`
    * - :ref:`oracle-output-adapter-ref`
@@ -21,7 +23,7 @@ Adapter Reference Pages
    * - :ref:`smart-input-config-ref`
      - ingest streaming messages automatically
    * - :ref:`smart-output-config-ref`
-     - Output processed data to an outside consumer.
+     - Output processed data to an outside consumer
    * - :ref:`storage-adapter-ref`
      - Output information saved from models
        as well as :ref:`messages<messages-term>`,
@@ -34,6 +36,7 @@ Adapter Reference Pages
    :titlesonly:
    :maxdepth: 1
 
+   adapter-ref/DbConsumer-input
    adapter-ref/elastic-output
    adapter-ref/OracleOutputAdapter
    adapter-ref/smart-input

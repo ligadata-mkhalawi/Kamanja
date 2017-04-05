@@ -21,7 +21,7 @@ Kamanja currently provides three built-in serializers:
    * - JSON
      - com.ligadata.kamanja.serializer.jsonserdeser
      - supports :ref:`JSON<json-term>` messages
-   * - CSV
+   * - CSV or Delimited
      - com.ligadata.kamanja.serializer.csvserdeser
      - supports :ref:`CSV<csv-term>` messages
    * - KBinary

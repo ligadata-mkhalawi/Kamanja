@@ -45,6 +45,7 @@ File structure
         "Tenants": [
             ... {some config}
         ]
+
         ZooKeeperInfo": {
            "ZooKeeperNodeBasePath": "/kamanja",
            "ZooKeeperConnectString": "localhost:2181",
