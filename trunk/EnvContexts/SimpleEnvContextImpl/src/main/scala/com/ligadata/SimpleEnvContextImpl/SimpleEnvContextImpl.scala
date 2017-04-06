@@ -689,9 +689,9 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     } finally {
       _adapterUniqKeyValBktlocks(bktIdx).writeLock().unlock()
     }
-    val oneContData = Array(("AdapterUniqKvData", Array((Key(KvBaseDefalts.defaultTime, Array(key), 0, 0), "", value.getBytes().asInstanceOf[Any]))))
+    val oneContData = Array(("AdapterKvData", Array((Key(KvBaseDefalts.defaultTime, Array(key), 0, 0), "", value.getBytes().asInstanceOf[Any]))))
     if (logger.isDebugEnabled)
-      logger.debug(s"Saving AdapterUniqKvData key:${key}, value:${value}")
+      logger.debug(s"Saving AdapterKvData key:${key}, value:${value}")
     callSaveData(_sysCatalogDatastore, oneContData)
   }
 
@@ -744,16 +744,43 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
 
     if (notFoundKeys.size == 0) return retVal.toArray
     val results = new ArrayBuffer[(String, String)]()
+    val eachKeyResults = new ArrayBuffer[(String, String)]()
     val buildAdapOne = (k: Key, v: Any, serType: String, t: String, ver: Int) => {
-      buildAdapterUniqueValue(k, v, results)
+      buildAdapterUniqueValue(k, v, eachKeyResults)
     }
-    try {
-      callGetData(_sysCatalogDatastore, "AdapterUniqKvData", Array(TimeRange(KvBaseDefalts.defaultTime, KvBaseDefalts.defaultTime)), notFoundKeys.toArray, buildAdapOne)
-    } catch {
-      case e: Exception => {
-        logger.debug("Data not found for keys:" + notFoundKeys.map(key => key.mkString(",")).mkString(","), e)
+
+    var tryInOldTblKeys = ArrayBuffer[Array[String]]()
+
+    notFoundKeys.foreach(k => {
+      eachKeyResults.clear
+      try {
+        callGetData(_sysCatalogDatastore, "AdapterKvData", Array(TimeRange(KvBaseDefalts.defaultTime, KvBaseDefalts.defaultTime)), Array(k), buildAdapOne)
+      } catch {
+        case e: Exception => {
+          logger.debug("Data not found for keys:" + k.mkString(","), e)
+        }
       }
+      if (eachKeyResults.size == 0) {
+        tryInOldTblKeys += k
+      }
+      else {
+        results ++= eachKeyResults
+      }
+    })
+
+    if (tryInOldTblKeys.size > 0) {
+      eachKeyResults.clear
+      try {
+        // Reading from old table
+        callGetData(_sysCatalogDatastore, "AdapterUniqKvData", Array(TimeRange(KvBaseDefalts.defaultTime, KvBaseDefalts.defaultTime)), tryInOldTblKeys.toArray, buildAdapOne)
+      } catch {
+        case e: Exception => {
+          logger.debug("Data not found for keys:" + tryInOldTblKeys.map(key => key.mkString(",")).mkString(","), e)
+        }
+      }
+      results ++= eachKeyResults
     }
+
     if (results.size > 0) {
       retVal ++= results
       val groupedVals = results.groupBy(kv => getParallelBucketIdx(kv._1))
