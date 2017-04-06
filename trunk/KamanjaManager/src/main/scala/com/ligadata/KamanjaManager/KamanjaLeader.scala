@@ -310,7 +310,8 @@ object KamanjaLeader {
                   })
                 })
 
-                getPartKeyValues(partKeyValueMap, nodeKeysMap.toMap)
+                val defaultKeyValueMap = scala.collection.mutable.Map[String, String]()
+                getPartKeyValues(partKeyValueMap, nodeKeysMap.toMap, defaultKeyValueMap)
 
                 if (LOG.isDebugEnabled()) {
                   nodeKeysMap.foreach(kv => {
@@ -342,7 +343,7 @@ object KamanjaLeader {
                   }
                 }
 
-                val finalConsolidatedPartitionMap = consolidatePartitionsMap(partitionsInfoMap.toMap, partKeyValueMap)
+                val finalConsolidatedPartitionMap = consolidatePartitionsMap(partitionsInfoMap.toMap, partKeyValueMap, defaultKeyValueMap)
 
                 // val fndKeyInVal = if (foundKeysInValidation == null) scala.collection.immutable.Map[String, (String, Int, Int, Long)]() else foundKeysInValidation
                 val fndKeyInVal = scala.collection.immutable.Map[String, (String, Int, Int, Long)]()
@@ -793,7 +794,7 @@ object KamanjaLeader {
     keyvalue
   }
 
-  private def getPartKeyValues(keyValueMap: scala.collection.mutable.Map[String, KeyValue], nodeKeysMap: scala.collection.immutable.Map[String, Array[String]]): Unit = {
+  private def getPartKeyValues(keyValueMap: scala.collection.mutable.Map[String, KeyValue], nodeKeysMap: scala.collection.immutable.Map[String, Array[String]], defaultKeyValueMap: scala.collection.mutable.Map[String, String]): Unit = {
     if (keyValueMap == null) {
       return
     }
@@ -810,24 +811,22 @@ object KamanjaLeader {
         try {
           val uAK = nodeKeysMap.getOrElse(name, null)
           if (uAK != null) {
+            val adapterDefaultString = ia.DeserializeValue(null).Serialize
+
             uAK.foreach(uk => {
               var v: KeyValue = null
               try {
                 v = GetUniqueKeyValue(uk)
                 val key = ia.DeserializeKey(uk)
-                if (v != null) {
-                  keyValueMap(uk) = v
-                } else {
-                  keyValueMap(uk) = v
-                }
+                keyValueMap(uk) = v
+                if (v == null)
+                  defaultKeyValueMap(uk) = adapterDefaultString
               } catch {
                 case e: Throwable => {
                   LOG.error("Failed to prepare partition value for key:" + uk + ". Considering value from local if we have any", e)
-                  if (v != null) {
-                    keyValueMap(uk) = v
-                  } else {
-                    keyValueMap(uk) = v
-                  }
+                  keyValueMap(uk) = v
+                  if (v == null)
+                    defaultKeyValueMap(uk) = adapterDefaultString
                 }
               }
             })
@@ -2406,7 +2405,7 @@ object KamanjaLeader {
     CloseSetDataZkc
   }
 
-  private def consolidatePartitionsMap(partitionInfoMap: Map[String, String], keyValueMap: scala.collection.mutable.Map[String, KeyValue]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+  private def consolidatePartitionsMap(partitionInfoMap: Map[String, String], keyValueMap: scala.collection.mutable.Map[String, KeyValue], defaultKeyValueMap: scala.collection.mutable.Map[String, String]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
     var consolidatedMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
 
     try {
@@ -2417,10 +2416,10 @@ object KamanjaLeader {
       val initialConsolidatedMap = getConsolidatedInitialMap(partitionInfoMap)
       if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - initialConsolidatedMap " + initialConsolidatedMap)
 
-      val consolidateAllPartitions = getConsolidatedMap(initialConsolidatedMap, allPartitions)
+      val consolidateAllPartitions = getConsolidatedMap(initialConsolidatedMap, allPartitions, null)
       if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidateAllPartitions " + consolidateAllPartitions)
 
-      consolidatedMap = getConsolidatedMap(consolidateAllPartitions, keyValueMap)
+      consolidatedMap = getConsolidatedMap(consolidateAllPartitions, keyValueMap, defaultKeyValueMap)
       if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidatedMap " + consolidatedMap)
 
     } catch {
@@ -2431,9 +2430,11 @@ object KamanjaLeader {
     consolidatedMap
   }
 
-  private def getConsolidatedMap(initialConsolidatedMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], keyValueMap: scala.collection.mutable.Map[String, KeyValue]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+  private def getConsolidatedMap(initialConsolidatedMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], keyValueMap: scala.collection.mutable.Map[String, KeyValue],
+                                 defaultKeyValueMap: scala.collection.mutable.Map[String, String]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
     val consolidatedMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
     try {
+      val curNodeId = envCtxt.getNodeId
 
       if (keyValueMap != null && keyValueMap.size > 0) {
         keyValueMap.foreach(keyVal => {
@@ -2460,17 +2461,26 @@ object KamanjaLeader {
                   consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
               }
             } else {
-
+              if (defaultKeyValueMap != null) {
+                val defKeyval = defaultKeyValueMap.getOrElse(keyVal._1, null)
+                if (defKeyval != null)
+                  consolidatedMap(keyVal._1) = (defKeyval, curNodeId, this.UUID, this.nodeStartTime, this.counter)
+              }
             }
           } else if (keyVal._2 != null) {
             consolidatedMap(keyVal._1) = (keyVal._2.keyValue, keyVal._2.nodeid, keyVal._2.uuid, keyVal._2.nodestarttime, keyVal._2.counter)
           } else {
+            if (defaultKeyValueMap != null) {
+              val defKeyval = defaultKeyValueMap.getOrElse(keyVal._1, null)
+              if (defKeyval != null)
+                consolidatedMap(keyVal._1) = (defKeyval, curNodeId, this.UUID, this.nodeStartTime, this.counter)
+            }
           }
         })
-      } else return initialConsolidatedMap
-
+      } else {
+        return initialConsolidatedMap
+      }
     }
-
     catch {
       case e: Exception => LOG.error("Consolidated Map" + e.getMessage)
     }
