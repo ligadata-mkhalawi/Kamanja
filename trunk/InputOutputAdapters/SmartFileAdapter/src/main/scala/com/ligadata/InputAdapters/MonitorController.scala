@@ -165,6 +165,7 @@ class MonitorController {
                   if (keepMontoringBufferingFiles && !isShutdown)
                     monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan)
 
+
                   val updateDirQueuedInfo = (dirQueuedInfo._1, dirQueuedInfo._2, false) //not first scan anymore
                   monitoredDirsQueue.reEnqueue(updateDirQueuedInfo) // so the folder gets monitored again
 
@@ -182,7 +183,13 @@ class MonitorController {
                   //happens if last time queue head dir was monitored was less than waiting time
                   logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                   try {
-                    Thread.sleep(monitoringConf.waitingTimeMS)
+                    while(monitoringConf.waitingTimeMS-10 > 0){
+                      if(isShutdown){
+                        monitoringConf.waitingTimeMS = -1
+                      } else{
+                        Thread.sleep(10) //monitoringConf.waitingTimeMS)
+                      }
+                    }
                   }
                   catch {
                     case ex: Throwable =>
@@ -219,7 +226,7 @@ class MonitorController {
 
     keepMontoringBufferingFiles = false
     if (monitorsExecutorService != null){
-      Utils.shutdownAndAwaitTermination(monitorsExecutorService,"MonitorController thread",10000)
+      Utils.shutdownAndAwaitTermination(monitorsExecutorService,"MonitorController thread",3600000)
       monitorsExecutorService = null
     }
 

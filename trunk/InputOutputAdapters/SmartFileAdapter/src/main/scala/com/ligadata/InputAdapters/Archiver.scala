@@ -264,12 +264,12 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       val archiveThread = new Runnable() {
         override def run(): Unit = {
           var interruptedVal = false
-          while (!interruptedVal && !isInterrupted) {
+          while (!interruptedVal && !isInterrupted && !isShutdown) {
             if(initialTargetDirsCheckingDone) {
               try {
-                if (!isInterrupted && hasNextArchiveFileInfo) {
+                if (!isInterrupted && hasNextArchiveFileInfo && !isShutdown) {
                   val archInfo = getNextArchiveFileInfo
-                  if (!isInterrupted && archInfo != null && archInfo._1 != null && archInfo._2 != null) {
+                  if (!isInterrupted && archInfo != null && archInfo._1 != null && archInfo._2 != null && !isShutdown) {
                     logger.debug("got file to archive from queue: {}", archInfo._1.srcFileBaseName)
                     try {
                       archiveFile(archInfo._1, archInfo._2)
