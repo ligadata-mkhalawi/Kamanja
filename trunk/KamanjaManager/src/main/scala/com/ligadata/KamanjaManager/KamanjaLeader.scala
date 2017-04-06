@@ -329,7 +329,7 @@ object KamanjaLeader {
                     partKeyValueMap.foreach(kv => {
                       try {
                         if (kv._2 != null) {
-                          LOG.debug(kv._1 + " : " + kv._2._1 + " : " + kv._2._2 + " : " + kv._2._3 + " : " + kv._2._4 + " : " + kv._2._5)
+                          LOG.debug("Key:" + kv._1 + ", Value:" + kv._2.toString)
                         } else {
                           LOG.debug(kv._1 + " : Value is null")
                         }
@@ -2431,7 +2431,7 @@ object KamanjaLeader {
     consolidatedMap
   }
 
-  private def getConsolidatedMap(initialConsolidatedMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], keyValueMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
+  private def getConsolidatedMap(initialConsolidatedMap: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], keyValueMap: scala.collection.mutable.Map[String, KeyValue]): scala.collection.mutable.Map[String, (String, String, String, Long, Long)] = {
     val consolidatedMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
     try {
 
@@ -2439,11 +2439,11 @@ object KamanjaLeader {
         keyValueMap.foreach(keyVal => {
           val foundVal = initialConsolidatedMap.getOrElse(keyVal._1, null)
           if (foundVal != null) {
-            val keyval = foundVal._1
-            val nodeid = foundVal._2
-            val uuid = foundVal._3
-            val nodestarttime = foundVal._4
-            val counter = foundVal._5
+            val keyval = foundVal.keyValue
+            val nodeid = foundVal.nodeid
+            val uuid = foundVal.uuid
+            val nodestarttime = foundVal.nodestarttime
+            val counter = foundVal.counter
 
             // val compUUID = AdapterPartitionInfoUtil.compareUUID(keyVal._2._3, uuid)
             if (keyVal._2 != null) {
@@ -2668,12 +2668,12 @@ object KamanjaLeader {
             allPartitions.foreach(partitionsInfo => {
 
               if (partitionsInfo != null) {
-                if (partitionKeyValues.nodeid.toLowerCase().equals(partitionsInfo._2._2)) {
+                if (partitionKeyValues.nodeid.toLowerCase().equals(partitionsInfo._2.nodeid)) {
                   //get the highest counter
-                  val appPartcounter = partitionsInfo._2._5
+                  val appPartcounter = partitionsInfo._2.counter
                   val localCounter = partitionKeyValues.uniquecounter
-                  if (partitionKeyValues.uuid.equals(partitionsInfo._2._3)) {
-                    if (partitionKeyValues.uniquecounter > partitionsInfo._2._5) {
+                  if (partitionKeyValues.uuid.equals(partitionsInfo._2.uuid)) {
+                    if (partitionKeyValues.uniquecounter > partitionsInfo._2.counter) {
                       val keyValArray = partitionKeyValues.keyvalues
                       if (keyValArray != null && keyValArray.length > 0) {
                         for (i <- 0 until keyValArray.length) {
@@ -2688,7 +2688,7 @@ object KamanjaLeader {
                       }
                     }
                   } else {
-                    if (partitionKeyValues.nodestarttime > partitionsInfo._2._5) {
+                    if (partitionKeyValues.nodestarttime > partitionsInfo._2.counter) {
                       val keyValArray = partitionKeyValues.keyvalues
                       if (keyValArray != null && keyValArray.length > 0) {
                         for (i <- 0 until keyValArray.length) {
