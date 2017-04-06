@@ -241,6 +241,28 @@ object KamanjaLeader {
 */
   }
 
+  def MaskedParitionKeyValue(keyValue: String): String = {
+    var maskedKeyValue: String = keyValue
+    if (keyValue != null && keyValue.size > 0) {
+      maskedKeyValue = generateMaskedKeyValue(keyValue, versionStr, UUID, KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId(), nodeStartTime, counter)
+    }
+    return maskedKeyValue
+  }
+
+  private def generateMaskedKeyValue(keyValue: String, versionStr: String, uuid: String, nodeId: String, nodestarttime: Long, counter: Long): String = {
+    var partitionKeyValue: String = ""
+
+    val json = ("versionstr" -> versionStr) ~
+      ("keyvalue" -> keyValue) ~
+      ("uuid" -> uuid) ~
+      ("nodestarttime" -> nodestarttime) ~
+      ("nodeid" -> nodeId) ~
+      ("uniquecounter" -> counter)
+
+    partitionKeyValue = compact(render(json))
+    partitionKeyValue
+  }
+
   private def UpdatePartitionsNodeData(eventType: String, eventPath: String, eventPathData: Array[Byte]): Unit = lock.synchronized {
     try {
       val evntPthData = if (eventPathData != null) (new String(eventPathData)) else "{}"
@@ -344,6 +366,37 @@ object KamanjaLeader {
                 }
 
                 val finalConsolidatedPartitionMap = consolidatePartitionsMap(partitionsInfoMap.toMap, partKeyValueMap, defaultKeyValueMap)
+
+                // If we have values locally and got in finalConsolidatedPartitionMap, which does not present in DB we should write them back
+                // If local cache is not enabled, we are not performing this action.
+                if (KamanjaConfiguration.adapterInfoWriteLocation != null && KamanjaConfiguration.adapterInfoWriteLocation.trim.length > 0) {
+                  LOG.warn("Checking whether final distribution has latest values than DB.")
+                  partKeyValueMap.foreach(kv => {
+                    try {
+                      val finalVal = finalConsolidatedPartitionMap.getOrElse(kv._1, null)
+                      if (finalVal != null && finalVal._1 != null) {
+                        var writeValue = false
+                        val keyValue = if (kv._2.keyValue != null) kv._2.keyValue else defaultKeyValueMap.getOrElse(kv._1, null)
+                        var dispKeyValue = keyValue
+                        if (keyValue != null) {
+                          writeValue = !(finalVal._1.equals(keyValue))
+                        } else {
+                          dispKeyValue = ""
+                          writeValue = true
+                        }
+                        if (writeValue) {
+                          LOG.warn("Found value %s in final consolidation and %s in db for key %s. Writing the final consolidation back to db.".format(finalVal._1, dispKeyValue, kv._1))
+                          val maskedKeyValue = generateMaskedKeyValue(finalVal._1, versionStr, finalVal._3, finalVal._2, finalVal._4, finalVal._5)
+                          envCtxt.setAdapterUniqueKeyValue(kv._1, maskedKeyValue)
+                        }
+                      }
+                    } catch {
+                      case e: Throwable => {
+                        LOG.error("Failed to write value in database for key:" + kv._1, e)
+                      }
+                    }
+                  })
+                }
 
                 // val fndKeyInVal = if (foundKeysInValidation == null) scala.collection.immutable.Map[String, (String, Int, Int, Long)]() else foundKeysInValidation
                 val fndKeyInVal = scala.collection.immutable.Map[String, (String, Int, Int, Long)]()
@@ -794,7 +847,8 @@ object KamanjaLeader {
     keyvalue
   }
 
-  private def getPartKeyValues(keyValueMap: scala.collection.mutable.Map[String, KeyValue], nodeKeysMap: scala.collection.immutable.Map[String, Array[String]], defaultKeyValueMap: scala.collection.mutable.Map[String, String]): Unit = {
+  private def getPartKeyValues(keyValueMap: scala.collection.mutable.Map[String, KeyValue], nodeKeysMap: scala.collection.immutable.Map[String, Array[String]],
+                               defaultKeyValueMap: scala.collection.mutable.Map[String, String]): Unit = {
     if (keyValueMap == null) {
       return
     }
@@ -2414,13 +2468,13 @@ object KamanjaLeader {
       if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - keyValueMap " + keyValueMap)
 
       val initialConsolidatedMap = getConsolidatedInitialMap(partitionInfoMap)
-      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - initialConsolidatedMap " + initialConsolidatedMap)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - initialConsolidatedMap " + initialConsolidatedMap.mkString("~~~~"))
 
       val consolidateAllPartitions = getConsolidatedMap(initialConsolidatedMap, allPartitions, null)
-      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidateAllPartitions " + consolidateAllPartitions)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidateAllPartitions " + consolidateAllPartitions.mkString("~~~~"))
 
       consolidatedMap = getConsolidatedMap(consolidateAllPartitions, keyValueMap, defaultKeyValueMap)
-      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidatedMap " + consolidatedMap)
+      if (LOG.isDebugEnabled()) LOG.debug("consolidatePartitionsMap - consolidatedMap " + consolidatedMap.mkString("~~~~"))
 
     } catch {
       case e: Exception => LOG.error("Consolidated Map" + e.getMessage)
@@ -2461,11 +2515,7 @@ object KamanjaLeader {
                   consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
               }
             } else {
-              if (defaultKeyValueMap != null) {
-                val defKeyval = defaultKeyValueMap.getOrElse(keyVal._1, null)
-                if (defKeyval != null)
-                  consolidatedMap(keyVal._1) = (defKeyval, curNodeId, this.UUID, this.nodeStartTime, this.counter)
-              }
+              consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
             }
           } else if (keyVal._2 != null) {
             consolidatedMap(keyVal._1) = (keyVal._2.keyValue, keyVal._2.nodeid, keyVal._2.uuid, keyVal._2.nodestarttime, keyVal._2.counter)

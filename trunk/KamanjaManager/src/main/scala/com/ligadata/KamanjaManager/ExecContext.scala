@@ -86,7 +86,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             lastTimeCommitOffsets = System.currentTimeMillis
             eventsCntr = 0
             WriteAdpterInfo(prevEventOrigin.key, prevEventOrigin.value)
-            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, MaskedParitionKeyValue(prevEventOrigin.value))
+            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, KamanjaLeader.MaskedParitionKeyValue(prevEventOrigin.value))
           } catch {
             case e: Throwable => {
               lastEventOrigin = prevEventOrigin
@@ -115,31 +115,6 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
       case e: Exception => LOG.error("WriteAdpterInfo " + e.getMessage)
     }
 
-  }
-
-  private def MaskedParitionKeyValue(keyValue: String): String = {
-    var maskedKeyValue: String = keyValue
-    if (keyValue != null && keyValue.size > 0) {
-      val uuid = KamanjaLeader.UUID
-      val versionstr = KamanjaLeader.versionStr
-      val counter = KamanjaLeader.counter
-      maskedKeyValue = generateMaskedKeyValue(keyValue, versionstr, KamanjaLeader.UUID, KamanjaMetadata.gNodeContext.getEnvCtxt().getNodeId(), KamanjaLeader.nodeStartTime, counter)
-    }
-    return maskedKeyValue
-  }
-
-  private def generateMaskedKeyValue(keyValue: String, versionStr: String, uuid: String, nodeId: String, nodestarttime: Long, counter: Long): String = {
-    var partitionKeyValue: String = ""
-
-    val json = ("versionstr" -> versionStr) ~
-      ("keyvalue" -> keyValue) ~
-      ("uuid" -> uuid) ~
-      ("nodestarttime" -> nodestarttime) ~
-      ("nodeid" -> nodeId) ~
-      ("uniquecounter" -> counter)
-
-    partitionKeyValue = compact(render(json))
-    partitionKeyValue
   }
 
   def GetAdapterPartitionKVInfo: (String, String, String) = {
@@ -418,7 +393,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                   lastTimeCommitOffsets = System.currentTimeMillis
                   eventsCntr = 0
                   WriteAdpterInfo(prevEventOrigin.key, prevEventOrigin.value)
-                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, MaskedParitionKeyValue(txnCtxt.origin.value))
+                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, KamanjaLeader.MaskedParitionKeyValue(txnCtxt.origin.value))
                   prevTimeCommitOffsets = lastTimeCommitOffsets
                   prevEventsCntr = eventsCntr
                   prevEventOrigin = lastEventOrigin
@@ -435,7 +410,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                 lastEventOrigin = nullEventOrigin
                 eventsCntr = 0
                 lastTimeCommitOffsets = System.currentTimeMillis
-                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, MaskedParitionKeyValue(txnCtxt.origin.value))
+                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, KamanjaLeader.MaskedParitionKeyValue(txnCtxt.origin.value))
               }
             } catch {
               case e: Exception => {
