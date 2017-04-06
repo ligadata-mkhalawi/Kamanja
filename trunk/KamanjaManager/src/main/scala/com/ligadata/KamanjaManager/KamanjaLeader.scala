@@ -376,7 +376,7 @@ object KamanjaLeader {
                       val finalVal = finalConsolidatedPartitionMap.getOrElse(kv._1, null)
                       if (finalVal != null && finalVal._1 != null) {
                         var writeValue = false
-                        val keyValue = if (kv._2.keyValue != null) kv._2.keyValue else defaultKeyValueMap.getOrElse(kv._1, null)
+                        val keyValue = if (kv._2 != null && kv._2.keyValue != null) kv._2.keyValue else defaultKeyValueMap.getOrElse(kv._1, null)
                         var dispKeyValue = keyValue
                         if (keyValue != null) {
                           writeValue = !(finalVal._1.equals(keyValue))
