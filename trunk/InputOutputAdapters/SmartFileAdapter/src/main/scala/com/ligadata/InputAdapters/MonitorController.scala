@@ -183,7 +183,7 @@ class MonitorController {
                   //happens if last time queue head dir was monitored was less than waiting time
                   logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                   try {
-                    while(monitoringConf.waitingTimeMS-10 > 0){
+                    while(monitoringConf.waitingTimeMS-1000 > 0){
                       if(isShutdown){
                         monitoringConf.waitingTimeMS = -1
                       } else{
