@@ -176,6 +176,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var archiveInfo = new scala.collection.mutable.Queue[ArchiveFileInfo]()
   private var participantExecutor: ExecutorService = null
   private var participantsFilesAssignmentExecutor: ExecutorService = null
+  private var fileAssignmenedExecutor: ExecutorService = null
   private var leaderExecutor: ExecutorService = null
   private var filesParallelism: Int = -1
   private var monitorController: MonitorController = null
@@ -1380,12 +1381,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             smartFileContext, partitionId.toString, actualThreadId, fileToProcessName)
           smartFileContext.inUse = true
         }
-        else
-          logger.debug("SmartFileConsumer : context {} already in use, partition id={}, actualThreadId={},file={}",
+        else {
+          logger.error("SmartFileConsumer : context {} already in use, partition id={}, actualThreadId={},file={}",
             smartFileContext, partitionId.toString, actualThreadId, fileToProcessName)
+        }
 
         //logger.error("partitionId={}, smartFileContext={}", partitionId.toString, smartFileContext)
-
         //start processing the file
 
         val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName)
@@ -1810,11 +1811,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       participantsFilesAssignmentExecutor = null
     }
 
+    if (fileAssignmenedExecutor != null) {
+      Utils.shutdownAndAwaitTermination(fileAssignmenedExecutor,"fileAssignmenedExecutor thread",3600000)
+      fileAssignmenedExecutor = null
+    }
+
     isShutdown = false
     _leaderCallbackRequests.clear
     _fileAssignmentsCallbackRequests.clear
 
     participantsFilesAssignmentExecutor = Executors.newFixedThreadPool(1)
+    // For now we are executing only 256 threads at the most in each Consumer
+    fileAssignmenedExecutor = Executors.newFixedThreadPool(256)
 
     val fileAssignmentFromLeaderThread = new Runnable() {
       val exec = participantsFilesAssignmentExecutor
@@ -1827,7 +1835,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             while (i < requests.size && !isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
               val req = requests(i)
               i += 1
-              fileAssignmentFromLeaderFn(req.eventType, req.eventPath, req.eventPathData)
+
+              val fileAssignmenedExecThread = new Runnable() {
+                val request = req
+                override def run(): Unit = {
+                  fileAssignmentFromLeaderFn(request.eventType, request.eventPath, request.eventPathData)
+                }
+              }
+              fileAssignmenedExecutor.execute(fileAssignmenedExecThread)
             }
             // Wait only if we don't have any requests to process
             if (requests.size == 0 && !isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
@@ -2027,6 +2042,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (participantsFilesAssignmentExecutor != null){
       Utils.shutdownAndAwaitTermination(participantsFilesAssignmentExecutor,"participantsFilesAssignmentExecutor thread",3600000)
       participantsFilesAssignmentExecutor = null
+    }
+
+    if (fileAssignmenedExecutor != null){
+      Utils.shutdownAndAwaitTermination(fileAssignmenedExecutor,"fileAssignmenedExecutor thread",3600000)
+      fileAssignmenedExecutor = null
     }
 
     _leaderCallbackRequests.clear

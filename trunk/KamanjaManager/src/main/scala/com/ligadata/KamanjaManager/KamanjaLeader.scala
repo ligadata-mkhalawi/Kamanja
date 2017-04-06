@@ -108,7 +108,7 @@ object KamanjaLeader {
   val allPartitions = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
   private val consolidatedPartitions = scala.collection.mutable.Map[String, String]()
   var condolidatedAdapterInfoMap = Map[String, Array[(String, String)]]()
-  private var lock: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
+  private var lock2: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
 
   val versionStr = "value embedded in node execution information"
   val UUID = AdapterPartitionInfoUtil.setGuid(System.currentTimeMillis())
@@ -760,9 +760,8 @@ object KamanjaLeader {
       }
     } catch {
       case e: Exception => {
+        LOG.warn("uuid, nodeid, nodestarttime do not exists in database. Considering local one")
         keyvalue = new KeyValue(keyValueStr, nodeId, UUID, nodeStartTime, counter)
-        LOG.error("uuid, nodeid, nodestarttime do not exists in database ")
-
       }
     }
     if (LOG.isDebugEnabled()) LOG.debug("Kamanja Leader - GetUniqueKeyValue - keyvalue: " + keyvalue.keyValue + " : " + keyvalue.nodeid + " : " + keyvalue.uuid + " : " + keyvalue.nodestarttime + " : " + keyvalue.counter)
@@ -2523,7 +2522,24 @@ object KamanjaLeader {
             if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
               while (!tp.isShutdown) {
                 try {
-                  Thread.sleep(writeAdapterInfoTime)
+                  val waitSecs = writeAdapterInfoTime / 1000
+                  val waitMilliSecs = writeAdapterInfoTime % 1000
+                  var idx = 0
+                  while (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && idx < waitSecs) {
+                    idx += 1
+                    try {
+                      Thread.sleep(1000)
+                    } catch {
+                      case e: Throwable => {}
+                    }
+                  }
+                  if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && waitMilliSecs > 0) {
+                    try {
+                      Thread.sleep(waitMilliSecs)
+                    } catch {
+                      case e: Throwable => {}
+                    }
+                  }
                   writeAdapPartitionInfoToNodes(allPartitions)
                 } catch {
                   case e: Throwable => {
@@ -2553,7 +2569,7 @@ object KamanjaLeader {
 
       if (partKeyValuesSize > 0) {
         try {
-          lock.writeLock().lock()
+          lock2.writeLock().lock()
 
           if (allPartitions != null && allPartitions.keys.size == 0) {
             for (i <- 0 until partKeyValuesSize) {
@@ -2606,7 +2622,7 @@ object KamanjaLeader {
             })
           }
         } finally {
-          lock.writeLock().unlock()
+          lock2.writeLock().unlock()
         }
       }
     }
