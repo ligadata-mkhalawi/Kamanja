@@ -71,7 +71,7 @@ object AdapterPartitionInfoUtil {
     return guid
   }
 
-  def writeToFile(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], nodeadapterInfoPath: String): Unit = {
+  def writeToFile(allPartitions: scala.collection.mutable.Map[String, KeyValue], nodeadapterInfoPath: String): Unit = {
     try {
       if (nodeadapterInfoPath.equalsIgnoreCase(null)) {
         LOG.error("nodeadapterInfoPath should not be null for select operation")
@@ -92,18 +92,18 @@ object AdapterPartitionInfoUtil {
     }
   }
 
-  private def generatePartitionInfoJson(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)]): String = {
+  private def generatePartitionInfoJson(allPartitions: scala.collection.mutable.Map[String, KeyValue]): String = {
 
     var adapterInfoString: String = ""
     val guid = setGuid(System.currentTimeMillis())
 
     val json = ("keyvalues" -> allPartitions.map(kv =>
       ("key" -> kv._1) ~
-        ("keyvalue" -> kv._2._1) ~
-        ("nodeid" -> kv._2._2) ~
-        ("uuid" -> kv._2._3) ~
-        ("nodestarttime" -> kv._2._4) ~
-        ("uniquecounter" -> kv._2._5)));
+        ("keyvalue" -> kv._2.keyValue) ~
+        ("nodeid" -> kv._2.nodeid) ~
+        ("uuid" -> kv._2.uuid) ~
+        ("nodestarttime" -> kv._2.nodestarttime) ~
+        ("uniquecounter" -> kv._2.counter)));
 
     adapterInfoString = compact(render(json))
     adapterInfoString
@@ -139,8 +139,8 @@ object AdapterPartitionInfoUtil {
     return new java.io.File(filePath).exists
   }
 
-  def takeBackUpAndWriteToFile(allPartitions: scala.collection.mutable.Map[String, (String, String, String, Long, Long)], nodeadapterInfoPath: String): Unit = {
-    var localAllPartitions = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+  def takeBackUpAndWriteToFile(allPartitions: scala.collection.mutable.Map[String, KeyValue], nodeadapterInfoPath: String): Unit = {
+    var localAllPartitions = scala.collection.mutable.Map[String, KeyValue]()
     try {
       lock.writeLock().lock();
       deleteOldFileAndWriteToFile(nodeadapterInfoPath, backupfile5, backupfile4)
