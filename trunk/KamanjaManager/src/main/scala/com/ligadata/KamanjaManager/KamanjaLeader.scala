@@ -108,6 +108,7 @@ object KamanjaLeader {
   val allPartitions = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
   private val consolidatedPartitions = scala.collection.mutable.Map[String, String]()
   var condolidatedAdapterInfoMap = Map[String, Array[(String, String)]]()
+  private var lock2: ReentrantReadWriteLock = new ReentrantReadWriteLock(true);
 
   val versionStr = "value embedded in node execution information"
   val UUID = AdapterPartitionInfoUtil.setGuid(System.currentTimeMillis())
@@ -2568,7 +2569,7 @@ object KamanjaLeader {
 
       if (partKeyValuesSize > 0) {
         try {
-          lock.writeLock().lock()
+          lock2.writeLock().lock()
 
           if (allPartitions != null && allPartitions.keys.size == 0) {
             for (i <- 0 until partKeyValuesSize) {
@@ -2621,7 +2622,7 @@ object KamanjaLeader {
             })
           }
         } finally {
-          lock.writeLock().unlock()
+          lock2.writeLock().unlock()
         }
       }
     }
