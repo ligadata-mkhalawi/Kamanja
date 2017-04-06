@@ -5,8 +5,9 @@ Running Python Models on Kamanja
 
 :ref:`Python<python-term>` models can be run on Kamanja
 much as other types of models are run.
-Standard metadata commands are used to add/remove/update models.
-In the next section, these commands are illustrated.
+Use the :ref:`kamanja-command-ref`
+to add, remove, and update models.
+These commands are illustrated here.
 
 Limitations
 -----------
@@ -21,15 +22,17 @@ Kamanja Python Metadata Commands
 Add Model
 ~~~~~~~~~
 
-The following command illustrates how a model can be added to the Kamanja system:
+The following command illustrates how to add a model
+to the Kamanja system:
 
 ::
 
-  $KAMANJA_HOME/bin/kamanja add model python
-  $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
-      MODELNAME subtract.SubtractTuple MESSAGENAME \
-      org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE \
-      org.kamanja.arithmetic.arithmeticOutMsg TENANTID tenant1 \
+  $KAMANJA_HOME/bin/kamanja add model python \
+      $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
+      MODELNAME subtract.SubtractTuple \
+      MESSAGENAME org.kamanja.arithmetic.arithmeticMsg \
+      OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg \
+      TENANTID tenant1 \
       MODELVERSION 0.00001 \
       MODELOPTIONS ’{”InputTypeInfo”: {”a” : ”Float”, ”b” : ” Float”}}’
 
@@ -37,11 +40,12 @@ or
 
 ::
 
-  $KAMANJA_HOME/bin/kamanja add model python
-  $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
-      MODELNAME subtract.SubtractTuple MESSAGENAME \
-      org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE \
-      org.kamanja.arithmetic.arithmeticOutMsg TENANTID tenant1 \
+  $KAMANJA_HOME/bin/kamanja add model python \
+      $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
+      MODELNAME subtract.SubtractTuple \
+      MESSAGENAME org.kamanja.arithmetic.arithmeticMsg \
+      OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg \
+      TENANTID tenant1 \
       MODELVERSION 0.00001
 
 where
@@ -49,13 +53,15 @@ where
 - MODELNAME <modulename>.<classname> – name of the module name
   without .py.Classname is the name of the class inside the module
   that contains the execute method.
-- MESSAGENAME – name of the input message for the consumption of the input message.
+- MESSAGENAME – name of the input message
+  for the consumption of the input message.
 - OUTMESSAGE – name of the output queue where produced messages are sent.
 - MODELOPTIONS – (optional) contains the active input fields
   from the consumed input message in JSON format.
 
 For Python models, a user may also specify model options
-in the form of a JSON string (or a file path containing JSON may also be given).
+in the form of a JSON string
+or the full path name of a file containing JSON.
 The options can be quite complex,
 including JSON dictionaries and JSON lists of dictionaries.
 
@@ -77,12 +83,13 @@ Updates are similar to the add model:
 
 ::
 
-  kamanja update model python
-  $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py
-     MODELNAME subtract.SubtractTuple MESSAGENAME
-     org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE
-     org.kamanja.arithmetic.arithmeticOutMsg TENANTID tenant1
-     MODELVERSION 0.00003
+  kamanja update model python \
+     $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
+     MODELNAME subtract.SubtractTuple \
+     MESSAGENAME org.kamanja.arithmetic.arithmeticMsg \
+     OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg \
+     TENANTID tenant1 \
+     MODELVERSION 0.00003 \
      MODELOPTIONS ’{”InputTypeInfo”: {”a” : ”Float”, ”b” : ” Float”}}’
 
 In the example, the model options have had a number of their values changed.
@@ -138,7 +145,8 @@ to determine what should be returned.
        return outMsg
 
 
-The Python example can return either output or NULL as shown in the above program.
+The Python example can return either output or NULL
+as shown in the above program.
 The model can install external libraries and use them in the Python program.
 The models are stored in $KAMANJA_HOME/python/model once they are compiled.
 MODELNAME in the command-line is given the name of the <modulename>.<classname>.
@@ -147,7 +155,8 @@ The divide.py MODELNAME is divide.DivideTuple.
 Theano Model using ModelInstance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following code gives another example using a third-party library called Theano.
+The following code gives another example using
+a third-party Python scientific library called Theano:
 
 ::
 
@@ -156,7 +165,7 @@ The following code gives another example using a third-party library called Thea
   import json
   import logging
   import theano
-  from theano import tensor
+  from theano import theano
 
   class AddTheanoTuple(ModelInstance):
        """ Model AddTheanoTuple will sum msg["a"] and msg["b"] """
@@ -165,8 +174,8 @@ The following code gives another example using a third-party library called Thea
             A real implementation would use the output fields to
             determine what should be returned.
             """
-            a = tensor.dscalar ()
-            b = tensor.dscalar()
+            a = theanodscalar ()
+            b = theanodscalar()
             c = a+ b
             f = theano.function([a,b], c)
             sumofTup = f(float(msg["a"]) , float(msg["b"]) )
@@ -192,10 +201,13 @@ Simple Example
 Steps to run the sample:
 
 #. Start Zookeeper, Kafka
-#. Call CreateQueues
-#. Run the Python_Simple.sh script in $KAMANJA_HOME/input/SampleApplications/bin.
-   The step loads all messages, models, and adapter bindings.
-#. Start Kamanja.
+#. Call the :ref:`createqueues-command-ref` command
+   to connect to the Kafka server and create some queues for simple testing.
+#. Run the Python_Simple.sh script
+   in $KAMANJA_HOME/input/SampleApplications/bin.
+   to load all :ref:`messages<messages-term>`, :ref:`models<model-term>`,
+   and :ref:`adapter bindings<adapter-binding-config-ref>`.
+#. Start Kamanja; see :ref:`start-stop-cluster`.
 #. Run PushSimpleData.sh in $KAMANJA_HOME/input/SampleApplications/bin.
 #. Watch the output queue.
 
@@ -216,23 +228,26 @@ Sample input and output are given below.
 Example Using Python Libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The example shows the use of a third-party library called Theano.
-Theano is a Python scientific library.
-It is designed to take advantage of underlying hardware
+The example shows another use of the Theano library.
+It takesj advantage of underlying hardware
 (that includes recent graphics processing units (GPUs))
 and hence has high performance that is comparable to C implementations.
 
 The example is just a simple floating point addition
 done functionally using Theano.
-Future versions include real examples.
 
 Steps to run the sample:
 
 #. Start Zookeeper, Kafka
-#. Call CreateQueues
-#. Run the Python_Tensor.sh script in $KAMANJA_HOME/input/SampleApplications/bin. The step loads all messages, models, and adapter bindings.
-#. Start Kamanja.
-#. Run PushSimpleData.sh in $KAMANJA_HOME/input/SampleApplications/bin.
+#. Call the :ref:`createqueues-command-ref` command
+   to connect to the Kafka server and create some queues for simple testing.
+#. Run the Python_Theano.sh script
+   in the *$KAMANJA_HOME/input/SampleApplications/bin* directory
+   to load all :ref:`messages<messages-term>`, :ref:`models<model-term>`,
+   and :ref:`adapter bindings<adapter-binding-config-ref>`.
+   This loads all messages, models, and adapter bindings.
+#. Start Kamanja; see :ref:`start-stop-cluster`.
+#. Run the PushSimpleData.sh in $KAMANJA_HOME/input/SampleApplications/bin.
 #. Watch the output queue.
 
 ::
@@ -252,10 +267,15 @@ using his/her job, payment, and mortgage history.
 Steps to run the example:
 
 #. Start Zookeeper, Kafka
-#. Call CreateQueues
-#. Run the Python_Reg.sh script in $KAMANJA_HOME/input/SampleApplications/bin. The step loads all messages, models, and adapter bindings.
+#. Call the :ref:`createqueues-command-ref` command
+   to connect to the Kafka server and create some queues for simple testing.
+#. Run the Python_Reg.sh script
+   in the *$KAMANJA_HOME/input/SampleApplications/bin* directory
+   to load all :ref:`messages<messages-term>`, :ref:`models<model-term>`,
+   and :ref:`adapter bindings<adapter-binding-config-ref>`.
 #. Start Kamanja.
-#. Run PushHmeqData.sh in $KAMANJA_HOME/input/SampleApplications/bin.
+#. Run the PushHmeqData.sh script
+   in the *$KAMANJA_HOME/input/SampleApplications/bin* directory.
 #. Watch the output queue.
 
 ::
@@ -273,11 +293,15 @@ Steps to run the example:
   Output 	{“rec id”: 53,”python risk score”: 0.2493699} 	Predict risk
 
 To understand the terms in this table,
-see HMEQ-mortgage-applic-SAS-data-doc.pdf and HMEQ-Sta6704-Data-Mining-Methods.pdf.
-
+see `HMEQ-mortgage-applic-SAS-data-doc.pdf
+<http://kamanja.org/wp-content/uploads/2016/09/HMEQ-mortgage-applic-SAS-data-doc.pdf>`_
+and
+`HMEQ-Sta6704-Data-Mining-Methods.pdf
+<http://kamanja.org/wp-content/uploads/2016/09/HMEQ-Sta6704-Data-Mining-Methods.pdf>`_.
 
 Bibliography
 ~~~~~~~~~~~~
 
 Theano 0.8.2 Documentation. LISA Lab, University of Montreal, 2008-2016.
-Web. 23 Sep 2016. (`<http://deeplearning.net/software/theano/introduction.html>`_)
+Web. 23 Sep 2016.
+(`<http://deeplearning.net/software/theano/introduction.html>`_)

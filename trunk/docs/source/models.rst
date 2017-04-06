@@ -12,6 +12,7 @@ Working with Models
    models/languages
    models/app-struct
    models/ingest-data
+   models/daas-api-output
    models/preprocess-data
    models/message-bindings
    models/monitor-exec

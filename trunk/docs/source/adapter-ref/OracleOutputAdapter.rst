@@ -99,7 +99,7 @@ with the following caveats:
 - All Kamanja decimal types are mapped to NUMBER type in Oracle.
 - A Kamanja Boolean type is mapped to varchar2(5)
   because Kamanja ouputs a Boolean value as "true" or "false"
-- A String type is mapped to varchar2(100)
+- A String type is mapped to varchar2(4000)
   because, while the Kamanja :ref:`message definition<message-def-config-ref>`
   does not limit the size of the string,
   the Oracle VARCHAR2 type requires a size when a table is being created.

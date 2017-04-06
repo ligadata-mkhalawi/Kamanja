@@ -7,7 +7,7 @@ CreateQueues.sh
 
 Connect to local Kafka server
 and create the *testin_1*, *testout_1*, and *teststatus_1*
-queues for the three :ref:`adapters<adapter-term>` :ref:`topics<topic-term>`
+queues for the three :ref:`adapter<adapter-term>` :ref:`topics<topic-term>`
 that are configured by default when Kamanja is first
 installed and initialized.
 
