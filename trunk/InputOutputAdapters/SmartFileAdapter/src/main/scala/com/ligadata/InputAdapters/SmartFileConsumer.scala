@@ -1842,7 +1842,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   fileAssignmentFromLeaderFn(request.eventType, request.eventPath, request.eventPathData)
                 }
               }
-              fileAssignmenedExecutor.execute(fileAssignmentFromLeaderThread)
+              fileAssignmenedExecutor.execute(fileAssignmenedExecThread)
             }
             // Wait only if we don't have any requests to process
             if (requests.size == 0 && !isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
