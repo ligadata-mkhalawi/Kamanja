@@ -187,7 +187,7 @@ class MonitorController {
                       if(isShutdown){
                         monitoringConf.waitingTimeMS = -1
                       } else{
-                        Thread.sleep(10) //monitoringConf.waitingTimeMS)
+                        Thread.sleep(1000) //monitoringConf.waitingTimeMS)
                       }
                     }
                   }
