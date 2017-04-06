@@ -1336,9 +1336,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
     if (archiveExecutor != null){
       Utils.shutdownAndAwaitTermination(archiveExecutor,"MonitorController thread",3600000)
+      archiveExecutor = null
     }
 
-    archiveExecutor = null
 
     forceFlushAllArchiveDirs()
 

@@ -220,9 +220,9 @@ class MonitorController {
     keepMontoringBufferingFiles = false
     if (monitorsExecutorService != null){
       Utils.shutdownAndAwaitTermination(monitorsExecutorService,"MonitorController thread",10000)
+      monitorsExecutorService = null
     }
 
-    monitorsExecutorService = null
 
     if (monitoringThreadsFileHandlers != null) {
       monitoringThreadsFileHandlers.foreach(handler => {
