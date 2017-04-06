@@ -2,6 +2,7 @@ package com.ligadata.InputAdapters
 
 import scala.actors.threadpool.{TimeUnit => STimeUnit}
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
 import com.ligadata.Exceptions.KamanjaException
@@ -218,9 +219,10 @@ class MonitorController {
 
     keepMontoringBufferingFiles = false
     if (monitorsExecutorService != null){
-      Utils.shutdownAndAwaitTermination(monitorsExecutorService,"MonitorController thread",3600000)
-      monitorsExecutorService = null
+      Utils.shutdownAndAwaitTermination(monitorsExecutorService,"MonitorController thread",10000)
     }
+
+    monitorsExecutorService = null
 
     if (monitoringThreadsFileHandlers != null) {
       monitoringThreadsFileHandlers.foreach(handler => {

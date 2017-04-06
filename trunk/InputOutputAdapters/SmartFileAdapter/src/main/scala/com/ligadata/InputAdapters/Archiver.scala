@@ -11,9 +11,10 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.logging.log4j.LogManager
 
 import scala.actors.threadpool.{ExecutorService, Executors}
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
-
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import java.io.ByteArrayOutputStream
+
+import com.ligadata.Utils.Utils
 
 
 case class StreamFile(destDir: String, var destFileName: String, var outStream: OutputStream,
@@ -1333,9 +1334,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     if(adapterConfig.archiveConfig == null)
       return
 
-    if (archiveExecutor != null)
-      archiveExecutor.shutdown()
-      archiveExecutor.awaitTermination(1,STimeUnit.DAYS )
+    if (archiveExecutor != null){
+      Utils.shutdownAndAwaitTermination(archiveExecutor,"MonitorController thread",3600000)
+    }
 
     archiveExecutor = null
 
