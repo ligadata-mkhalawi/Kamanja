@@ -2439,23 +2439,23 @@ object KamanjaLeader {
         keyValueMap.foreach(keyVal => {
           val foundVal = initialConsolidatedMap.getOrElse(keyVal._1, null)
           if (foundVal != null) {
-            val keyval = foundVal.keyValue
-            val nodeid = foundVal.nodeid
-            val uuid = foundVal.uuid
-            val nodestarttime = foundVal.nodestarttime
-            val counter = foundVal.counter
+            val keyval = foundVal._1
+            val nodeid = foundVal._2
+            val uuid = foundVal._3
+            val nodestarttime = foundVal._4
+            val counter = foundVal._5
 
             // val compUUID = AdapterPartitionInfoUtil.compareUUID(keyVal._2._3, uuid)
             if (keyVal._2 != null) {
-              if (keyVal._2._3.equals(uuid)) {
+              if (keyVal._2.uuid.equals(uuid)) {
                 if (LOG.isDebugEnabled()) LOG.debug("getConsolidatedMap - same UUID")
-                if (keyVal._2._5 > counter)
-                  consolidatedMap(keyVal._1) = (keyVal._2._1, keyVal._2._2, keyVal._2._3, keyVal._2._4, keyVal._2._5)
+                if (keyVal._2.counter > counter)
+                  consolidatedMap(keyVal._1) = (keyVal._2.keyValue, keyVal._2.nodeid, keyVal._2.uuid, keyVal._2.nodestarttime, keyVal._2.counter)
                 else
                   consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
               } else {
-                if (keyVal._2._4 > nodestarttime)
-                  consolidatedMap(keyVal._1) = (keyVal._2._1, keyVal._2._2, keyVal._2._3, keyVal._2._4, keyVal._2._5)
+                if (keyVal._2.nodestarttime > nodestarttime)
+                  consolidatedMap(keyVal._1) = (keyVal._2.keyValue, keyVal._2.nodeid, keyVal._2.uuid, keyVal._2.nodestarttime, keyVal._2.counter)
                 else
                   consolidatedMap(keyVal._1) = (keyval, nodeid, uuid, nodestarttime, counter)
               }
@@ -2463,7 +2463,7 @@ object KamanjaLeader {
 
             }
           } else if (keyVal._2 != null) {
-            consolidatedMap(keyVal._1) = (keyVal._2._1, keyVal._2._2, keyVal._2._3, keyVal._2._4, keyVal._2._5)
+            consolidatedMap(keyVal._1) = (keyVal._2.keyValue, keyVal._2.nodeid, keyVal._2.uuid, keyVal._2.nodestarttime, keyVal._2.counter)
           } else {
           }
         })
