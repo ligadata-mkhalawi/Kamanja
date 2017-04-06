@@ -100,7 +100,7 @@ object KamanjaLeader {
   private[this] var distributionExecutor = Executors.newFixedThreadPool(1)
 
   private var partitionsInfoMap = scala.collection.mutable.Map[String, String]()
-  private var execCtxtsAdapterInfoPool: ExecutorService = null // 
+  private var execCtxtsAdapterInfoPool: ExecutorService = null //
   var updatePartitionInfoPath = "data/node"
   var consolidatedPartitionInfo = "/adapterinfo/consolidate/"
   var adapterJson: String = ""
@@ -249,81 +249,73 @@ object KamanjaLeader {
             if (expectedNodesAction.compareToIgnoreCase(action) == 0) {
               nodesStatus += extractedNode
 
-              // val nodeJson = parse(extractedNode)
-
-              // if (nodeJson == null || nodeJson.values == null) // Not doing any action if not found valid json
-              //  return
-
-              //   val nodevalues = nodeJson.values.asInstanceOf[Map[String, String]]
-
-              //  val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
-
-              val (nodeid, uuid) = extractNodeIdAndUUId(extractedNode)
-
-              var partKeyValueMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
-
-              //scala.collection.mutable.Map[null, (null, UUID, nodeId)]()
-              if (distributionMap != null && distributionMap.size > 0) {
-                distributionMap.foreach(distInfo => {
-                  distInfo._2.foreach(parts => {
-                    val partitions = parts._2
-                    if (partitions != null && partitions.size > 0) {
-                      for (i <- 0 until partitions.size) {
-                        partKeyValueMap(partitions(i)) = (null, nodeid, UUID, nodeStartTime, counter)
-                      }
-                    }
-                  })
-                })
-              }
-              //get the key values from storage
-              var nodeKeysMap = scala.collection.mutable.Map[String, Array[String]]()
-              distributionMap.foreach(distMap => {
-                distMap._2.foreach(distr => {
-                  var keys = new scala.collection.mutable.ArrayBuffer[String]
-                  if (nodeKeysMap.contains(distr._1)) {
-                    val previousKeys = nodeKeysMap(distr._1)
-                    if (previousKeys != null && previousKeys.length > 0) {
-                      for (i <- 0 until previousKeys.length) {
-                        keys += previousKeys(i)
-                      }
-                    }
-                  }
-                  keys = keys ++ distr._2
-                  nodeKeysMap(distr._1) = keys.toArray
-                })
-              })
-
-              partKeyValueMap = getPartKeyValues(partKeyValueMap, nodeKeysMap.toMap)
-
-              if (LOG.isDebugEnabled()) {
-                nodeKeysMap.foreach(kv => {
-                  LOG.debug("nodeKeysMap kv " + kv._1)
-                  for (i <- 0 until kv._2.length) {
-                    LOG.debug("kv._2 " + kv._2(i))
-                  }
-                })
-                if (partKeyValueMap != null && partKeyValueMap.keys.size > 0) {
-                  partKeyValueMap.foreach(kv => {
-                    LOG.debug(kv._1 + " : " + kv._2._1 + " : " + kv._2._2 + " : " + kv._2._3 + " : " + kv._2._4 + " : " + kv._2._5)
-                  })
-                }
-              }
-
               if (expectedNodesAction == "stopped") {
                 // extractedNode
                 val parittionsInfo = values.getOrElse("PartitionsInfo", "")
 
                 if (parittionsInfo != null)
-                  partitionsInfoMap(nodeId) = parittionsInfo.toString
+                  partitionsInfoMap(extractedNode) = parittionsInfo.toString
               }
-              val finalConsolidatedPartitionMap = consolidatePartitionsMap(partitionsInfoMap.toMap, partKeyValueMap)
 
+              //  val nodeid = nodevalues.getOrElse("NodeId", "").toString.toLowerCase
               if (nodesStatus.size == curParticipents.size && expectedNodesAction == "stopped" && (nodesStatus -- curParticipents).isEmpty) {
                 // Send the data to output queues in case if anything not sent before
                 SendUnSentInfoToOutputAdapters
                 // envCtxt.PersistRemainingStateEntriesOnLeader
                 nodesStatus.clear
                 expectedNodesAction = "distributed"
+
+                var partKeyValueMap = scala.collection.mutable.Map[String, (String, String, String, Long, Long)]()
+
+                //scala.collection.mutable.Map[null, (null, UUID, nodeId)]()
+                if (distributionMap != null && distributionMap.size > 0) {
+                  distributionMap.foreach(distInfo => {
+                    distInfo._2.foreach(parts => {
+                      val partitions = parts._2
+                      if (partitions != null && partitions.size > 0) {
+                        for (i <- 0 until partitions.size) {
+                          partKeyValueMap(partitions(i)) = (null, envCtxt.getNodeId, UUID, nodeStartTime, counter)
+                        }
+                      }
+                    })
+                  })
+                }
+
+                //get the key values from storage
+                var nodeKeysMap = scala.collection.mutable.Map[String, Array[String]]()
+                distributionMap.foreach(distMap => {
+                  distMap._2.foreach(distr => {
+                    var keys = new scala.collection.mutable.ArrayBuffer[String]
+                    if (nodeKeysMap.contains(distr._1)) {
+                      val previousKeys = nodeKeysMap(distr._1)
+                      if (previousKeys != null && previousKeys.length > 0) {
+                        for (i <- 0 until previousKeys.length) {
+                          keys += previousKeys(i)
+                        }
+                      }
+                    }
+                    keys = keys ++ distr._2
+                    nodeKeysMap(distr._1) = keys.toArray
+                  })
+                })
+
+                partKeyValueMap = getPartKeyValues(partKeyValueMap, nodeKeysMap.toMap)
+
+                if (LOG.isDebugEnabled()) {
+                  nodeKeysMap.foreach(kv => {
+                    LOG.debug("nodeKeysMap kv " + kv._1)
+                    for (i <- 0 until kv._2.length) {
+                      LOG.debug("kv._2 " + kv._2(i))
+                    }
+                  })
+                  if (partKeyValueMap != null && partKeyValueMap.keys.size > 0) {
+                    partKeyValueMap.foreach(kv => {
+                      LOG.debug(kv._1 + " : " + kv._2._1 + " : " + kv._2._2 + " : " + kv._2._3 + " : " + kv._2._4 + " : " + kv._2._5)
+                    })
+                  }
+                }
+
+                val finalConsolidatedPartitionMap = consolidatePartitionsMap(partitionsInfoMap.toMap, partKeyValueMap)
 
                 // val fndKeyInVal = if (foundKeysInValidation == null) scala.collection.immutable.Map[String, (String, Int, Int, Long)]() else foundKeysInValidation
                 val fndKeyInVal = scala.collection.immutable.Map[String, (String, Int, Int, Long)]()
