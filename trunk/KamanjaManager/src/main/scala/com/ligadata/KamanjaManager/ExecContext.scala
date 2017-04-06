@@ -107,7 +107,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         var allParts = KamanjaLeader.allPartitions
         if (allParts != null && allParts.size > 0 && allParts.contains(key)) {
           val value = allParts(key)
-          allParts(key) = (keyVal, value._2, value._3, value._4, value._5)
+          allParts(key) = KeyValue(keyVal, value.nodeid, value.uuid, value.nodestarttime, value.counter)
         }
         KamanjaLeader.writeAdapPartitionInfoToNodes(allParts)
       }
