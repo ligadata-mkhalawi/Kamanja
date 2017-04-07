@@ -194,20 +194,24 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
 
   private def getRecordValues(record: ContainerInterface): Array[Any] = {
     record.getAllAttributeValues.filter(attr => !ignoreFieldsIdxs.contains(attr.getValueType().getIndex)).map(attr => {
-      val binFldInputVal = binaryFieldInputIdxs.getOrElse(attr.getValueType().getIndex, null)
       val value = attr.getValue
-      if (binFldInputVal != null) {
-        if (binFldInputVal.binType == 0) {
-          Binary.fromString(value.toString)
+      if (value != null) {
+        val binFldInputVal = binaryFieldInputIdxs.getOrElse(attr.getValueType().getIndex, null)
+        if (binFldInputVal != null) {
+          if (binFldInputVal.binType == 0) {
+            Binary.fromString(value.toString)
+          } else {
+            val valueAr = value.asInstanceOf[Array[String]]
+            valueAr.map(v => {
+              if (v != null) {
+                Binary.fromString(v)
+              } else {
+                null
+              }
+            })
+          }
         } else {
-          val valueAr = value.asInstanceOf[Array[String]]
-          valueAr.map(v => {
-            if (v != null) {
-              Binary.fromString(v)
-            } else {
-              null
-            }
-          })
+          value
         }
       } else {
         value
