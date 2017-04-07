@@ -892,11 +892,14 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           })
         }
         if (LOG.isWarnEnabled) {
-          LOG.warn("BatchWriteTest::Writing %d records took %dms".format(outputContainers.size, (System.currentTimeMillis - startTime)))
+          LOG.warn("%s: Writing %d records took %dms".format(fc.Name, outputContainers.size, (System.currentTimeMillis - startTime)))
         }
       } else {
-        // Only one record. This always goes to one key
+        // Only one record or not parquet format. This always goes to one key
         writeToPartitionFile(tnxCtxt, outputContainers)
+        if (LOG.isDebugEnabled) {
+          LOG.debug("%s: Writing %d records took %dms".format(fc.Name, outputContainers.size, (System.currentTimeMillis - startTime)))
+        }
       }
     } catch {
       case e: Exception => {
