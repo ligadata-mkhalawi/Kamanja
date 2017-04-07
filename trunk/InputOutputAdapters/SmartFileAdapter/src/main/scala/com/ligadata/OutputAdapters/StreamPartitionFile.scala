@@ -228,6 +228,26 @@ class StreamPartitionFile(fc: SmartFileProducerConfiguration, key: String, val a
     if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, message) else writeToFs(fc, message)
   }
 
+
+  def send(tnxCtxt: TransactionContext, recordsArr: Array[ContainerInterface], serializer: SmartFileProducer): Array[Int] = {
+    if (recordsArr.size == 0) return Array[Int]()
+
+    val resultSize = recordsArr.size
+    var retResults = new Array[Int](resultSize)
+
+    for (i <- 0 until resultSize) {
+      retResults(i) = SendStatus.FAILURE
+    }
+
+    var i = 0
+    recordsArr.foreach(record => {
+      retResults(i) = send(tnxCtxt, record, serializer)
+      i += 1
+    })
+
+    retResults
+  }
+
   def send(tnxCtxt: TransactionContext, record: ContainerInterface,
            serializer : SmartFileProducer) : Int = {
 
