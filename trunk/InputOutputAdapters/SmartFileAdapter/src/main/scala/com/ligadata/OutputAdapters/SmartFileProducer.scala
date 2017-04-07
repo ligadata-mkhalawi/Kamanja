@@ -125,7 +125,7 @@ class OutputStreamWriter {
       return (file.exists())
     } catch {
       case e: Throwable => {
-        LOG.warn("Failed to check file exists for file " + fileName, e)
+        if (LOG.isWarnEnabled) LOG.warn("Failed to check file exists for file " + fileName, e)
       }
     }
     return false
@@ -153,7 +153,7 @@ class OutputStreamWriter {
       return (fs.exists(path))
     } catch {
       case e: Throwable => {
-        LOG.warn("Failed to check file exists for file " + fileName, e)
+        if (LOG.isWarnEnabled) LOG.warn("Failed to check file exists for file " + fileName, e)
       }
     }
     return false
@@ -215,13 +215,13 @@ class OutputStreamWriter {
         os = new FileOutputStream(file, canAppend)
       } catch {
         case fio: IOException => {
-          LOG.warn("Smart File Producer " + fc.Name + ": Unable to create a file destination " + fc.uri + " due to an IOException", fio)
+          if (LOG.isWarnEnabled) LOG.warn("Smart File Producer " + fc.Name + ": Unable to create a file destination " + fc.uri + " due to an IOException", fio)
           if (numOfRetries > MAX_RETRIES) {
             LOG.error("Smart File Producer " + fc.Name + ":Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.")
             throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
           }
           numOfRetries += 1
-          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
+          if (LOG.isWarnEnabled) LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
           Thread.sleep(FAIL_WAIT)
         }
         case e: Exception => {
@@ -258,21 +258,21 @@ class OutputStreamWriter {
           if (!canAppend) {
             throw UnsupportedOperationException("File %s exists but append is not permitted".format(fileName), null)
           }
-          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Loading existing file " + uri)
+          if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Loading existing file " + uri)
           os = fs.append(path)
         } else {
-          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Creating new file " + uri);
+          if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Creating new file " + uri);
           os = fs.create(path);
         }
       } catch {
         case fio: IOException => {
-          LOG.warn("Smart File Producer " + fc.Name + ": Unable to create a file destination " + fc.uri + " due to an IOException", fio)
+          if (LOG.isWarnEnabled) LOG.warn("Smart File Producer " + fc.Name + ": Unable to create a file destination " + fc.uri + " due to an IOException", fio)
           if (numOfRetries > MAX_RETRIES) {
             LOG.error("Smart File Producer " + fc.Name + ":Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.")
             throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
           }
           numOfRetries += 1
-          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
+          if (LOG.isWarnEnabled) LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
           Thread.sleep(FAIL_WAIT)
         }
         case e: Exception => {
@@ -310,7 +310,7 @@ class OutputStreamWriter {
     }
     catch {
       case ex: Throwable =>
-        LOG.warn("", ex)
+        if (LOG.isWarnEnabled) LOG.warn("", ex)
         0
     }
   }
@@ -326,7 +326,7 @@ class OutputStreamWriter {
   }
 
   def mkdirsFS(fc: SmartFileProducerConfiguration, dirPath: String): Boolean = {
-    LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
+    if (LOG.isInfoEnabled) LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
     try {
       new File(dirPath).mkdirs()
     }
@@ -338,7 +338,7 @@ class OutputStreamWriter {
   }
 
   def mkdirsHDFS(fc: SmartFileProducerConfiguration, dirPath: String): Boolean = {
-    LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
+    if (LOG.isInfoEnabled) LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
     try {
       val hdfsConf: Configuration = new Configuration()
       if (fc.kerberos != null) {
@@ -360,7 +360,7 @@ class OutputStreamWriter {
     }
     catch {
       case ex: Throwable =>
-        LOG.warn("", ex)
+        if (LOG.isWarnEnabled) LOG.warn("", ex)
         false
     }
   }
@@ -391,6 +391,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private[this] val LOG = LogManager.getLogger(getClass);
 
   private val _reent_lock = new ReentrantReadWriteLock(true)
+
+  private val _smartFileProducer_lock = new Object
 
   private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
     if (reent_lock != null)
@@ -450,7 +452,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private val FAIL_WAIT = 2000
   private var MAX_RETRIES = 3
   private var startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
+  private var lastSeen = System.currentTimeMillis
+  private var lastTnxCtxt: TransactionContext = null
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
 
@@ -462,11 +465,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     fc.uri = fc.uri.substring("file://".length() - 1)
 
   val isParquet = fc.isParquet
+  val doBatchAndLockGlobally = isParquet
   val isAvro = fc.isAvro
   val parquetCompression = if (fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
-  if (isParquet)
-    LOG.info(">>>>>>>>> using parquet with compression: " + parquetCompression)
-  else LOG.info(">>>>>>>>> compression: " + fc.compressionString)
+  if (isParquet) {
+    if (LOG.isInfoEnabled) LOG.info(">>>>>>>>> using parquet with compression: " + parquetCompression)
+  }
+  else {
+    if (LOG.isInfoEnabled) LOG.info(">>>>>>>>> compression: " + fc.compressionString)
+  }
 
   val defaultExtension = if (isParquet || isAvro) "" else fc.compressionString
 
@@ -476,10 +483,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       CompressorStreamFactory.GZIP.equalsIgnoreCase(fc.compressionString) ||
       CompressorStreamFactory.XZ.equalsIgnoreCase(fc.compressionString) ||
       isParquet
-    )
-      LOG.debug("Smart File Producer " + fc.Name + " Using compression: " + fc.compressionString)
-    else
-      throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
+    ) {
+      if (LOG.isDebugEnabled) LOG.debug("Smart File Producer " + fc.Name + " Using compression: " + fc.compressionString)
+      else
+        throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
+    }
   }
 
   if (fc.partitionFormat == null && fc.timePartitionFormat != null) {
@@ -496,6 +504,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
+  // for now we are using accumulatedBatchToWrite & accumulatedOutputContainers for isParquet (doBatchAndLockGlobally) is true
+  private val accumulatedBatchToWrite = fc.otherConfig.getOrElse("CommitBatchSize", "4096").toString.trim.toInt
+  private val accumulatedOutputContainers: ArrayBuffer[ContainerInterface] = if (doBatchAndLockGlobally) new ArrayBuffer[ContainerInterface](accumulatedBatchToWrite) else null
+
   private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1)
   private val producerLock = this
 
@@ -505,7 +517,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   var nextRolloverTime: Long = 0
   if (fc.rolloverInterval > 0) {
-    LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " minutes.")
+    if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " minutes.")
     val dt = System.currentTimeMillis()
     nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
 
@@ -515,6 +527,14 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           try {
             val dt = System.currentTimeMillis
             if (isTimeToRollover(dt)) {
+              if (doBatchAndLockGlobally) {
+                _smartFileProducer_lock.synchronized {
+                  if (accumulatedOutputContainers.size > 0) {
+                    writeData(lastTnxCtxt, accumulatedOutputContainers.toArray) // Write left over data
+                    accumulatedOutputContainers.clear()
+                  }
+                }
+              }
               producerLock.synchronized {
                 if (isTimeToRollover(dt)) {
                   rolloverFiles()
@@ -541,10 +561,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   var bufferFlusher: Thread = null
   if (fc.flushBufferInterval > 0) {
-    LOG.info("Smart File Producer " + fc.Name + ": File buffer is configured. Will flush buffer every " + fc.flushBufferInterval + " milli seconds.")
+    if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": File buffer is configured. Will flush buffer every " + fc.flushBufferInterval + " milli seconds.")
     bufferFlusher = new Thread {
       override def run {
-        LOG.info("Smart File Producer " + fc.Name + ": writing all buffers.")
+        if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": writing all buffers.")
         try {
           Thread.sleep(fc.flushBufferInterval)
         } catch {
@@ -552,20 +572,33 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         }
 
         while (!shutDown) {
+          if (doBatchAndLockGlobally) {
+            _smartFileProducer_lock.synchronized {
+              if (accumulatedOutputContainers.size > 0) {
+                writeData(lastTnxCtxt, accumulatedOutputContainers.toArray) // Write left over data
+                accumulatedOutputContainers.clear()
+              }
+            }
+          }
+
           WriteLock(_reent_lock)
           try {
-            for ((name, pf) <- partitionStreams) {
+            partitionStreams.par.map(kv => {
+              val name = kv._1
+              val pf = kv._2
               if (pf != null) {
-                LOG.debug("Smart File Producer " + fc.Name + ": writing buffer for file at " + name)
+                if (LOG.isDebugEnabled) LOG.debug("Smart File Producer " + fc.Name + ": writing buffer for file at " + name)
                 try {
                   pf.synchronized {
                     pf.flush()
                   }
                 } catch {
-                  case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
+                  case e: Exception => {
+                    LOG.error("Smart File Producer " + fc.Name + ": Error closing file: ", e)
+                  }
                 }
               }
-            }
+            })
           } finally {
             WriteUnlock(_reent_lock)
           }
@@ -583,23 +616,27 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   }
 
   private def rolloverFiles() = {
-    LOG.info("Smart File Producer " + fc.Name + ": Rolling over files.")
+    if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": Rolling over files.")
 
     WriteLock(_reent_lock)
     try {
-      for ((name, pf) <- partitionStreams) {
+      partitionStreams.par.map(kv => {
+        val name = kv._1
+        val pf = kv._2
         if (pf != null) {
-          LOG.info("Smart File Producer " + fc.Name + ": Rolling file at " + name)
+          if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": Rolling file at " + name)
           try {
             pf.synchronized {
               pf.flush()
               pf.close()
             }
           } catch {
-            case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
+            case e: Exception => {
+              LOG.error("Smart File Producer " + fc.Name + ": Error closing file: ", e)
+            }
           }
         }
-      }
+      })
       partitionStreams.clear()
     } finally {
       WriteUnlock(_reent_lock)
@@ -608,22 +645,23 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, SmartFileProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
+    val lastSeenStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(lastSeen))
+    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, SmartFileProducer.ADAPTER_DESCRIPTION, startTime, lastSeenStr, Serialization.write(metrics).toString)
   }
 
   override def getComponentSimpleStats: String = {
     Category + "/" + getAdapterName + "/evtCnt->" + metrics("MessagesProcessed").asInstanceOf[AtomicLong].get
   }
 
-  private def getPartionFile(record: ContainerInterface): PartitionFile = {
+  private def getPartionFlKey(record: ContainerInterface): (String, String, Int) = {
     var typeName = record.getFullTypeName();
     val dateTime = record.getTimePartitionData()
     val tlcfg = fc.typeLevelConfig.getOrElse(typeName, null);
-    var fileBufferSize = fc.flushBufferSize;
+    // var fileBufferSize = fc.flushBufferSize;
     var partitionFormatString = glbPartitionFormatString
     var partitionFormatObjects = glbPartitionFormatObjects
     if (tlcfg != null) {
-      fileBufferSize = tlcfg.flushBufferSize
+      // fileBufferSize = tlcfg.flushBufferSize
       partitionFormatString = tlcfg.partitionFormatString
       partitionFormatObjects = tlcfg.partitionFormatObjects
     }
@@ -646,12 +684,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     val pk = record.getPartitionKey()
     var bucket: Int = 0
     if (pk != null && pk.length > 0 && fc.partitionBuckets > 1) {
-      LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile pk for the record - [" + pk.mkString(",") + "]")
+      if (LOG.isInfoEnabled) LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile pk for the record - [" + pk.mkString(",") + "]")
       bucket = pk.mkString("").hashCode() % fc.partitionBuckets
     }
 
     if (dateTime > 0 && partitionFormatString != null && partitionFormatObjects != null) {
-      LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
+      if (LOG.isInfoEnabled) LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
       val values = partitionFormatObjects.map(fmt => {
         if (fmt.isInstanceOf[FastDateFormat])
@@ -669,20 +707,35 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key for the record - [" + key + "]")
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key in partitionStreams - [" + partitionStreams.keys.mkString(",") + "]")
     }
+    return (key, path, bucket)
+  }
 
+  private def getPartionFile(record: ContainerInterface): PartitionFile = {
+    val (key, path, bucket) = getPartionFlKey(record)
+    getPartionFileFromKey(key, path, bucket, record)
+  }
+
+  private def getPartionFileFromKey(key: String, path: String, bucket: Int, record: ContainerInterface): PartitionFile = {
     var partKey: PartitionFile = null
     ReadLock(_reent_lock)
     partKey = partitionStreams.getOrElse(key, null)
     ReadUnlock(_reent_lock)
 
+    var typeName = record.getFullTypeName();
+    val tlcfg = fc.typeLevelConfig.getOrElse(typeName, null);
+    var fileBufferSize = fc.flushBufferSize;
+    if (tlcfg != null) {
+      fileBufferSize = tlcfg.flushBufferSize
+    }
+
     if (partKey == null) {
       WriteLock(_reent_lock)
       try {
-        LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key[" + key + "] not found")
+        if (LOG.isInfoEnabled) LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key[" + key + "] not found")
         // need to check again to make sure other threads did not update
         partKey = partitionStreams.getOrElse(key, null)
         if (partKey == null) {
-          LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key[" + key + "] still not found will add")
+          if (LOG.isInfoEnabled) LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key[" + key + "] still not found will add")
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
@@ -722,9 +775,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (isParquet) {
             //TODO : is it better to cache parsed schemas in a map ?
             /*if(!writeSupportsMap.contains(record.getFullTypeName)){
-              LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
+              if(LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
               val parquetSchema = Utils.getParquetSchema(record.getAvroSchema)
-              LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
+              if(LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
 
               val writeSupport = new ParquetWriteSupport(parquetSchema)
               writeSupportsMap.put(record.getFullTypeName, writeSupport)
@@ -763,7 +816,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema), ignoreFields.toSet.toArray)
           partKey.init(fileName, fileBufferSize)
 
-          LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
+          if (LOG.isInfoEnabled) LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
           partitionStreams(key) = partKey
         }
       } finally {
@@ -776,7 +829,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
 
   /*private def reopenPartitionFile(pf: PartitionFile): PartitionFile = {//only for stream, not applicable for parquet
-    LOG.info("Smart File Producer :" + fc.Name + " : In PartitionFile key - [" + pf.getKey + "]")
+    if(LOG.isInfoEnabled) LOG.info("Smart File Producer :" + fc.Name + " : In PartitionFile key - [" + pf.getKey + "]")
     WriteLock(_reent_lock)
     try {
       partitionStreams.remove(pf.getKey)
@@ -793,40 +846,61 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
     // Not implemented yet
-    throw new Exception("Not yet implemented")
+    throw new NotImplementedError("send not yet implemented")
   }
 
-
-  // Locking before we write into file
-  // To send an array of messages. messages.size should be same as partKeys.size
-  override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
-    if (outputContainers.size == 0) return
-
-    val dt = System.currentTimeMillis
-    lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
-    if (isTimeToRollover(dt)) {
-      this.synchronized {
-        if (isTimeToRollover(dt)) {
-          rolloverFiles()
-          nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
+  // This function must be called for one Partition File
+  private def writeToPartitionFile(tnxCtxt: TransactionContext, partitionFileOutputContainers: Array[ContainerInterface]): Unit = {
+    if (partitionFileOutputContainers.size == 0) return
+    val record1 = partitionFileOutputContainers(0)
+    val (key, path, bucket) = getPartionFlKey(record1)
+    val pf = getPartionFileFromKey(key, path, bucket, record1)
+    pf.synchronized {
+      var addedCntr = 0
+      val status = pf.send(tnxCtxt, partitionFileOutputContainers, this)
+      for (i <- 0 until status.size) {
+        if (status(i) == SendStatus.SUCCESS) {
+          addedCntr += 1
+        }
+        else {
+          // BUGBUG:: What happens if it fails ?????? No proper handling here
         }
       }
+      if (addedCntr > 0)
+        metrics("MessagesProcessed").asInstanceOf[AtomicLong].addAndGet(addedCntr)
     }
+  }
 
+  private def writeData(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
+    val startTime = System.currentTimeMillis
     try {
-      // Op is not atomic
-      var idx = 0
-      outputContainers.foreach(record => {
+      if (doBatchAndLockGlobally && outputContainers.size > 1) {
+        val groupByKeyRecs = outputContainers.groupBy(record => {
+          val (key, path, bucket) = getPartionFlKey(record)
+          key
+        })
 
-        val pf = getPartionFile(record);
-        pf.synchronized {
-          val status = pf.send(tnxCtxt, record, this)
-
-          if (status == SendStatus.SUCCESS)
-            metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
+        val makeParallelThreashold = 2
+        if (outputContainers.size >= makeParallelThreashold) {
+          // We can do parallel here
+          groupByKeyRecs.par.map(kv => {
+            writeToPartitionFile(tnxCtxt, kv._2)
+          })
+        } else {
+          groupByKeyRecs.map(kv => {
+            writeToPartitionFile(tnxCtxt, kv._2)
+          })
         }
-
-      })
+        if (LOG.isWarnEnabled) {
+          LOG.warn("%s: Writing %d records took %dms".format(fc.Name, outputContainers.size, (System.currentTimeMillis - startTime)))
+        }
+      } else {
+        // Only one record or not parquet format. This always goes to one key
+        writeToPartitionFile(tnxCtxt, outputContainers)
+        if (LOG.isDebugEnabled) {
+          LOG.debug("%s: Writing %d records took %dms".format(fc.Name, outputContainers.size, (System.currentTimeMillis - startTime)))
+        }
+      }
     } catch {
       case e: Exception => {
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
@@ -835,10 +909,44 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
+  // Locking before we write into file
+  // To send an array of messages. messages.size should be same as partKeys.size
+  override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
+    if (outputContainers.size == 0) return
+
+    val dt = System.currentTimeMillis
+    lastSeen = dt
+
+    if (doBatchAndLockGlobally) {
+      _smartFileProducer_lock.synchronized {
+        accumulatedOutputContainers ++= outputContainers
+        lastTnxCtxt = tnxCtxt
+        if (accumulatedOutputContainers.size > accumulatedBatchToWrite) {
+          writeData(tnxCtxt, accumulatedOutputContainers.toArray)
+          accumulatedOutputContainers.clear
+        }
+      }
+    } else {
+      // If not parquet (when !doBatchAndLockGlobally) write the data in regular way
+      writeData(tnxCtxt, outputContainers)
+    }
+
+  }
+
   override def Shutdown(): Unit = {
+    shutDown = true
+    if (doBatchAndLockGlobally) {
+      _smartFileProducer_lock.synchronized {
+        if (accumulatedOutputContainers.size > 0) {
+          // Passing tnxCtxt as null is ok for parquet format
+          writeData(lastTnxCtxt, accumulatedOutputContainers.toArray) // Write left over data
+          accumulatedOutputContainers.clear()
+        }
+      }
+    }
+
     WriteLock(_reent_lock)
     try {
-      shutDown = true
 
       if (rolloverExecutor != null)
         rolloverExecutor.shutdownNow
@@ -848,15 +956,26 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         bufferFlusher = null
       }
 
-      for ((name, pf) <- partitionStreams) {
-        if (pf != null) {
-          LOG.info("Smart File Producer " + fc.Name + ": closing file at " + name)
-          pf.synchronized {
-            pf.flush()
-            pf.close()
+      if (partitionStreams.size > 0) {
+        partitionStreams.par.map(kv => {
+          val name = kv._1;
+          val pf = kv._2;
+          if (pf != null) {
+            if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": closing file at " + name)
+            pf.synchronized {
+              try {
+                pf.flush()
+                pf.close()
+              } catch {
+                case e: Throwable => {
+                  LOG.error("Failed to close Smart File Producer " + fc.Name + ": closing file at " + name, e)
+                }
+              }
+            }
           }
-        }
+        })
       }
+
       partitionStreams.clear()
     } finally {
       WriteUnlock(_reent_lock)

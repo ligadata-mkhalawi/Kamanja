@@ -9,6 +9,7 @@ import org.apache.hadoop.security.UserGroupInformation
 import org.apache.logging.log4j.LogManager
 import parquet.hadoop.ParquetWriter
 import parquet.hadoop.metadata.CompressionCodecName
+import parquet.io.api.Binary
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -28,7 +29,20 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
   private var finalFilePath: String = ""
   private var ugi: UserGroupInformation = null
   private var parquetCompression: CompressionCodecName = null
-  private var ignoreFields = scala.collection.immutable.Set[String]()
+  private var ignoreFieldsNames = scala.collection.immutable.Set[String]()
+  private var ignoreFieldsIdxs = scala.collection.immutable.Set[Int]()
+
+  class BinFldInputVal {
+    var outputIdx: Int = -1
+    var binType: Int = -1
+  }
+
+  private var binaryFieldIdxs = scala.collection.mutable.Map[Int, Int]()
+  private var binaryFieldInputIdxs = scala.collection.mutable.Map[Int, BinFldInputVal]() // This is mapped to direct input idxs. So that way we can ignore then in conversion. value is outputidx & bintype
+
+  // We are considering only fixed & only one type of message for now
+  private var recordElementId: Long = 0
+  private var recordSchemaId: Int = 0
 
   private var tmpDir = ""
   private var tmpFileName = ""
@@ -58,7 +72,7 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
               avroSchemasMap.put(typeName, Utils.getAvroSchema(record))
             val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)*/
 
-    if (LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + avroSchemaStr + ", ignoreFields:" + ignoreFlds.mkString(","))
+    if (LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + avroSchemaStr + ", ignoreFieldsNames:" + ignoreFlds.mkString(","))
     val parquetSchema = Utils.getParquetSchema(avroSchemaStr, ignoreFlds)
     if (LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
 
@@ -69,10 +83,18 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
 
     val writeSupport = new ParquetWriteSupport(parquetSchema, ignoreNullFlags)
 
-    ignoreFields = if (ignoreFlds != null) ignoreFlds.toSet else scala.collection.immutable.Set[String]()
-
     actualActiveFilePath = if (tmpFilePath.length > 0) tmpFilePath else filePath
     parquetWriter = Utils.createParquetWriter(fc, actualActiveFilePath, writeSupport, parquetCompression)
+
+    ignoreFieldsNames = (if (ignoreFlds != null) ignoreFlds.toSet else scala.collection.immutable.Set[String]() ++ writeSupport.getSystemFields)
+
+    writeSupport.getBinaryFieldIdxs.foreach(idx => {
+      binaryFieldIdxs(idx) = 0 // This is simple Binary
+    })
+
+    writeSupport.getArrayBinaryFieldIdxs.foreach(idx => {
+      binaryFieldIdxs(idx) = 1 // This is Array Binary
+    })
 
     var buffer: ArrayBuffer[ContainerInterface] = null
     if (flushBufferSize > 0)
@@ -120,12 +142,14 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
           if (!osWriter.isFileExists(fc, finalFileDir))
             osWriter.mkdirs(fc, finalFileDir)
 
-          LOG.info("parquet file closed. moving file {} to {}", tmpFilePathNoProtocol, finalFullPathNoProtocol)
+          if (LOG.isInfoEnabled) LOG.info("parquet file closed. moving file {} to {}", tmpFilePathNoProtocol, finalFullPathNoProtocol)
           val moved = fileHandler.moveTo(finalFullPathNoProtocol)
-          if (moved)
-            LOG.info("move successful")
-          else LOG.error("Move unsuccessful: could not move tmp parquet file {} to {}", tmpFilePathNoProtocol, finalFullPathNoProtocol)
-
+          if (moved) {
+            if (LOG.isInfoEnabled) LOG.info("move successful")
+          }
+          else {
+            LOG.error("Move unsuccessful: could not move tmp parquet file {} to {}", tmpFilePathNoProtocol, finalFullPathNoProtocol)
+          }
           //fileHandler.disconnect()
         }
         catch {
@@ -144,34 +168,143 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
 
   val reflectionUtil = new ReflectionUtil()
 
-  def send(tnxCtxt: TransactionContext, record: ContainerInterface,
-           serializer: SmartFileProducer): Int = {
+  private def resolveElemntIdAndIgnoreFlds(record: ContainerInterface, serializer: SmartFileProducer): Unit = synchronized {
+    if (recordSchemaId == 0) {
+      recordSchemaId = record.getSchemaId
+      recordElementId = serializer.nodeContext.getEnvCtxt()._mgr.ElementIdForSchemaId(recordSchemaId)
+      // Here it may go wrong only when this record get partial fields
+      // Here we can use getAttributeTypes instead of getAllAttributeValues. But this is called only once. I think this is fine.
+
+      val recVals = record.getAllAttributeValues
+
+      ignoreFieldsIdxs = recVals.filter(attr => ignoreFieldsNames.contains(attr.getValueType().getName())).map(attr => attr.getValueType().getIndex).toSet
+
+      var outIdx = 0
+      recVals.filter(attr => !ignoreFieldsIdxs.contains(attr.getValueType().getIndex)).map(attr => {
+        if (binaryFieldIdxs.contains(outIdx)) {
+          val binFldInputVal = new BinFldInputVal
+          binFldInputVal.binType = binaryFieldIdxs.getOrElse(outIdx, -1)
+          binFldInputVal.outputIdx = outIdx
+          binaryFieldInputIdxs(attr.getValueType().getIndex) = binFldInputVal
+        }
+        outIdx += 1
+      })
+    }
+  }
+
+  private def getRecordValues(record: ContainerInterface): Array[Any] = {
+    record.getAllAttributeValues.filter(attr => !ignoreFieldsIdxs.contains(attr.getValueType().getIndex)).map(attr => {
+      val value = attr.getValue
+      if (value != null) {
+        val binFldInputVal = binaryFieldInputIdxs.getOrElse(attr.getValueType().getIndex, null)
+        if (binFldInputVal != null) {
+          if (binFldInputVal.binType == 0) {
+            Binary.fromString(value.toString)
+          } else {
+            val valueAr = value.asInstanceOf[Array[String]]
+            valueAr.map(v => {
+              if (v != null) {
+                Binary.fromString(v)
+              } else {
+                null
+              }
+            })
+          }
+        } else {
+          value
+        }
+      } else {
+        value
+      }
+    })
+  }
+
+  def send(tnxCtxt: TransactionContext, recordsArr: Array[ContainerInterface], serializer: SmartFileProducer): Array[Int] = {
+    if (recordsArr.size == 0) return Array[Int]()
+
+    val resultSize = recordsArr.size
+    var retResults = new Array[Int](resultSize)
+
+    for (i <- 0 until resultSize) {
+      retResults(i) = SendStatus.FAILURE
+    }
+
+    if (recordSchemaId == 0) {
+      resolveElemntIdAndIgnoreFlds(recordsArr(0), serializer)
+    }
+
+    val recordsData = recordsArr.par.map(record => getRecordValues(record))
+
+    var writingRecIdx = 0
+    while (writingRecIdx < resultSize) {
+      val curRec = recordsData(writingRecIdx)
+      retResults(writingRecIdx) = writeRecordData(curRec)
+      if (retResults(writingRecIdx) == SendStatus.SUCCESS)
+        records += 1
+      writingRecIdx += 1
+    }
+
+    /*
+        var i = 0
+        recordsData.toArray.foreach(curRec => {
+          retResults(i) = writeRecordData(curRec)
+          if (retResults(i) == SendStatus.SUCCESS)
+            records += 1
+          i += 1
+        })
+    */
+
+    retResults
+  }
+
+  def send(tnxCtxt: TransactionContext, record: ContainerInterface, serializer: SmartFileProducer): Int = {
 
     try {
-      // Op is not atomic
+      if (!record.isFixed) {
+        throw new Exception("Support only fixed messages for Parquet format")
+      }
 
+      if (recordSchemaId == 0) {
+        resolveElemntIdAndIgnoreFlds(record, serializer)
+      }
+
+      val recordData: Array[Any] = getRecordValues(record)
+
+      val retCode = writeRecordData(recordData)
+      if (retCode == SendStatus.SUCCESS)
+        records += 1
+
+      return retCode
+    } catch {
+      case e: Exception => {
+        val messageStr =
+          if (record == null) "null"
+          else record.getAllAttributeValues.map(attr => if (attr == null || attr.getValue == null) "null" else attr.getValue.toString).mkString(",")
+
+        LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
+        throw FatalAdapterException("Smart File Producer " + fc.Name + " is Unable to send message: " + messageStr, e)
+      }
+    }
+  }
+
+  private def writeRecordData(recordData: Array[Any]): Int = {
+    try {
       var isSuccess = false
       var numOfRetries = 0
       while (!isSuccess) {
         try {
-          this.synchronized {
-            //no need to buffer in parquet, writer already acts as a buffer
+          //no need to buffer in parquet, writer already acts as a buffer
+          if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + actualActiveFilePath)
+          //avroSchemasMap(record.getFullTypeName)
+          // flush_lock.synchronized {
+          parquetWriter.write(recordData)
+          //reflectionUtil.callFlush(parquetWriter)
+          //reflectionUtil.callInitStore(parquetWriter)
+          // }
 
-            LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + actualActiveFilePath)
-            val recordData: Array[Any] = record.getAllAttributeValues.filter(attr => !ignoreFields.contains(attr.getValueType().getName())).map(attr => attr.getValue)
-            //avroSchemasMap(record.getFullTypeName)
-            flush_lock.synchronized {
-              parquetWriter.write(recordData)
-              //reflectionUtil.callFlush(parquetWriter)
-              //reflectionUtil.callInitStore(parquetWriter)
-            }
-
-            size += recordData.length // TODO : do we need to get actual size ?
-            records += 1
-          }
+          size += recordData.length // TODO : do we need to get actual size ?
           isSuccess = true
-          LOG.info("finished writing message")
-          //metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
+          if (LOG.isInfoEnabled) LOG.info("finished writing message")
           return SendStatus.SUCCESS
         } catch {
           case fio: IOException => {
@@ -179,27 +312,16 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
             throw FatalAdapterException("Unable to write to specified file " + actualActiveFilePath, fio)
           }
           case e: Throwable => {
-
-            val messageStr =
-              if (record == null) "null"
-              else record.getAllAttributeValues.map(attr => if (attr == null || attr.getValue == null) "null" else attr.getValue.toString).mkString(",")
-            LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message: " + messageStr, e)
-
+            LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message", e)
             throw e
           }
         }
       }
-
       SendStatus.FAILURE
-
     } catch {
       case e: Throwable => {
-        val messageStr =
-          if (record == null) "null"
-          else record.getAllAttributeValues.map(attr => if (attr == null || attr.getValue == null) "null" else attr.getValue.toString).mkString(",")
-
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
-        throw FatalAdapterException("Smart File Producer " + fc.Name + " is Unable to send message: " + messageStr, e)
+        throw FatalAdapterException("Smart File Producer " + fc.Name + " is Unable to send message", e)
       }
     }
   }

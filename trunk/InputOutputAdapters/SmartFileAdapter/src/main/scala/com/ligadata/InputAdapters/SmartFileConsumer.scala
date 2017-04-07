@@ -759,7 +759,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     if (nextQueueDumptime < curTime) {
       if (nextQueueDumptime > 0) {
-        LOG.warn("Current Processing Queue:" + processingQueue.mkString("\\|") + ", Requests Queue:" + getFileRequestsQueue.mkString("\\|"))
+        val processingQStr = processingQueue.mkString("\\|").take(1024)
+        val requestQStr = getFileRequestsQueue.mkString("\\|").take(1024)
+        val finalProcessingQStr =
+          if (processingQStr.length > 1024)
+            processingQStr.take(1024) + " ..."
+          else
+            processingQStr
+        val finalRequestQStr =
+          if (requestQStr.length > 1024)
+            requestQStr.take(1024) + " ..."
+          else
+            requestQStr
+        LOG.warn("Current Processing Queue: (%d) => %s \nRequests Queue: (%d) => %s".format(processingQueue.length, finalProcessingQStr, getFileRequestsQueue.length, finalRequestQStr))
       }
       nextQueueDumptime = curTime + 5 * 60 * 1000
     }

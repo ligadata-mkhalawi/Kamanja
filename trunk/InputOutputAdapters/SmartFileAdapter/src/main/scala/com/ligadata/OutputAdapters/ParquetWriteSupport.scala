@@ -13,6 +13,8 @@ import parquet.io.api._
 import parquet.schema.MessageType
 import parquet.schema.PrimitiveType.PrimitiveTypeName
 
+import scala.collection.mutable.ArrayBuffer
+
 class ParquetWriteSupport extends WriteSupport[Array[Any]] {
   private[this] val logger = LogManager.getLogger(getClass);
 
@@ -47,6 +49,30 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
     })
   }
 
+
+  def getSystemFields = systemFields.toSet
+
+  def getBinaryFieldIdxs: Array[Int] = {
+    val retVals = ArrayBuffer[Int]()
+    for (i <- 0 until cols.length) {
+      val col = cols(i)
+      if (col.getPath().length == 1 && col.getType() == PrimitiveTypeName.BINARY)
+        retVals += i
+    }
+    retVals.toArray
+  }
+
+  def getArrayBinaryFieldIdxs: Array[Int] = {
+    val retVals = ArrayBuffer[Int]()
+    for (i <- 0 until cols.length) {
+      val col = cols(i)
+      if (col.getPath().length != 1 && cols(i).getPath()(1) == "array" && col.getType() == PrimitiveTypeName.BINARY)
+        retVals += i
+    }
+    retVals.toArray
+  }
+
+
   @Override
   def init(config: Configuration): WriteContext = {
     new WriteContext(schema, new HashMap[String, String]())
@@ -59,7 +85,7 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
 
   @Override
   def write(values: Array[Any]): Unit = {
-    writeLock.synchronized {
+    // writeLock.synchronized {
 
       if (values.length != cols.length) {
         throw new ParquetEncodingException("Invalid input data. Expecting " +
@@ -83,10 +109,9 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
       for (i <- 0 to cols.length - 1) {
 
         val colName = cols(i).getPath()(0)
-        logger.debug("parquet serializing. col name: %s, value: %s".format(colName, (if (values(i) == null) null else values(i).toString)))
-        if (!systemFields.contains(colName.toLowerCase)) {
+        if (logger.isDebugEnabled) logger.debug("parquet serializing. col name: %s, value: %s".format(colName, (if (values(i) == null) null else values(i).toString)))
+        // if (!systemFields.contains(colName.toLowerCase)) {
 
-          val colName = cols(i).getPath()(0)
           val value = values(i)
           // val.length() == 0 indicates a NULL value.
 
@@ -104,10 +129,10 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
               recordConsumer.endField(cols(i).getPath()(0), i)
             }
           }
-        }
+        // }
       }
       recordConsumer.endMessage()
-    }
+    // }
   }
 
   private def stringToBinary(value: Any): Binary = {
@@ -131,8 +156,12 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
       case PrimitiveTypeName.INT64 =>
         recordConsumer.addLong(value.asInstanceOf[Long])
 
-      case PrimitiveTypeName.BINARY =>
-        recordConsumer.addBinary(stringToBinary(value))
+      case PrimitiveTypeName.BINARY => {
+        if (value.isInstanceOf[Binary])
+          recordConsumer.addBinary(value.asInstanceOf[Binary])
+        else
+          recordConsumer.addBinary(stringToBinary(value))
+      }
       case _ =>
         throw new ParquetEncodingException("Unsupported column type: " + typeName)
     }
@@ -193,11 +222,16 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
         }
 
       case PrimitiveTypeName.BINARY =>
-        val valueAr = value.asInstanceOf[Array[String]]
+        val valueAr = value.asInstanceOf[Array[Any]]
         if(valueAr != null){
           recordConsumer.startGroup();
           recordConsumer.startField(path(1), 0)
-          valueAr.foreach(v => if(v!=null) recordConsumer.addBinary(stringToBinary(v)))
+          valueAr.foreach(v => if(v!=null) {
+            if (v.isInstanceOf[Binary])
+              recordConsumer.addBinary(v.asInstanceOf[Binary])
+            else
+              recordConsumer.addBinary(stringToBinary(v.asInstanceOf[String]))
+          })
           recordConsumer.endField(path(1), 0)
           recordConsumer.endGroup()
         }
