@@ -527,6 +527,14 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           try {
             val dt = System.currentTimeMillis
             if (isTimeToRollover(dt)) {
+              if (doBatchAndLockGlobally) {
+                _smartFileProducer_lock.synchronized {
+                  if (accumulatedOutputContainers.size > 0) {
+                    writeData(lastTnxCtxt, accumulatedOutputContainers.toArray) // Write left over data
+                    accumulatedOutputContainers.clear()
+                  }
+                }
+              }
               producerLock.synchronized {
                 if (isTimeToRollover(dt)) {
                   rolloverFiles()
@@ -905,19 +913,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
     val dt = System.currentTimeMillis
     lastSeen = dt
-    if (isTimeToRollover(dt)) {
-      _smartFileProducer_lock.synchronized {
-        if (isTimeToRollover(dt)) {
-          if (doBatchAndLockGlobally && accumulatedOutputContainers.size > 0) {
-            writeData(tnxCtxt, accumulatedOutputContainers.toArray) // Write left over data
-            accumulatedOutputContainers.clear()
-          }
-          rolloverFiles()
-          nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
-        }
-      }
-    }
-
 
     if (doBatchAndLockGlobally) {
       _smartFileProducer_lock.synchronized {
