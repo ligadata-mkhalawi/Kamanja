@@ -98,7 +98,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   // Heartbeat monitor related variables.
   private var hbRunning: Boolean = false
   private var hbTopicPartitionNumber = -1
-  private val hbExecutor2 = Executors.newFixedThreadPool(1)
+  private val hbExecutor2 = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-hbExecutor2-%d"))
 
   private var timeoutTimer = KafkaSimpleConsumer.INIT_TIMEOUT
 
@@ -230,7 +230,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
         threads = qc.instancePartitions.size
     }
 
-    readExecutor = Executors.newFixedThreadPool(threads)
+    readExecutor = Executors.newFixedThreadPool(threads, Utils.GetScalaThreadFactory(inputConfig.Name + "-readExecutor-%d"))
 
     // Create a Map of all the partiotion Ids.
     kvs.clear

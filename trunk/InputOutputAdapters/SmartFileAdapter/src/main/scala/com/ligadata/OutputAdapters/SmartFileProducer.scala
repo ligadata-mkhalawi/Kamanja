@@ -508,7 +508,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private val accumulatedBatchToWrite = fc.otherConfig.getOrElse("CommitBatchSize", "4096").toString.trim.toInt
   private val accumulatedOutputContainers: ArrayBuffer[ContainerInterface] = if (doBatchAndLockGlobally) new ArrayBuffer[ContainerInterface](accumulatedBatchToWrite) else null
 
-  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1)
+  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-rolloverExecutor-%d"))
   private val producerLock = this
 
   private def isTimeToRollover(dt: Long): Boolean = {

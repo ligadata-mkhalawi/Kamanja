@@ -23,7 +23,9 @@ import java.util.Properties
 import java.util.zip.GZIPInputStream
 import java.nio.file.{ Paths, Files }
 import java.util.jar.JarInputStream
-import scala.actors.threadpool.{ExecutorService , TimeUnit => STimeUnit}
+import scala.actors.threadpool.{Executors, ExecutorService, TimeUnit => STimeUnit, ThreadFactory => SThreadFactory}
+import java.util.concurrent.{ThreadFactory => JThreadFactory}
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.ligadata.Exceptions.StackTrace
 
 import scala.util.control.Breaks._
@@ -37,6 +39,20 @@ case class CacheConfig(HostList: List[HostConfig], CacheStartPort: Int, CacheSiz
 
 object Utils {
   private val logger = LogManager.getLogger(getClass)
+
+  class KamanjaThreadFactory(val threadFactory: JThreadFactory) extends SThreadFactory {
+    override def newThread(r: Runnable): Thread = {
+      threadFactory.newThread(r)
+    }
+  }
+
+  def GetScalaThreadFactory(nameFormat: String): SThreadFactory = {
+    new KamanjaThreadFactory(new ThreadFactoryBuilder().setNameFormat(nameFormat).build())
+  }
+
+  def GetJavaThreadFactory(nameFormat: String): JThreadFactory = {
+    new ThreadFactoryBuilder().setNameFormat(nameFormat).build()
+  }
 
   def SimpDateFmtTimeFromMs(tmMs: Long): String = {
     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new java.util.Date(tmMs))

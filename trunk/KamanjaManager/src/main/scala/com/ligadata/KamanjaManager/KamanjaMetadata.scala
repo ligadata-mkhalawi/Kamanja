@@ -605,7 +605,7 @@ object KamanjaMetadata extends ObjectResolver {
   private[this] var mdlsChangedCntr: Long = 1
   private[this] var initializedFactOfMdlInstFactObjs = false
   private[this] val reent_lock = new ReentrantReadWriteLock(true);
-  private[this] val updMetadataExecutor = Executors.newFixedThreadPool(1)
+  private[this] val updMetadataExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-updMetadataExecutor-%d"))
   // Just having snapshot in case if multiple threads are updating metadta (MetadataImpl) in same JVM
   private[this] var previousProcessedTxn: Long = -1
   private[this] var updatedClusterConfig: Map[String, Any] = null

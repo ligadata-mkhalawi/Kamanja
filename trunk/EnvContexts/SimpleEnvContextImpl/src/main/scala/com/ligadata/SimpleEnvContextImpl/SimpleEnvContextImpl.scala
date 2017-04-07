@@ -165,7 +165,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   }
 
   val CLASSNAME = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
-  private var hbExecutor: ExecutorService = Executors.newFixedThreadPool(1)
+  private var hbExecutor: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-hbExecutor-%d"))
   private var isShutdown = false
   private var metrics: collection.mutable.Map[String, Long] = collection.mutable.Map[String, Long]()
   private var startTime: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))

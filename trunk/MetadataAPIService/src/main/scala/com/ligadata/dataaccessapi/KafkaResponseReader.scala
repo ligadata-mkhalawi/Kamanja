@@ -106,7 +106,7 @@ class KafkaResponseReader(config: Map[String, String]) {
   def start(process: (String) => Unit): Unit = lock.synchronized {
 
     println("Started processing for topic " + topic)
-    readExecutor = Executors.newFixedThreadPool(numberOfThreads)
+    readExecutor = Executors.newFixedThreadPool(numberOfThreads, Utils.GetScalaThreadFactory(getClass.getName + "-readExecutor-%d"))
 
     // Start a KafkaConsumer for each thread
     (1 to numberOfThreads).foreach(i => {

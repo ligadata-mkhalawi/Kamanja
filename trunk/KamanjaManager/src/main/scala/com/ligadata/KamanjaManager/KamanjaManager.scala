@@ -34,7 +34,7 @@ import org.json4s._
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
   private val serverSocket = new ServerSocket(port)
-  private var exec: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(5)
+  private var exec: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(5, Utils.GetScalaThreadFactory(getClass.getName + "-exec-%d"))
 
   LOG.warn("KamanjaServer started for port:" + port)
 
@@ -272,7 +272,7 @@ class KamanjaManager extends Observer {
   private var adapterMetricInfo: scala.collection.mutable.MutableList[com.ligadata.HeartBeat.MonitorComponentInfo] = null
   //  private val failedEventsAdapters = new ArrayBuffer[OutputAdapter]
 
-  private var metricsService: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(1)
+  private var metricsService: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-metricsService-%d"))
   private var isTimerRunning = false
   private var isTimerStarted = false
   private type OptionMap = Map[Symbol, Any]
@@ -393,7 +393,7 @@ class KamanjaManager extends Observer {
       // Not really waiting for termination
     }
 
-    execCtxtsCommitPartitionOffsetPool = scala.actors.threadpool.Executors.newFixedThreadPool(1)
+    execCtxtsCommitPartitionOffsetPool = scala.actors.threadpool.Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-execCtxtsCommitPartitionOffsetPool-%d"))
 
     // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
@@ -1137,7 +1137,7 @@ class KamanjaManager extends Observer {
       }
     }
 
-    val scheduledThreadPool = Executors.newScheduledThreadPool(3);
+    val scheduledThreadPool = Executors.newScheduledThreadPool(3, Utils.GetScalaThreadFactory(getClass.getName + "-scheduledThreadPool-%d"));
 
     scheduledThreadPool.scheduleWithFixedDelay(statusPrint_PD, 0, 1000, TimeUnit.MILLISECONDS);
 

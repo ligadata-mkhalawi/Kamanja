@@ -440,7 +440,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
     if (isShutdown || isStopProcessing)
       return
 
-    executor = Executors.newFixedThreadPool(partitionInfo.length)
+    executor = Executors.newFixedThreadPool(partitionInfo.length, Utils.GetScalaThreadFactory(inputConfig.Name + "-executor-%d"))
 
     var failedToCreateTasks = false
     partitionInfo.foreach(pInfo => {

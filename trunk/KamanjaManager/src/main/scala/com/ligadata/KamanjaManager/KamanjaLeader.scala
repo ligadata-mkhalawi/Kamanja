@@ -105,7 +105,7 @@ object KamanjaLeader {
   private[this] var envCtxt: EnvContext = _
   private[this] var updatePartitionsFlag = false
   private[this] var saveEndOffsets = false
-  private[this] var distributionExecutor = Executors.newFixedThreadPool(1)
+  private[this] var distributionExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-distributionExecutor-%d"))
 
   private var partitionsInfoMap = scala.collection.mutable.Map[String, String]()
   private var execCtxtsAdapterInfoPool: ExecutorService = null
@@ -163,7 +163,7 @@ object KamanjaLeader {
     envCtxt = null
     updatePartitionsFlag = false
     saveEndOffsets = false
-    distributionExecutor = Executors.newFixedThreadPool(1)
+    distributionExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-distributionExecutor-%d"))
   }
 
   private def SetCanRedistribute(redistFlag: Boolean): Unit = lock.synchronized {
@@ -2592,7 +2592,7 @@ object KamanjaLeader {
     }
     var adapInfoMaplocal = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
 
-    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2)
+    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2, Utils.GetScalaThreadFactory(getClass.getName + "-execCtxtsAdapterInfoPool-%d"))
 
     // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {

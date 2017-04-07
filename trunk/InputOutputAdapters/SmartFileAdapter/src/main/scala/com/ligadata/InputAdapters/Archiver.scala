@@ -245,7 +245,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     if(adapterConfig.archiveConfig == null)
       return
 
-    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism + 2)
+    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism + 2, Utils.GetScalaThreadFactory(inputConfig.Name + "-archiveExecutor-%d"))
 
     val initialTargetDirsChecker = new Runnable() {
       override def run(): Unit = {
