@@ -252,10 +252,10 @@ Steps to run the sample:
 
 ::
 
-  Type of Data 	Actual Data 	Description of Actual Data
-  Input 	22, 802 	csv input (a,b)
+  Type of Data 	Actual Data 	  escription of Actual Data
+  Input 	22, 802           csv input (a,b)
   Output 	{“a”:22.0,”b”:803.0,”operator”:”+”,”result”:825.0} (addf.py)
-  {“a”:22.0,”b”:803.0,”operator”:”+”,”result”:825.0} (Theano) 	Add
+                                  {“a”:22.0,”b”:803.0,”operator”:”+”,”result”:825.0} (Theano) 	Add
 
 
 Multiple Logistic Regression Example

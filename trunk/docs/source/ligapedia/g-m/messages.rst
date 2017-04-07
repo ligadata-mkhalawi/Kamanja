@@ -6,12 +6,13 @@ Messages
 
 Messages contain the data that flows into and out of the
 :ref:`models<model-term>` in a pipeline that executes on Kamanja.
-Three types of model are supported:
+Messages are used in three ways:
 
-- input messages -- data flowing into a model
-- output messages -- data flowing out of a model;
-  the output message of one model can be the input message of another model.
-- storage messages -- 
+- input -- data flowing into a model
+- output -- data flowing out of a model;
+  the output message of one model can be the input message of another model
+  and can be fed to an external store such as Elasticsearch.
+- storage -- data is written to 
 
 The message data can be formatted as
 :ref:`CSV<csv-term>`, :ref:`JSON<json-term>`,
