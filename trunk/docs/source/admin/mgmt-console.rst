@@ -33,29 +33,6 @@ Run the tool:
 
 .. image:: /_images/fmc-dashboard.png
 
-.. _new-data-mgmt-console:
-
-Accessing data
---------------
-
-Connecting to a new data source
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-CSV
-~~~
-
-XML
-~~~
-
-Database
-~~~~~~~~
-
-Importing an existing data source DDL
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _message-mgmt-console:
-
 Working with messages
 ---------------------
 
@@ -77,12 +54,20 @@ The **kamanja** command is also used to update and delete a message.
 The Flare Management Console can be used to create and manage messages
 more easily.
 
-Display existing messages on the system:
+To enter the Message management section of the Management Console,
+click on **Metadata -> Messages** in the upper left block.
+A screen appears that displays some basic information
+about message definitions on the system:
 
 .. image:: /_images/fmc-messages-definition.png
 
-Create and Update Message Definition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create Message Definition
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To create a new message definition,
+click on the "New" button in the upper right of the screen.
+The following screen is displayed:
 
 .. image:: /_images/fmc-add-update-message.png
 
@@ -95,6 +80,15 @@ Create and Update Message Definition
 
 .. image:: /_images/fmc-add-update-message-3.png
 
+
+
+.. .. image:: /_images/fmc-add-update-message-4.png
+
+
+Update Message Definition
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: /_images/fmc-update-message.png
 
 
 Delete Message Definition
@@ -131,11 +125,55 @@ Delete container
 Search container
 ~~~~~~~~~~~~~~~~
 
+.. _auto-message-definitions:
+
+Generating message definitions automatically
+--------------------------------------------
+
+Connecting to a new data source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+CSV
+~~~
+
+.. image:: /_images/fmc-csv.png
+
+XML
+~~~
+
+.. image:: /_images/fmc-xml.png
+
+
+Database
+~~~~~~~~
+
+.. image:: /_images/fmc-database.png
+
+
+.. .. image:: /_images/fmc-database-2.png
+
+
+.. image:: /_images/fmc-database-3.png
+
+
+.. .. image:: /_images/fmc-datastore.png
+
+
+Importing an existing data source DDL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _message-mgmt-console:
+
+
 
 .. _inspector-mgmt-console:
 
 Inspector
 ---------
+
+.. image:: /_images/fmc-inspector-2.png
+
 
 
 .. image:: /_images/fmc-inspector-datasource.png
