@@ -85,7 +85,7 @@ class HeartBeatUtil {
     CreateClient.CreateNodeIfNotExists(zkConnectString, zkNodePath) // Creating the path if missing
       
     _zkcForSetData = CreateClient.createSimple(zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs)
-    _exec = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-exec-%d"))
+    _exec = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-exec-%d"))
 
     _exec.execute(new Runnable() {
       override def run() = {

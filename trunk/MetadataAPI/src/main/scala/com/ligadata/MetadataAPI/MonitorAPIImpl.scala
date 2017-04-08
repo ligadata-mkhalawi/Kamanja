@@ -39,7 +39,7 @@ object MonitorAPIImpl {
   val CHILD_UPDATED_ACTION = "CHILD_UPDATED"
   val ENGINE = "engine"
   val METADATA = "metadata"
-  var _exec = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-_exec-%d"))
+  var _exec = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-_exec-%d"))
 
   private var startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))

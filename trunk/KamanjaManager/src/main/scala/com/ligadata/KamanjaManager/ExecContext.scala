@@ -874,7 +874,7 @@ object PostMessageExecutionQueue {
     val curPartitionKey: PartitionUniqueRecordKey = new PostMsgUniqRecKey
     execCtxt = ExecContextFactoryImpl.CreateExecContext(input, curPartitionKey, nodeCtxt)
     nodeContext = nodeCtxt
-    processMsgs = scala.actors.threadpool.Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-processMsgs-%d"))
+    processMsgs = scala.actors.threadpool.Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-processMsgs-%d"))
     isShutdown = false
 
     processMsgs.execute(new Runnable() {

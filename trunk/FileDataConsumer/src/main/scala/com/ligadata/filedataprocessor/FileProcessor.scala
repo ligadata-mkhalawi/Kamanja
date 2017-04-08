@@ -78,7 +78,7 @@ object FileProcessor {
   var targetMoveDir: String = _
   var readyToProcessKey: String = _
 
-  var globalFileMonitorService: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(3, Utils.GetScalaThreadFactory(getClass.getName + "-globalFileMonitorService-%d"))
+  var globalFileMonitorService: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(3, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-globalFileMonitorService-%d"))
   val DEBUG_MAIN_CONSUMER_THREAD_ACTION = 1000
   val NOT_RECOVERY_SITUATION = -1
   val BROKEN_FILE = -100
@@ -134,7 +134,7 @@ object FileProcessor {
   // default to a minute
   private var randomFailureThreshHold = 0
 
-  val scheduledThreadPool = java.util.concurrent.Executors.newScheduledThreadPool(1, Utils.GetJavaThreadFactory(getClass.getName + "-scheduledThreadPool-%d"))
+  val scheduledThreadPool = java.util.concurrent.Executors.newScheduledThreadPool(1, Utils.GetJavaThreadFactory("Class:" + getClass.getName + "-scheduledThreadPool-%d"))
 
   val testRand = scala.util.Random
   private var isMontoringDirectories = true
@@ -892,7 +892,7 @@ object FileProcessor {
     *
     */
   private def runFileWatcher(): Unit = {
-    var fileDirectoryWatchers = scala.actors.threadpool.Executors.newFixedThreadPool(path.size, Utils.GetScalaThreadFactory(getClass.getName + "-fileDirectoryWatchers-%d"))
+    var fileDirectoryWatchers = scala.actors.threadpool.Executors.newFixedThreadPool(path.size, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-fileDirectoryWatchers-%d"))
     try {
       // Lets see if we have failed previously on this partition Id, and need to replay some messages first.
       logger.info(" SMART FILE CONSUMER (global): Recovery operations, checking  => " + MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")
@@ -1292,7 +1292,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   private var zkc: CuratorFramework = null
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  var fileConsumers: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(3, Utils.GetScalaThreadFactory(getClass.getName + "-fileConsumers-%d"))
+  var fileConsumers: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(3, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-fileConsumers-%d"))
 
   //val inMemoryBuffersCntr = new java.util.concurrent.atomic.AtomicLong()
 
@@ -1747,7 +1747,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
 
     // Start the worker bees... should only be started the first time..
     if (workerBees == null) {
-      workerBees = scala.actors.threadpool.Executors.newFixedThreadPool(NUMBER_OF_BEES, Utils.GetScalaThreadFactory(getClass.getName + "-workerBees-%d"))
+      workerBees = scala.actors.threadpool.Executors.newFixedThreadPool(NUMBER_OF_BEES, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-workerBees-%d"))
       for (i <- 1 to NUMBER_OF_BEES) {
         workerBees.execute(new Runnable() {
           override def run() = {

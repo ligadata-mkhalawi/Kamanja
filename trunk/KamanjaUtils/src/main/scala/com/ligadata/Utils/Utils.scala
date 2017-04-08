@@ -44,7 +44,7 @@ object Utils {
   private val logger = LogManager.getLogger(getClass)
   private val poolNumber = new AtomicInteger(0)
 
-  private def GetNextPoolPrefixStr: String = {
+  private def GetNextPoolSuffixStr: String = {
     "Pool-%d-".format(poolNumber.incrementAndGet())
   }
 
@@ -54,12 +54,18 @@ object Utils {
     }
   }
 
-  def GetScalaThreadFactory(nameFormat: String): SThreadFactory = {
-    new KamanjaThreadFactory(new ThreadFactoryBuilder().setNameFormat(GetNextPoolPrefixStr + nameFormat).build())
+  def GetScalaThreadFactory(nameFormat: String, addSuffixPoolId: Boolean = true): SThreadFactory = {
+    if (addSuffixPoolId)
+      new KamanjaThreadFactory(new ThreadFactoryBuilder().setNameFormat(nameFormat + GetNextPoolSuffixStr).build())
+    else
+      new KamanjaThreadFactory(new ThreadFactoryBuilder().setNameFormat(nameFormat).build())
   }
 
-  def GetJavaThreadFactory(nameFormat: String): JThreadFactory = {
-    new ThreadFactoryBuilder().setNameFormat(GetNextPoolPrefixStr + nameFormat).build()
+  def GetJavaThreadFactory(nameFormat: String, addSuffixPoolId: Boolean = true): JThreadFactory = {
+    if (addSuffixPoolId)
+      new ThreadFactoryBuilder().setNameFormat(nameFormat + GetNextPoolSuffixStr).build()
+    else
+      new ThreadFactoryBuilder().setNameFormat(nameFormat).build()
   }
 
   def SetThreadName(thread: Thread, threadName: String) = {

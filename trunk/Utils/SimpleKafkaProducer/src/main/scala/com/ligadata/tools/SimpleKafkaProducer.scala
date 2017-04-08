@@ -672,7 +672,7 @@ object SimpleKafkaProducer {
 
       val flsLists = if (sAllValidTrimFls.size > threads) threads else sAllValidTrimFls.size
 
-      val executor = Executors.newFixedThreadPool(flsLists, Utils.GetScalaThreadFactory(getClass.getName + "-executor-%d"))
+      val executor = Executors.newFixedThreadPool(flsLists, Utils.GetScalaThreadFactory("Class:" + getClass.getName + "-executor-%d"))
       val FilesForThreads = new Array[ArrayBuffer[String]](flsLists)
       sAllValidTrimFls.foreach(fl => {
         val index = idx % flsLists
