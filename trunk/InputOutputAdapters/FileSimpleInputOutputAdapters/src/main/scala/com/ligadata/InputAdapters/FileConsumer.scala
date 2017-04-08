@@ -226,7 +226,7 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
     if (partitionInfo == null || partitionInfo.size == 0)
       return
 
-    executor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-executor-%d"))
+    executor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-executor-%d"))
     executor.execute(new Runnable() {
       override def run() {
 

@@ -41,8 +41,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   private var globalOffset = 0L
   private var totalReadLen = 0L
 
-  private val extractExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(parentSmartFileConsumer.inputConfig.Name + "-extractExecutor-%d"))
-  private val updatExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(parentSmartFileConsumer.inputConfig.Name + "-updatExecutor-%d"))
+  private val extractExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Adapter:" + parentSmartFileConsumer.inputConfig.Name + "-extractExecutor-%d"))
+  private val updatExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Adapter:" + parentSmartFileConsumer.inputConfig.Name + "-updatExecutor-%d"))
 
   private var finished = false
   private var processingInterrupted = false

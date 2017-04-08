@@ -72,7 +72,7 @@ class MonitorController {
   private var maxBufferErrors = 5
 
   private var keepMontoringBufferingFiles = false
-  //var globalFileMonitorService: ExecutorService = Executors.newFixedThreadPool(2, Utils.GetScalaThreadFactory(inputConfig.Name + "-globalFileMonitorService-%d"))
+  //var globalFileMonitorService: ExecutorService = Executors.newFixedThreadPool(2, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-globalFileMonitorService-%d"))
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -121,7 +121,7 @@ class MonitorController {
   def monitor(): Unit = {
     val monitoringConf = adapterConfig.monitoringConfig
     val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
-    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount, Utils.GetScalaThreadFactory(adapterConfig.Name + "-monitorsExecutorService-%d"))
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount, Utils.GetScalaThreadFactory("Adapter:" + adapterConfig.Name + "-monitorsExecutorService-%d"))
     logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
       monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 

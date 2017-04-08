@@ -218,7 +218,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var maxPartNumber = -1
     //TODO: The engine should tell us how many thread to use.. for now default to the old behaiviour... 1 Threads per partition
     var numberOfThreads = partitionIds.size
-    readExecutor = Executors.newFixedThreadPool(numberOfThreads, Utils.GetScalaThreadFactory(inputConfig.Name + "-readExecutor-%d"))
+    readExecutor = Executors.newFixedThreadPool(numberOfThreads, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-readExecutor-%d"))
 
     // Get the data about the request and set the instancePartition list.
     val partitionInfo = partitionIds.map(quad => {

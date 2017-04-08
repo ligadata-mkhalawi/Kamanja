@@ -508,7 +508,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private val accumulatedBatchToWrite = fc.otherConfig.getOrElse("CommitBatchSize", "4096").toString.trim.toInt
   private val accumulatedOutputContainers: ArrayBuffer[ContainerInterface] = if (doBatchAndLockGlobally) new ArrayBuffer[ContainerInterface](accumulatedBatchToWrite) else null
 
-  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory(inputConfig.Name + "-rolloverExecutor-%d"))
+  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-rolloverExecutor-%d"))
   private val producerLock = this
 
   private def isTimeToRollover(dt: Long): Boolean = {
@@ -559,7 +559,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     })
   }
 
-  private var bufferFlusher: ExecutorService = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory(inputConfig.Name + "-bufferFlusher-%d"))
+  private var bufferFlusher: ExecutorService = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-bufferFlusher-%d"))
   if (fc.flushBufferInterval > 0) {
     if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": File buffer is configured. Will flush buffer every " + fc.flushBufferInterval + " milli seconds.")
     bufferFlusher.execute(new Runnable() {

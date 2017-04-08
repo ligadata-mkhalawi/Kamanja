@@ -433,7 +433,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               val leaderCallbackRequests = getLeaderCallbackRequestsAndClear
               var appliedReq = 0
 
-              var moveExecutor = Executors.newFixedThreadPool(32, Utils.GetScalaThreadFactory(inputConfig.Name + "-moveExecutor-%d"))
+              var moveExecutor = Executors.newFixedThreadPool(32, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-moveExecutor-%d"))
 
               val startTime = System.currentTimeMillis
               var moveWaitingTime: Long = 0
@@ -1837,9 +1837,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     _leaderCallbackRequests.clear
     _fileAssignmentsCallbackRequests.clear
 
-    participantsFilesAssignmentExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-participantsFilesAssignmentExecutor-%d"))
+    participantsFilesAssignmentExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-participantsFilesAssignmentExecutor-%d"))
     // For now we are executing only 256 threads at the most in each Consumer
-    fileAssignmenedExecutor = Executors.newFixedThreadPool(256, Utils.GetScalaThreadFactory(inputConfig.Name + "-fileAssignmenedExecutor-%d"))
+    fileAssignmenedExecutor = Executors.newFixedThreadPool(256, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-fileAssignmenedExecutor-%d"))
 
     val fileAssignmentFromLeaderThread = new Runnable() {
       val exec = participantsFilesAssignmentExecutor
@@ -1925,7 +1925,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val archiveParallelism = if (adapterConfig.archiveConfig.archiveParallelism <= 0) 1 else adapterConfig.archiveConfig.archiveParallelism
       val archiveSleepTimeInMs = if (adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 1 else adapterConfig.archiveConfig.archiveSleepTimeInMs
       logger.info("Archival Init. archiveParallelism:" + archiveParallelism + ", archiveSleepTimeInMs:" + archiveSleepTimeInMs)
-      archiveExecutor = Executors.newFixedThreadPool(archiveParallelism, Utils.GetScalaThreadFactory(inputConfig.Name + "-archiveExecutor-%d"))
+      archiveExecutor = Executors.newFixedThreadPool(archiveParallelism, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-archiveExecutor-%d"))
 
       val maxArchiveAttemptsCount = 3
       if (archiver != null && adapterConfig.archiveConfig != null) {

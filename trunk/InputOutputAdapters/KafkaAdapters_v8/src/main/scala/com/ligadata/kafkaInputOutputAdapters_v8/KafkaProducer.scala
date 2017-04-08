@@ -226,8 +226,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   private var isHeartBeating = false
   private var isInError = false
 
-  private var retryExecutor: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-retryExecutor-%d"))
-  private var heartBeatThread: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-heartBeatThread-%d"))
+  private var retryExecutor: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-retryExecutor-%d"))
+  private var heartBeatThread: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-heartBeatThread-%d"))
 
   LOG.info(qc.Name + " Initializing Statistics")
   startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))

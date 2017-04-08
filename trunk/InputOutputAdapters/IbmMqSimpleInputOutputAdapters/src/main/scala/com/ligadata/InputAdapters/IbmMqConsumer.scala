@@ -196,7 +196,7 @@ class IbmMqConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: Exec
       threads = 1
 
     // create the consumer streams
-    executor = Executors.newFixedThreadPool(threads, Utils.GetScalaThreadFactory(inputConfig.Name + "-executor-%d"))
+    executor = Executors.newFixedThreadPool(threads, Utils.GetScalaThreadFactory("Adapter:" + inputConfig.Name + "-executor-%d"))
 
     kvs.clear
 
