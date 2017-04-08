@@ -31,7 +31,7 @@ import scala.collection.mutable.Map
 import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
-
+import com.ligadata.Utils.Utils
 
 import com.ligadata.AdaptersConfiguration.{ KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaQueueAdapterConfiguration }
 import com.ligadata.InputOutputAdapterInfo._

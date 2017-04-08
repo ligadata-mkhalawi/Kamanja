@@ -42,7 +42,7 @@ import net.sf.jmimemagic.MagicMatch
 import net.sf.jmimemagic.MagicParseException
 import net.sf.jmimemagic.MagicMatchNotFoundException
 import net.sf.jmimemagic.MagicException
-
+import com.ligadata.Utils.Utils
 
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Char], relatedChunk: Int)
 case class BufferToChunk(len: Int, payload: Array[Char], chunkNumber: Int, relatedFileName: String, firstValidOffset: Int, isEof: Boolean, partMap: scala.collection.mutable.Map[Int,Int])
@@ -134,7 +134,7 @@ object FileProcessor {
   // default to a minute
   private var randomFailureThreshHold = 0
 
-  val scheduledThreadPool = java.util.concurrent.Executors.newScheduledThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-scheduledThreadPool-%d"))
+  val scheduledThreadPool = java.util.concurrent.Executors.newScheduledThreadPool(1, Utils.GetJavaThreadFactory(getClass.getName + "-scheduledThreadPool-%d"))
 
   val testRand = scala.util.Random
   private var isMontoringDirectories = true

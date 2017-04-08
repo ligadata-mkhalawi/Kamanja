@@ -40,6 +40,7 @@ import com.ligadata.transactions._
 
 import com.ligadata.transactions._
 import scala.actors.threadpool.{ ExecutorService }
+import com.ligadata.Utils.Utils
 
 // There are no locks at this moment. Make sure we don't call this with multiple threads for same object
 class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {

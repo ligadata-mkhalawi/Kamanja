@@ -35,6 +35,7 @@ import java.nio.file.{Files, Paths }
 import com.ligadata.Utils.KeyHasher
 import org.apache.logging.log4j._
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.Utils.Utils
 
 object ProducerSimpleStats {
 

@@ -24,7 +24,7 @@ import org.apache.logging.log4j._
 import org.json4s.jackson.Serialization
 import scala.actors.threadpool.{ Executors, ExecutorService }
 import scala.collection.mutable.ArrayBuffer
-
+import com.ligadata.Utils.Utils
 
 /**
  * MonitorAPIImpl - Implementation for methods required to access Monitor related methods.

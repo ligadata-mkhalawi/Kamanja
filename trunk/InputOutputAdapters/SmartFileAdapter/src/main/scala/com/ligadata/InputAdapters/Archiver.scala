@@ -14,7 +14,7 @@ import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 
 import java.io.ByteArrayOutputStream
-
+import com.ligadata.Utils.Utils
 
 case class StreamFile(destDir: String, var destFileName: String, var outStream: OutputStream,
                       var currentFileSize: Long, var streamBuffer: ArrayBuffer[Byte], var flushBufferSize: Long,
@@ -245,7 +245,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     if(adapterConfig.archiveConfig == null)
       return
 
-    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism + 2, Utils.GetScalaThreadFactory(inputConfig.Name + "-archiveExecutor-%d"))
+    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism + 2, Utils.GetScalaThreadFactory(adapterConfig.Name + "-archiveExecutor-%d"))
 
     val initialTargetDirsChecker = new Runnable() {
       override def run(): Unit = {

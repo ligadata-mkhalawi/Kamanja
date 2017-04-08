@@ -121,7 +121,7 @@ class MonitorController {
   def monitor(): Unit = {
     val monitoringConf = adapterConfig.monitoringConfig
     val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
-    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount, Utils.GetScalaThreadFactory(inputConfig.Name + "-monitorsExecutorService-%d"))
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount, Utils.GetScalaThreadFactory(adapterConfig.Name + "-monitorsExecutorService-%d"))
     logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
       monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 

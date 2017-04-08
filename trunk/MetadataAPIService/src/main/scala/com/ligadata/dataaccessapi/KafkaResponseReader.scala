@@ -11,6 +11,7 @@ import org.json4s.jackson.Serialization
 import scala.actors.threadpool.{ ExecutorService, Executors }
 import scala.collection.mutable.ArrayBuffer
 import java.util.concurrent.atomic.AtomicLong
+import com.ligadata.Utils.Utils
 
 object KafkaResponseReader {
 

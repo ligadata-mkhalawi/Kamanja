@@ -14,6 +14,7 @@ import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, Kafka
 import org.apache.kafka.common.{TopicPartition, PartitionInfo}
 import org.apache.logging.log4j.LogManager
 import org.json4s.jackson.Serialization
+import com.ligadata.Utils.Utils
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer

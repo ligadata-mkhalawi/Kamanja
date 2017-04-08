@@ -105,7 +105,7 @@ object KamanjaLeader {
   private[this] var envCtxt: EnvContext = _
   private[this] var updatePartitionsFlag = false
   private[this] var saveEndOffsets = false
-  private[this] var distributionExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-distributionExecutor-%d"))
+  private[this] var distributionExecutor = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory(getClass.getName + "-distributionExecutor-%d"))
 
   private var partitionsInfoMap = scala.collection.mutable.Map[String, String]()
   private var execCtxtsAdapterInfoPool: ExecutorService = null
@@ -163,7 +163,7 @@ object KamanjaLeader {
     envCtxt = null
     updatePartitionsFlag = false
     saveEndOffsets = false
-    distributionExecutor = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(getClass.getName + "-distributionExecutor-%d"))
+    distributionExecutor = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory(getClass.getName + "-distributionExecutor-%d"))
   }
 
   private def SetCanRedistribute(redistFlag: Boolean): Unit = lock.synchronized {

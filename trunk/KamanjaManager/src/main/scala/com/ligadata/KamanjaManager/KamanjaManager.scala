@@ -1137,7 +1137,7 @@ class KamanjaManager extends Observer {
       }
     }
 
-    val scheduledThreadPool = Executors.newScheduledThreadPool(3, Utils.GetScalaThreadFactory(getClass.getName + "-scheduledThreadPool-%d"));
+    val scheduledThreadPool = Executors.newScheduledThreadPool(3, Utils.GetJavaThreadFactory(getClass.getName + "-scheduledThreadPool-%d"));
 
     scheduledThreadPool.scheduleWithFixedDelay(statusPrint_PD, 0, 1000, TimeUnit.MILLISECONDS);
 

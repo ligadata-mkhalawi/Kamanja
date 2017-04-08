@@ -508,7 +508,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private val accumulatedBatchToWrite = fc.otherConfig.getOrElse("CommitBatchSize", "4096").toString.trim.toInt
   private val accumulatedOutputContainers: ArrayBuffer[ContainerInterface] = if (doBatchAndLockGlobally) new ArrayBuffer[ContainerInterface](accumulatedBatchToWrite) else null
 
-  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1, Utils.GetScalaThreadFactory(inputConfig.Name + "-rolloverExecutor-%d"))
+  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory(inputConfig.Name + "-rolloverExecutor-%d"))
   private val producerLock = this
 
   private def isTimeToRollover(dt: Long): Boolean = {
@@ -559,11 +559,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     })
   }
 
-  var bufferFlusher: Thread = null
+  private var bufferFlusher: ExecutorService = Executors.newFixedThreadPool(1, com.ligadata.Utils.Utils.GetScalaThreadFactory(inputConfig.Name + "-bufferFlusher-%d"))
   if (fc.flushBufferInterval > 0) {
     if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": File buffer is configured. Will flush buffer every " + fc.flushBufferInterval + " milli seconds.")
-    bufferFlusher = new Thread {
-      override def run {
+    bufferFlusher.execute(new Runnable() {
+      override def run(): Unit = {
         if (LOG.isInfoEnabled) LOG.info("Smart File Producer " + fc.Name + ": writing all buffers.")
         try {
           Thread.sleep(fc.flushBufferInterval)
@@ -610,9 +610,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           }
         }
       }
-    }
-
-    bufferFlusher.start
+    })
   }
 
   private def rolloverFiles() = {
@@ -952,7 +950,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         rolloverExecutor.shutdownNow
 
       if (bufferFlusher != null) {
-        bufferFlusher.interrupt
+        bufferFlusher.shutdownNow
         bufferFlusher = null
       }
 

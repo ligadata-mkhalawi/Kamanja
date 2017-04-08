@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong
 import scala.actors.threadpool.{ TimeUnit, ExecutorService, Executors }
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import com.ligadata.Utils.Utils
 
 object KafkaProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new KafkaProducer(inputConfig, nodeContext)

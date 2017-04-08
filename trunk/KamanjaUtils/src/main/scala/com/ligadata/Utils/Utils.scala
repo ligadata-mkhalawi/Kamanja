@@ -18,19 +18,22 @@
 package com.ligadata.Utils
 
 import com.google.common.base.Optional
-import java.io.{ InputStream, FileInputStream, File }
+import java.io.{File, FileInputStream, InputStream}
 import java.util.Properties
 import java.util.zip.GZIPInputStream
-import java.nio.file.{ Paths, Files }
+import java.nio.file.{Files, Paths}
 import java.util.jar.JarInputStream
-import scala.actors.threadpool.{Executors, ExecutorService, TimeUnit => STimeUnit, ThreadFactory => SThreadFactory}
+
+import scala.actors.threadpool.{AtomicInteger, ExecutorService, Executors, ThreadFactory => SThreadFactory, TimeUnit => STimeUnit}
 import java.util.concurrent.{ThreadFactory => JThreadFactory}
+
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.ligadata.Exceptions.StackTrace
 
 import scala.util.control.Breaks._
 import scala.collection.mutable.TreeSet
-import org.apache.logging.log4j.{ Logger, LogManager }
+import org.apache.logging.log4j.{LogManager, Logger}
+
 import scala.collection.mutable.ArrayBuffer
 
 case class ClusterStatus(nodeId: String, isLeader: Boolean, leaderNodeId: String, participantsNodeIds: Iterable[String])
@@ -39,6 +42,11 @@ case class CacheConfig(HostList: List[HostConfig], CacheStartPort: Int, CacheSiz
 
 object Utils {
   private val logger = LogManager.getLogger(getClass)
+  private val poolNumber = new AtomicInteger(0)
+
+  private def GetNextPoolPrefixStr: String = {
+    "Pool-%d-".format(poolNumber.incrementAndGet())
+  }
 
   class KamanjaThreadFactory(val threadFactory: JThreadFactory) extends SThreadFactory {
     override def newThread(r: Runnable): Thread = {
@@ -47,11 +55,11 @@ object Utils {
   }
 
   def GetScalaThreadFactory(nameFormat: String): SThreadFactory = {
-    new KamanjaThreadFactory(new ThreadFactoryBuilder().setNameFormat(nameFormat).build())
+    new KamanjaThreadFactory(new ThreadFactoryBuilder().setNameFormat(GetNextPoolPrefixStr + nameFormat).build())
   }
 
   def GetJavaThreadFactory(nameFormat: String): JThreadFactory = {
-    new ThreadFactoryBuilder().setNameFormat(nameFormat).build()
+    new ThreadFactoryBuilder().setNameFormat(GetNextPoolPrefixStr + nameFormat).build()
   }
 
   def SimpDateFmtTimeFromMs(tmMs: Long): String = {

@@ -36,6 +36,7 @@ import com.ibm.msg.client.wmq.common.CommonConstants
 import com.ibm.msg.client.jms.JmsConstants
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.Utils.Utils
 
 object IbmMqConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "IBM MQ Consumer"
