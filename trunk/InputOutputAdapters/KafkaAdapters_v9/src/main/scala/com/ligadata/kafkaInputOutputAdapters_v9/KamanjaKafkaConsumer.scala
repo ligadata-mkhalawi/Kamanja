@@ -220,7 +220,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var maxPartNumber = -1
     //TODO: The engine should tell us how many thread to use.. for now default to the old behaiviour... 1 Threads per partition
     var numberOfThreads = partitionIds.size
-    readExecutor = Executors.newFixedThreadPool(numberOfThreads, Utils.GetScalaThreadFactory(inputConfig.Name + "-readExecutor-%d"))
+    readExecutor = Executors.newFixedThreadPool(numberOfThreads)
 
     // Get the data about the request and set the instancePartition list.
     val partitionInfo = partitionIds.map(quad => {
@@ -384,6 +384,8 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
           var nextLogtime = 0L
           var lessOffsetErrors = 0
 
+          Utils.SetThreadName(Thread.currentThread(), "Adapter:%s-PartitionId:Unknown".format(inputConfig.Name))
+
           while (!isQuiese && !isShutdown) {
             try {
               var poll_records = (kafkaConsumer.poll(KamanjaKafkaConsumer.POLLING_INTERVAL))
@@ -414,6 +416,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                       if (partitionId == -1) {
                         partitionId = record.partition
                         offsetValue = record.offset
+                        Utils.SetThreadName(Thread.currentThread(), "Adapter:%s-PartitionId:%d".format(inputConfig.Name, partitionId))
                       } else if (partitionId == record.partition) {
                         if (record.offset < offsetValue) {
                           if (lessOffsetErrors < 10) {

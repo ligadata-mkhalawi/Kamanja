@@ -398,11 +398,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       envContext.createListenerForCacheChildern(sendStartInfoToLeaderParentPath, collectStartInfo) // listen to start info
 
-      leaderExecutor = Executors.newFixedThreadPool(2, Utils.GetScalaThreadFactory(inputConfig.Name + "-leaderExecutor-%d"))
+      leaderExecutor = Executors.newFixedThreadPool(2)
       val statusCheckerThread = new Runnable() {
         var lastStatus: scala.collection.mutable.Map[String, (Long, Int)] = null
 
         override def run(): Unit = {
+          Utils.SetThreadName(Thread.currentThread(), "Adapter:%s-StatusCheckerThread".format(inputConfig.Name))
           while (keepCheckingStatus) {
             try {
               Thread.sleep(statusUpdateInterval)
@@ -424,6 +425,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       val assignFilesToRequestThread = new Runnable() {
         override def run(): Unit = {
+          Utils.SetThreadName(Thread.currentThread(), "Adapter:%s-AssignFilesToRequestThread".format(inputConfig.Name))
           // First we process Req. Type 1 and then 0
           val reqTypesProcessingOrder = Array[Int](1, 0)
           while (!isShutdown) {
@@ -1355,6 +1357,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val processingThreadId = keyTokens(keyTokens.length - 1).toInt
         val processingNodeId = keyTokens(keyTokens.length - 2)
 
+        Utils.SetThreadName(Thread.currentThread(), "FileMessageExtractor-Adapter:%s-NodeId:%s-PartitionId:%s".format(inputConfig.Name, processingThreadId.toString, processingNodeId.toString))
+
         if (isShutdown) {
           LOG.debug("Smart File Consumer - Node Id = {}, Thread Id = {} had been assigned a new file ({}), but shutdown already called. so ignore the assignment",
             processingNodeId, processingThreadId.toString, fileToProcessName)
@@ -1563,7 +1567,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (parallelismStatus == "Uninitialized" || parallelismStatus == "Changed") {
       LOG.info("SMART FILE CONSUMER - participant ({}) - creating {} thread(s) to handle partitions ({})",
         nodeId, filesParallelism.toString, eventPathData)
-      participantExecutor = Executors.newFixedThreadPool(filesParallelism, Utils.GetScalaThreadFactory(inputConfig.Name + "-participantExecutor-%d"))
+      participantExecutor = Executors.newFixedThreadPool(filesParallelism)
       currentNodePartitions.foreach(partitionId => {
 
         val executorThread = new Runnable() {
@@ -1572,6 +1576,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           def init(id: Int) = partitionId = id
 
           override def run(): Unit = {
+            Utils.SetThreadName(Thread.currentThread(), "ParticipantExecutor-Adapter:%s-NodeId:%s-PartitionId:%d".format(inputConfig.Name, nodeId, partitionId))
 
             val actualThreadId = Thread.currentThread().getThreadGroup.getName + ">" + Thread.currentThread().getId
             logger.info("SMART FILE CONSUMER - running thread with partitionId={}, actualThreadId={}",
@@ -1851,6 +1856,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               val fileAssignmenedExecThread = new Runnable() {
                 val request = req
                 override def run(): Unit = {
+                  Utils.SetThreadName(Thread.currentThread(), "FileMessageExtractor-Adapter:%s-NodeId:Unknown-PartitionId:Unknown".format(inputConfig.Name))
                   fileAssignmentFromLeaderFn(request.eventType, request.eventPath, request.eventPathData)
                 }
               }

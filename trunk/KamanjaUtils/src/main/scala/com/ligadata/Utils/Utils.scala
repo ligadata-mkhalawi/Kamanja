@@ -62,6 +62,14 @@ object Utils {
     new ThreadFactoryBuilder().setNameFormat(GetNextPoolPrefixStr + nameFormat).build()
   }
 
+  def SetThreadName(thread: Thread, threadName: String) = {
+    try {
+      thread.setName(threadName)
+    } catch {
+      case e: Throwable => {}
+    }
+  }
+
   def SimpDateFmtTimeFromMs(tmMs: Long): String = {
     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new java.util.Date(tmMs))
   }

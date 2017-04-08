@@ -52,6 +52,7 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.routing.RoundRobinPool
 import java.util.UUID
+import com.ligadata.Utils.Utils
 
 trait LogTrait {
   val loggerName = this.getClass.getName()

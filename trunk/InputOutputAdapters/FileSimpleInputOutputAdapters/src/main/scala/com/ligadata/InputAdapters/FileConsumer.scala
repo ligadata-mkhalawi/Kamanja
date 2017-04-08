@@ -28,6 +28,7 @@ import com.ligadata.AdaptersConfiguration.{ FileAdapterConfiguration, FilePartit
 import scala.util.control.Breaks._
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.Utils.Utils
 
 object FileConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "File Consumer"

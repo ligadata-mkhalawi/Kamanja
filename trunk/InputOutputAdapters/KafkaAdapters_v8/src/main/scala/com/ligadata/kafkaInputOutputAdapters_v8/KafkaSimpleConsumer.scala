@@ -230,7 +230,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
         threads = qc.instancePartitions.size
     }
 
-    readExecutor = Executors.newFixedThreadPool(threads, Utils.GetScalaThreadFactory(inputConfig.Name + "-readExecutor-%d"))
+    readExecutor = Executors.newFixedThreadPool(threads)
 
     // Create a Map of all the partiotion Ids.
     kvs.clear
@@ -247,11 +247,13 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
 
     // Schedule a task to perform a read from a give partition.
     kvs.foreach(kvsElement => {
-
       readExecutor.execute(new Runnable() {
         override def run() {
           val partitionId = kvsElement._1
           val partition = kvsElement._2
+
+          val threadName = "Adapter:%s-PartitionId:%d".format(inputConfig.Name, partitionId)
+          Utils.SetThreadName(Thread.currentThread(), threadName)
 
           // Initialize the monitoring status
           partitonCounts(partitionId.toString) = 0

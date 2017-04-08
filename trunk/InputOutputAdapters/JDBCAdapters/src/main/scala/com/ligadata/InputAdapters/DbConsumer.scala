@@ -440,7 +440,7 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
     if (isShutdown || isStopProcessing)
       return
 
-    executor = Executors.newFixedThreadPool(partitionInfo.length, Utils.GetScalaThreadFactory(inputConfig.Name + "-executor-%d"))
+    executor = Executors.newFixedThreadPool(partitionInfo.length)
 
     var failedToCreateTasks = false
     partitionInfo.foreach(pInfo => {
@@ -453,8 +453,10 @@ class DbConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCon
             private val partitionKey = k
             private val partitionVal = if (v != null) v else new DbPartitionUniqueRecordValue
             private val execThread = execCtxtObj.CreateExecContext(input, partitionKey, nodeContext)
+            private val threadName = "Adapter:%s-PartitionId:%d".format(inputConfig.Name, partitionKey.PartitionId)
 
             override def run(): Unit = {
+              Utils.SetThreadName(Thread.currentThread(), threadName)
               try {
                 var canContinueToSend = true
                 var execNo = 0L

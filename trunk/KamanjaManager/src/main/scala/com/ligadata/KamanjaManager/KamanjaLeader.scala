@@ -2592,7 +2592,7 @@ object KamanjaLeader {
     }
     var adapInfoMaplocal = scala.collection.mutable.Map[String, scala.collection.mutable.ArrayBuffer[AdapterPartKeyValues]]()
 
-    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2, Utils.GetScalaThreadFactory(getClass.getName + "-execCtxtsAdapterInfoPool-%d"))
+    execCtxtsAdapterInfoPool = scala.actors.threadpool.Executors.newFixedThreadPool(2, com.ligadata.Utils.Utils.GetScalaThreadFactory(getClass.getName + "-execCtxtsAdapterInfoPool-%d"))
 
     // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
