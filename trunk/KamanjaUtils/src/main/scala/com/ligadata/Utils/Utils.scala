@@ -45,7 +45,7 @@ object Utils {
   private val poolNumber = new AtomicInteger(0)
 
   private def GetNextPoolSuffixStr: String = {
-    "Pool-%d-".format(poolNumber.incrementAndGet())
+    "-Pool-%d".format(poolNumber.incrementAndGet())
   }
 
   class KamanjaThreadFactory(val threadFactory: JThreadFactory) extends SThreadFactory {
