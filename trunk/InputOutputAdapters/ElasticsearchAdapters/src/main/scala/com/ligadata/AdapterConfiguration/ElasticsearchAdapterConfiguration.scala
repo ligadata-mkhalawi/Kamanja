@@ -9,7 +9,7 @@ import org.json4s.native.JsonMethods._
 
 
 class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
-  var hostList: String = null
+  var hostList = Map[String, String]()
   //folder to write files
   var schemaName: String = ""
   // prefix for the file names
@@ -59,14 +59,26 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
 
     val adapCfg = parse(inputConfig.adapterSpecificCfg)
     if (adapCfg == null || adapCfg.values == null) {
-      val err = "Elasticsearch File Producer configuration must be specified for " + adapterConfig.Name
+      val err = "Elasticsearch Producer configuration must be specified for " + adapterConfig.Name
       throw new KamanjaException(err, null)
     }
 
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("hostList") == 0) {
-        adapterConfig.hostList = kv._2.toString.trim
+        if (kv._2.isInstanceOf[Map[String, String]]) {
+          adapterConfig.hostList = kv._2.asInstanceOf[Map[String, String]]
+        } else if (kv._2.isInstanceOf[String]) {
+          adapterConfig.hostList = kv._2.toString.toString.split(",").map(s => s.trim).filter(s => !s.isEmpty).map(s => {
+            val hostAndPort = s.split(":").map(t => t.trim)
+            val host = if (hostAndPort.size > 0) hostAndPort(0) else ""
+            val port = if (hostAndPort.size > 1 && !hostAndPort(1).isEmpty) hostAndPort(1) else "9300"
+            (host, port)
+          }).filter(hp => !hp._1.isEmpty).toMap
+        } else {
+          val err = "Elasticsearch Hostlist can be a Map or String for adapter " + adapterConfig.Name
+          throw new KamanjaException(err, null)
+        }
       } else if (kv._1.compareToIgnoreCase("clustername") == 0) {
         adapterConfig.clusterName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("properties") == 0) {

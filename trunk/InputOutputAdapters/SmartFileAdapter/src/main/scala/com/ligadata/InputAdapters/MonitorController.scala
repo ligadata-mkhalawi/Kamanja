@@ -35,7 +35,7 @@ class MonitorController {
     commonFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
   }
 
-  val NOT_RECOVERY_SITUATION = -1
+  val NOT_RECOVERY_SITUATION = 0 // Non recover situation is making 0 offset instead of -1
 
   private var adapterConfig: SmartFileAdapterConfiguration = null
   private var newFileDetectedCallback: () => Unit = null
@@ -214,16 +214,32 @@ class MonitorController {
       val dirMonitorThread = new Runnable() {
         override def run() = {
           try {
+            var cntr = 0L
+            val adapName = if (adapterConfig.Name  != null) adapterConfig.Name else ""
 
             while (keepMontoringBufferingFiles && !isShutdown) {
-              if (logger.isDebugEnabled) logger.debug("waitingGroupsToProcessCount={}, dirCheckThreshold={}",
-                waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              cntr += 1
+              if (cntr > 1000000000L)
+                cntr -= 1000000000L
+
+              if (logger.isDebugEnabled) {
+                logger.debug("adapterName={} waitingGroupsToProcessCount={}, dirCheckThreshold={}",
+                  adapName, waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              } else if (logger.isWarnEnabled && ((cntr % 1000) ==  0)) {
+                logger.warn("adapterName={} waitingGroupsToProcessCount={}, dirCheckThreshold={}",
+                  adapName, waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              }
 
               //start/stop listing folders contents based on current number of waiting files compared to a threshold
               if (adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
                 waitingGroupsToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold) {
 
-                if (logger.isInfoEnabled) logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                if (logger.isInfoEnabled) {
+                  logger.info("Smart File Monitor - too many files already in process queue for adapter:{}. monitoring thread {} is sleeping for {} ms", adapName, currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                } else if (logger.isWarnEnabled && ((cntr % 1000) ==  0)) {
+                  logger.warn("Smart File Monitor - too many files already in process queue for adapter:{}. monitoring thread {} is sleeping for {} ms", adapName, currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                }
+
                 try {
                   Thread.sleep(monitoringConf.waitingTimeMS)
                 }
@@ -237,6 +253,11 @@ class MonitorController {
                   val location = dirQueuedInfo._1
                   val isFirstScan = dirQueuedInfo._3
                   val srcDir = location.srcDir
+
+                  if (logger.isWarnEnabled && ((cntr % 1000) ==  0)) {
+                    logger.warn("adapterName={} waitingGroupsToProcessCount={}, dirCheckThreshold={} monitorDir={}",
+                      adapName, waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString, srcDir)
+                  }
 
                   if (keepMontoringBufferingFiles && !isShutdown)
                     monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan, groupsInfo)
@@ -564,13 +585,13 @@ class MonitorController {
     allEnqueuedGrps.foreach(g => {
       excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
     })
-    /*
-    //BUGBUG:: Get all processing files and add them in exclude list
-        val allProcessingGrps = getAllEnqueuedGroups
-        allProcessingGrps.foreach(g => {
-          excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
-        })
-  */
+
+    val allProcessingGrps = parentSmartFileConsumer.getProcessingQueueItems
+    allProcessingGrps.foreach(g => {
+      if (g.Files != None) {
+        excludeFlsSet ++= g.Files.get
+      }
+    })
 
     if (isFirstScan && initialFiles != null) {
       excludeFlsSet ++= initialFiles
@@ -584,9 +605,19 @@ class MonitorController {
       if (groupsInfo != null) {
         if (logger.isDebugEnabled) logger.debug("Found groupInfo")
         currentAllChilds.groupBy(fl => {
-          val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
           val parent = if (fl.parent != null) fl.parent else ""
-          (parent, extractFileFromPattern(groupsInfo, flName))
+          //BUGBUG:: For now Archive files does not participate as groups. Each file becomes a group. Fix it later if we want to make ArchiveFiles as groups
+          var foundArchiveFile = false
+          if (adapterConfig.monitoringConfig.hasHandleArchiveFileExtensions) {
+            val flTyp = SmartFileHandlerFactory.getArchiveFileType(fl.path, adapterConfig.monitoringConfig.handleArchiveFileExtensions)
+            foundArchiveFile = (flTyp != null && !flTyp.isEmpty)
+          }
+          if (foundArchiveFile) {
+            (parent, fl.path)
+          } else {
+            val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
+            (parent, extractFileFromPattern(groupsInfo, flName))
+          }
         }).values.toArray
       }
       else {
@@ -623,7 +654,7 @@ class MonitorController {
               if (!enqueuedBufferedFiles.contains(filePath)) {
                 val isValid = MonitorUtils.isValidFile(adapterConfig.Name,
                   monitoringThreadsFileHandlers(currentThreadId), filePath, currentFileLocationInfo, ignoredFiles,
-                  false, adapterConfig.monitoringConfig.checkFileTypes)
+                  false, adapterConfig.monitoringConfig.checkFileTypes, adapterConfig.monitoringConfig)
                 fixIgnoredFiles()
 
                 if (isValid)
@@ -706,7 +737,7 @@ class MonitorController {
 */
 
   
-  private def enQGroup(grp: EnqueuedGroupHandler): Unit = {
+  def enQGroup(grp: EnqueuedGroupHandler): Unit = {
     if (grp == null) return
     groupQLock.synchronized {
       groupQ += grp

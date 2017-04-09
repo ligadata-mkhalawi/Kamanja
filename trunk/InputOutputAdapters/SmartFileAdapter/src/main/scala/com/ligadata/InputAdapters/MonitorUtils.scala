@@ -35,7 +35,7 @@ object MonitorUtils {
 
   def isValidFile(adapterName : String, genericFileHandler: SmartFileHandler, filePath : String,
                   locationInfo : LocationInfo, ignoredFilesMap : scala.collection.mutable.Map[String, Long],
-                  checkExistence : Boolean, checkFileTypes: Boolean): Boolean = {
+                  checkExistence : Boolean, checkFileTypes: Boolean, monitoringConfig: FileAdapterMonitoringConfig): Boolean = {
     try {
       val filePathParts = filePath.split("/")
       val fileName = filePathParts(filePathParts.length - 1)
@@ -69,6 +69,13 @@ object MonitorUtils {
 
         if (!checkFileTypes) return true
         else {
+          // Making file is valid in case of Archive file
+          if (monitoringConfig.hasHandleArchiveFileExtensions) {
+            val typ = SmartFileHandlerFactory.getArchiveFileType(filePath, monitoringConfig.handleArchiveFileExtensions)
+            if (typ != null && !typ.isEmpty)
+              return true
+          }
+
           val contentType = CompressionUtil.getFileType(genericFileHandler, filePath, "")
           if((validContentTypes contains contentType)) return true
           else {
@@ -432,6 +439,26 @@ object SmartFileHandlerFactory{
 
 */
 
+  def getArchiveFileType(fileFullPath: String, typeToExtn: Map[String, Array[String]]): String = {
+    if (fileFullPath == null || typeToExtn == null || typeToExtn.isEmpty) return null
+    var foundType = false
+    var typ: String = null
+    var it = typeToExtn.iterator
+
+    while (!foundType && it.hasNext) {
+      var idx = 0
+      val kv = it.next()
+      while (!foundType && idx < kv._2.length) {
+        if (fileFullPath.endsWith(kv._2(idx))) {
+          foundType = true
+          typ = kv._1
+        }
+        idx += 1
+      }
+    }
+
+    typ
+  }
 
   def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String, isBinary: Boolean = false): SmartFileHandler ={
     val connectionConf = adapterConfig.connectionConfig

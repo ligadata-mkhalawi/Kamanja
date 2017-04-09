@@ -49,7 +49,7 @@ class ElasticsearchUtility /*extends LogTrait*/ {
     elasticsearchConfig.setInt("zookeeper.recovery.retry", 1)
     elasticsearchConfig.setInt("elasticsearch.client.retries.number", 1)
     elasticsearchConfig.setInt("elasticsearch.client.pause", 10000)
-    elasticsearchConfig.set("elasticsearch.zookeeper.quorum", adapterConfig.hostList)
+    elasticsearchConfig.set("elasticsearch.zookeeper.quorum", adapterConfig.hostList.toString)
     if (adapterConfig.kerberos != null) {
       //      elasticsearchConfig.set("hadoop.security.authorization", "true")
       //      elasticsearchConfig.set("hadoop.proxyuser.hdfs.groups", "*")
@@ -80,9 +80,9 @@ class ElasticsearchUtility /*extends LogTrait*/ {
 
   def createDataStorageInfo(adapterConfig: ElasticsearchAdapterConfiguration): String = {
     if (adapterConfig.kerberos != null) {
-      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s", "authentication": "kerberos", "regionserver_principal": %s", "master_principal": "%s", "principal": "%s", "keytab": "%s"}""".format(adapterConfig.schemaName, adapterConfig.hostList, adapterConfig.clusterName, adapterConfig.kerberos.regionServer, adapterConfig.kerberos.masterPrincipal, adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
+      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s", "authentication": "kerberos", "regionserver_principal": %s", "master_principal": "%s", "principal": "%s", "keytab": "%s"}""".format(adapterConfig.schemaName, adapterConfig.hostList.toString, adapterConfig.clusterName, adapterConfig.kerberos.regionServer, adapterConfig.kerberos.masterPrincipal, adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
     } else {
-      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s"}""".format(adapterConfig.schemaName, adapterConfig.hostList, adapterConfig.clusterName)
+      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s"}""".format(adapterConfig.schemaName, adapterConfig.hostList.toString(), adapterConfig.clusterName)
     }
     dataDataStoreInfo
   }
