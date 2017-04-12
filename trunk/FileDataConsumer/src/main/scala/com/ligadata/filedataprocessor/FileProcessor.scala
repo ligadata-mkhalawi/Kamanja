@@ -1469,8 +1469,13 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
   private var throttleTime: Int = 0
   private var isRecoveryOps = true
   private var bufferLimit = 1
-
-
+  private var dirToError: String = ""
+  private var fileAge: String = ""
+  private var fileCount: Int = 0
+  private var fileAgeInt: Int = 0
+  private val ONE_SECOND_IN_MILLIS = 1000
+  private val ONE_MINUTE_IN_MILLIS = 60000
+  private val ONE_HOUR_IN_MILLIS = 3600000
   def setContentParsableFlag(isParsable: Boolean): Unit = synchronized {
     isContentParsable = isParsable
   }
@@ -1499,6 +1504,9 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
       var mdConfig = props.getOrElse(SmartFileAdapterConstants.METADATA_CONFIG_FILE, null)
       var msgName = props.getOrElse(SmartFileAdapterConstants.MESSAGE_NAME, null)
       var kafkaBroker = props.getOrElse(SmartFileAdapterConstants.KAFKA_BROKER, null)
+      dirToError = props.getOrElse(SmartFileAdapterConstants.ERROR_DIR, null)
+      fileAge = props.getOrElse(SmartFileAdapterConstants.FILE_AGE, null)
+      fileCount = props.getOrElse(SmartFileAdapterConstants.FILE_COUNT, "0").toInt
 
       //Default allowed content types -
       var cTypes = props.getOrElse(SmartFileAdapterConstants.VALID_CONTENT_TYPES, "text/plain;application/gzip")
@@ -1509,7 +1517,31 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
           FileProcessor.contentTypes.put(cType, cType)
       }
 
+      if(dirToError == null){
+        logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Destination directory for error must be specified")
+        shutdown
+        throw MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.ERROR_DIR, null)
+      }
 
+      if(fileAge == null || fileAge.length == 0){
+        logger.warn("SMART_FILE_CONSUMER (" + partitionId + ") file age did not specified. The default value is 30 minute")
+        fileAge = "30m"
+      }
+
+      fileAgeInt =
+        if(fileAge.takeRight(1) == "s"){
+        fileAge.substring(0, fileAge.length-2).toInt * ONE_SECOND_IN_MILLIS
+      } else if(fileAge.takeRight(1) == "m"){
+        fileAge.substring(0, fileAge.length-2).toInt * ONE_MINUTE_IN_MILLIS
+      }  else if(fileAge.takeRight(1) == "h"){
+        fileAge.substring(0, fileAge.length-2).toInt * ONE_HOUR_IN_MILLIS
+      } else{
+        30 * ONE_MINUTE_IN_MILLIS // default value for file age is 30 minute
+      }
+
+      if(fileCount == 0){
+        logger.warn("SMART_FILE_CONSUMER (" + partitionId + ") file count did not specified. Th default value is 100")
+      }
       kafkaTopic = props.getOrElse(SmartFileAdapterConstants.KAFKA_TOPIC, null)
 
       // Bail out if dirToWatch, Topic are not set

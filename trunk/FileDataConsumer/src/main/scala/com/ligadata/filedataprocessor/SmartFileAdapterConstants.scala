@@ -85,4 +85,9 @@ object SmartFileAdapterConstants {
   val COMPONENT_NAME = "component.name";
   val NODE_ID_PREFIX = "node.id.prefix";
   val ADAPTER_WEIGHT = "adapter.weight";
+
+  // Reprocessing constant
+  val FILE_AGE = "fileAge"
+  val FILE_COUNT = "numberOfFiles"
+  val ERROR_DIR = "moveToErrorDir"
 }
