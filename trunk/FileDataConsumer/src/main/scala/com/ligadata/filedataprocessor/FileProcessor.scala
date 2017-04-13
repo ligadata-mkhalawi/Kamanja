@@ -2,13 +2,14 @@ package com.ligadata.filedataprocessor
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, TimeUnit}
-import java.util.zip.{ZipException, GZIPInputStream}
+import java.util.zip.{GZIPInputStream, ZipException}
+
 import com.ligadata.Exceptions.{MissingPropertyException, StackTrace}
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MessageDef
 import org.apache.curator.framework.CuratorFramework
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{LogManager, Logger}
 import org.json4s.DefaultFormats
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -16,33 +17,39 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.kamanja.metadata.MdMgr._
+
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConverters._
 import util.control.Breaks._
 import java.io._
 import java.nio.file._
-import scala.actors.threadpool.{Executors, ExecutorService}
+
+import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.PriorityQueue
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.Files.copy
 import java.nio.file.Paths.get
+
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.lang3.RandomStringUtils
 import java.net.URLEncoder
+
 import org.apache.tika.io.TikaInputStream
 import org.apache.tika.metadata.Metadata
 import org.apache.tika.detect.Detector
 import org.apache.tika.detect.DefaultDetector
 import org.apache.tika.mime.MimeTypes
+
 import scala.collection.mutable.Map
 import java.net.URLDecoder
+import java.util.Calendar
+
 import org.apache.tika.Tika
 import net.sf.jmimemagic.Magic
 import net.sf.jmimemagic.MagicMatch
 import net.sf.jmimemagic.MagicParseException
 import net.sf.jmimemagic.MagicMatchNotFoundException
 import net.sf.jmimemagic.MagicException
-
 import com.ligadata.ZooKeeper.ProcessComponentByWeight;
 
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Char], relatedChunk: Int)
@@ -149,6 +156,13 @@ object FileProcessor {
   var pcbw: ProcessComponentByWeight = null;
   var isLockAcquired = false;
   var isThisNodeReadyToProcess = false
+
+  private var fileAge: String = ""
+  private var fileCount: Int = 0
+  private var fileAgeInt: Int = 0
+  private val ONE_SECOND_IN_MILLIS = 1000
+  private val ONE_MINUTE_IN_MILLIS = 60000
+  private val ONE_HOUR_IN_MILLIS = 3600000
 
   private def testFailure(thisCause: String) = {
     var bigCheck = FileProcessor.testRand.nextInt(100)
@@ -499,6 +513,19 @@ object FileProcessor {
     maxFormatValidationArea = props.getOrElse(SmartFileAdapterConstants.MAX_SIZE_FOR_FILE_CONTENT_VALIDATION, "1048576").toInt
     status_interval = props.getOrElse(SmartFileAdapterConstants.STATUS_QUEUES_FREQUENCY, "0").toInt
     randomFailureThreshHold = props.getOrElse(SmartFileAdapterConstants.TEST_FAILURE_THRESHOLD, "0").toInt
+    fileAge = props.getOrElse(SmartFileAdapterConstants.FILE_AGE,"30m")
+    fileAgeInt =
+      if(fileAge.takeRight(1) == "s"){
+        fileAge.substring(0, fileAge.length-2).toInt * ONE_SECOND_IN_MILLIS
+      } else if(fileAge.takeRight(1) == "m"){
+        fileAge.substring(0, fileAge.length-2).toInt * ONE_MINUTE_IN_MILLIS
+      }  else if(fileAge.takeRight(1) == "h"){
+        fileAge.substring(0, fileAge.length-2).toInt * ONE_HOUR_IN_MILLIS
+      } else{
+        30 * ONE_MINUTE_IN_MILLIS // default value for file age is 30 minute
+      }
+
+    fileCount = props.getOrElse(SmartFileAdapterConstants.FILE_COUNT,"100").toInt
   }
 
   def markFileProcessing(fileName: String, offset: Int, createDate: Long): Unit = {
@@ -573,11 +600,39 @@ object FileProcessor {
     }
   }
 
+  def getFileInDirectory(dir: String, time: Long): Int ={
+    val files = new File(dir)
+    var size = 0
+    if(files.exists() && files.isDirectory) {
+      val filesList = files.listFiles.filter(_.isFile).toList
+      for(file <- filesList){
+        if (file.lastModified > time)
+          size = size + 1
+      }
+      size
+    } else {
+      logger.warn("%s does not exists or it is not a directory".format(dir))
+      0
+    }
+  }
   private def enQFile(file: String, offset: Int, createDate: Long, partMap: scala.collection.mutable.Map[Int, Int] = scala.collection.mutable.Map[Int, Int]()): Unit = {
     fileQLock.synchronized {
       logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
-      fileQ += new EnqueuedFile(file, offset, createDate, partMap)
+      //////////////////////// new code from here
+      val processedPath = file.substring(0,file.lastIndexOf('/')-1)
+      if(processedPath.equals(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO)){
+        val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
+        if (createDate > timeDiff){
+          if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
+            fileQ += new EnqueuedFile(file, offset, createDate, partMap)
+          }
+        }
+      } else {
+        fileQ += new EnqueuedFile(file, offset, createDate, partMap)
+      }
+      //////////////////////// to here
+      //fileQ += new EnqueuedFile(file, offset, createDate, partMap)
     }
   }
 
