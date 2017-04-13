@@ -1,7 +1,6 @@
 package com.ligadata.kamanja.test.application.configuration
 
 import com.ligadata.kamanja.test.application.KamanjaApplication
-import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 import com.ligadata.kamanja.test.application.metadata._
 import org.scalatest._
@@ -71,6 +70,7 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
 
     val ds1 = app.dataSets.head
     val ds2 = app.dataSets(1)
+    val ds3 = app.dataSets(2)
 
     assert(ds1.inputSet.file == s"$testAppDir/data/inputFile1.csv")
     assert(ds1.inputSet.format == "CSV")
@@ -87,6 +87,15 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
     assert(ds2.expectedResultsSet.file == s"$testAppDir/data/expectedResults2.json")
     assert(ds2.expectedResultsSet.format == "JSON")
     assert(ds2.expectedResultsSet.adapterName == "TestOut_1")
+
+    assert(ds3.inputSet.file equals s"$testAppDir/data/inputFile3.csv")
+    assert(ds3.inputSet.format equals "CSV")
+    assert(ds3.inputSet.adapterName equals "TestIn_2")
+    assert(ds3.inputSet.partitionKey equals Some("1"))
+    assert(ds3.inputSet.fileAdapterDir equals Some("/whatever/directory/you/want"))
+    assert(ds3.expectedResultsSet.adapterName equals "TestOut_2")
+    assert(ds3.expectedResultsSet.format equals "CSV")
+    assert(ds3.expectedResultsSet.file equals s"$testAppDir/data/expectedResults3.csv")
   }
 
   it should "read in a configuration file and produce an Application name" in {

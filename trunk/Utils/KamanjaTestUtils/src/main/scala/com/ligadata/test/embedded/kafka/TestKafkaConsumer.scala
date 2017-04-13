@@ -36,7 +36,8 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
     try {
       consumer.subscribe(List(config.adapterSpecificConfig.topicName))
       val partitions = consumer.assignment()
-      consumer.seekToEnd(partitions)
+      //consumer.seekToEnd(partitions)
+      partitions.foreach(partition => consumer.seek(partition, Long.MaxValue))
       while(true) {
         val records = consumer.poll(100).iterator()
         while(records.hasNext) {
@@ -45,7 +46,7 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
           logger.debug("[Test Kafka Consumer]: Offset: " + record.offset)
           logger.debug("[Test Kafka Consumer]: Value: " + record.value)
           val outputBuffer: ListBuffer[String] = new ListBuffer[String]
-          if (Globals.modelOutputResult.exists((_._1 == config.adapterSpecificConfig.topicName))) {
+          if (Globals.modelOutputResult.exists(_._1 == config.adapterSpecificConfig.topicName)) {
             outputBuffer ++= Globals.modelOutputResult(config.adapterSpecificConfig.topicName)
           }
 

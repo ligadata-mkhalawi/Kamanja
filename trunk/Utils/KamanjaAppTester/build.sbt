@@ -51,7 +51,7 @@ testOptions in Test += Tests.Setup( () => {
   }
 
   copy(new File("."))
-  sbt.IO.copyFile(new File(s"lib_managed/jars/org.apache.kafka/kafka-clients/kafka-clients-0.10.0.1.jar"), new File(s"Utils/KamanjaAppTester/target/scala-$scalaV/test-classes/kamanjaInstall/lib/system/kafka-clients-0.10.0.1.jar"))
+  sbt.IO.copyFile(new File(s"lib_managed/jars/org.apache.kafka/kafka-clients/kafka-clients-0.9.0.1.jar"), new File(s"Utils/KamanjaAppTester/target/scala-$scalaV/test-classes/kamanjaInstall/lib/system/kafka-clients-0.9.0.1.jar"))
   sbt.IO.write(new File(s"Utils/KamanjaAppTester/target/scala-$scalaV/test-classes/kamanjaInstall/config/library_list"), s"ExtDependencyLibs_$scalaV-${version.value}.jar\nKamanjaInternalDeps_$scalaV-${version.value}.jar\nExtDependencyLibs2_$scalaV-${version.value}.jar")
 })
 

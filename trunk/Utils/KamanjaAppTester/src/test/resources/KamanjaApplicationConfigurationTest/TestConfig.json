@@ -91,6 +91,19 @@
           "Format": "JSON",
           "AdapterName": "TestOut_1"
         }
+      },
+      {
+        "Input": {
+          "Filename": "inputFile3.csv",
+          "Format": "CSV",
+          "AdapterName": "TestIn_2",
+          "FileAdapterDirectory": "/whatever/directory/you/want"
+        },
+        "ExpectedResults": {
+          "Filename": "expectedResults3.csv",
+          "Format": "CSV",
+          "AdapterName": "TestOut_2"
+        }
       }
     ]
   }

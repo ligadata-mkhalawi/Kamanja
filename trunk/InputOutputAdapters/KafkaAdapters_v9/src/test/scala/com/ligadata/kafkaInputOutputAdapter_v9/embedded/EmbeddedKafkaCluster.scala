@@ -117,7 +117,7 @@ class EmbeddedKafkaCluster {
   def getBrokers = brokers
 
   def startCluster: Unit = {
-    if(brokers.length == 0){ 
+    if(brokers.length == 0){
       throw new Exception("[Embedded Kafka Cluster]: No brokers found to start")
     }
     brokers.foreach(broker => {

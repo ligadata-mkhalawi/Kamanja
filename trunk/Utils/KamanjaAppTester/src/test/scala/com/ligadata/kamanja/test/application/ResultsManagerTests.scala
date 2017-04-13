@@ -2,7 +2,6 @@ package com.ligadata.kamanja.test.application
 
 import com.ligadata.kamanja.test.application.configuration.EmbeddedConfiguration
 import com.ligadata.kamanja.test.application.data._
-import com.ligadata.kamanja.test.application.{MatchResult, ResultsManager}
 import com.ligadata.test.utils.TestUtils
 import org.scalatest._
 
@@ -19,9 +18,9 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
 
   "ResultsManager" should "compare an Array of actual results with expected results read from a file that are equal and in csv format and return a List of MatchResults that are all true" in {
     val resultsManager = new ResultsManager
-    val testInputSet = new InputSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1InputFile.csv", "CSV", "TestIn_1", None)
-    val testExpectedResultsSet = new ExpectedResultsSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1ExpectedResults.csv", "CSV", "TestOut_1")
-    val testDataSet = new DataSet(testInputSet, testExpectedResultsSet)
+    val testInputSet = InputSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1InputFile.csv", "CSV", "TestIn_1", None, None)
+    val testExpectedResultsSet = ExpectedResultsSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1ExpectedResults.csv", "CSV", "TestOut_1", None)
+    val testDataSet = DataSet(testInputSet, testExpectedResultsSet)
     val actualResults: List[String] = List(
       "1,John Clark,food,39.95",
       "2,James Brown,games,59.99",
@@ -51,9 +50,9 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
 
   it should "compare an Array of actual results with expected results read from a file that are equal in json format and return a List of MatchResults that are all true" in {
     val resultsManager = new ResultsManager
-    val testInputSet = new InputSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1InputFile.csv", "CSV", "TestIn_1", None)
-    val testExpectedResultsSet = new ExpectedResultsSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1ExpectedResults.json", "JSON", "TestOut_1")
-    val testDataSet = new DataSet(testInputSet, testExpectedResultsSet)
+    val testInputSet = InputSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1InputFile.csv", "CSV", "TestIn_1", None, None)
+    val testExpectedResultsSet = ExpectedResultsSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1ExpectedResults.json", "JSON", "TestOut_1", None)
+    val testDataSet = DataSet(testInputSet, testExpectedResultsSet)
     var actualResults: List[String] = List(
       """{"ID":1,"Name":"John Clark","Shopping List":["food"],"Total Cost":39.95}""",
       """{"ID":2,"Name":"James Brown","Shopping List":["games"],"Total Cost":59.99}""",

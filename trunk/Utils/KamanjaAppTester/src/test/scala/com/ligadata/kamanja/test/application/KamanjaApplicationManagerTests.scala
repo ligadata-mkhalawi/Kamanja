@@ -1,6 +1,5 @@
 package com.ligadata.kamanja.test.application
 
-import com.ligadata.kamanja.test.application.KamanjaApplicationManager
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.kamanja.test.application.metadata.interfaces.ModelElement

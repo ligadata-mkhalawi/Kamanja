@@ -21,11 +21,11 @@ class KamanjaApplicationConfiguration {
       logger = KamanjaAppLogger.getKamanjaAppLogger
     }
     catch {
-      case e: Exception => throw new KamanjaApplicationConfigurationException("Kamanja Application Logger has not be created. Please call createKamanjaAppLogger first.")
+      case e: Exception => throw KamanjaApplicationConfigurationException("Kamanja Application Logger has not be created. Please call createKamanjaAppLogger first.")
     }
     val config: File = new File(applicationConfiguration)
     if (!config.exists()) {
-      throw new KamanjaApplicationConfigurationException("***ERROR*** Configuration File: '" + config + "' does not exist")
+      throw KamanjaApplicationConfigurationException("***ERROR*** Configuration File: '" + config + "' does not exist")
     }
 
     val source = Source.fromFile(config)
@@ -42,11 +42,11 @@ class KamanjaApplicationConfiguration {
     catch {
       case e: KamanjaApplicationConfigurationException => {
         logger.error("***ERROR*** Failed to initialize Kamanja Application\n" + logger.getStackTraceAsString(e))
-        throw new KamanjaApplicationConfigurationException("***ERROR*** Failed to initialize Kamanja Application", e)
+        throw KamanjaApplicationConfigurationException("***ERROR*** Failed to initialize Kamanja Application", e)
       }
       case e: Exception => {
         logger.error("***ERROR*** Unexpected exception encountered. Failed to initialize Kamanja Application.\n" + logger.getStackTraceAsString(e))
-        throw new KamanjaApplicationConfigurationException("***ERROR*** Unexpected exception encountered. Failed to initialize Kamanja Application.", e)
+        throw KamanjaApplicationConfigurationException("***ERROR*** Unexpected exception encountered. Failed to initialize Kamanja Application.", e)
       }
     }
   }
@@ -147,19 +147,19 @@ class KamanjaApplicationConfiguration {
             case "python" => {
               if (!elem.keySet.exists(_ == "Filename")) {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'Filename' to be defined.")
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'Filename' to be defined.")
               }
               if (!elem.keySet.exists(_ == "ModelName")) {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelName' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelName' to be defined.")
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelName' to be defined.")
               }
               if (!elem.keySet.exists(_ == "ModelOptions")) {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelOptions' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelOptions' to be defined.")
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'ModelOptions' to be defined.")
               }
               if (!elem.keySet.exists(_ == "MessageConsumed")) {
                 logger.error("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'MessageConsumed' to be defined.")
-                throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'MessageConsumed' to be defined.")
+                throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'Model' with ModelType 'python' requires 'MessageConsumed' to be defined.")
               }
               if (elem.keySet.exists(_ == "MessageProduced")) {
                 if (elem("MessageProduced") != null && elem("MessageProduced") != "") {
@@ -175,14 +175,14 @@ class KamanjaApplicationConfiguration {
         case "modelconfiguration" => {
           if (!elem.keySet.exists(_ == "Filename")) {
             logger.error("***ERROR*** Metadata Element Type 'ModelConfiguration' requires 'Filename' to be defined.")
-            throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'ModelConfiguration' requires 'Filename' to be defined.")
+            throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'ModelConfiguration' requires 'Filename' to be defined.")
           }
           metadataElements = metadataElements :+ new ModelConfigurationElement(appDir + "/metadata/configuration/" + elem("Filename").toString)
         }
         case "adaptermessagebindings" => {
           if (!elem.keySet.exists(_ == "Filename")) {
             logger.error("***ERROR*** Metadata Element Type 'AdapterMessageBindings' requires 'Filename' to be defined.")
-            throw new KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'AdapterMessageBindings' requires 'Filename' to be defined.")
+            throw KamanjaApplicationConfigurationException("***ERROR*** Metadata Element Type 'AdapterMessageBindings' requires 'Filename' to be defined.")
           }
           metadataElements = metadataElements :+ new AdapterMessageBindingElement(appDir + "/metadata/configuration/" + elem("Filename").toString)
         }
@@ -195,18 +195,18 @@ class KamanjaApplicationConfiguration {
   private def parseDataSets(appDir: String, configStr: JValue): List[DataSet] = {
     var dataSets: List[DataSet] = List()
     val dataSetMap: List[Map[String, Any]] = (configStr \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
-    var inputDataFile: String = null;
-    var inputDataFormat: String = null;
-    var partitionKey: String = null;
-    var resultsDataFile: String = null;
-    var resultsDataFormat: String = null;
+    var inputDataFile: String = null
+    var inputDataFormat: String = null
+    var partitionKey: String = null
+    var resultsDataFile: String = null
+    var resultsDataFormat: String = null
 
     def checkFormat(format: String): String = {
       format.toLowerCase match {
         case "csv" | "json" => format
         case _ => {
           logger.error(s"***ERROR*** Format $format is not supported. Supported formats are 'CSV' and 'JSON'.")
-          throw new KamanjaApplicationConfigurationException(s"***ERROR*** Format $format is not supported. Supported formats are 'CSV' and 'JSON'.")
+          throw KamanjaApplicationConfigurationException(s"***ERROR*** Format $format is not supported. Supported formats are 'CSV' and 'JSON'.")
         }
       }
     }
@@ -215,22 +215,22 @@ class KamanjaApplicationConfiguration {
       // Get the input configuration and convert to map or throw exception
       val inputSetConfig = dataSetConfig.getOrElse("Input", {
         logger.error("***ERROR*** DataSet Element Type 'Input' must be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' must be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' must be defined.")
       }).asInstanceOf[Map[String, Any]]
 
       val inputFilename = inputSetConfig.getOrElse("Filename", {
         logger.error("***ERROR*** DataSet Element Type 'Input' requires 'Filename' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'Filename' to be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'Filename' to be defined.")
       }).asInstanceOf[String]
 
       val inputFormat = checkFormat(inputSetConfig.getOrElse("Format", {
         logger.error("***ERROR*** DataSet Element Type 'Input' requires 'Format' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'Format' to be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'Format' to be defined.")
       }).asInstanceOf[String])
 
       val inputAdapterName = inputSetConfig.getOrElse("AdapterName", {
         logger.error("***ERROR*** DataSet Element Type 'Input' Requires 'AdapterName' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' Requires 'AdapterName' to be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' Requires 'AdapterName' to be defined.")
       }).asInstanceOf[String]
 
       val partitionKey: Option[String] = if (inputSetConfig.getOrElse("PartitionKey", null) == null) None else Some(inputSetConfig("PartitionKey").asInstanceOf[String])
@@ -239,47 +239,47 @@ class KamanjaApplicationConfiguration {
         case Some(key) =>
           if (inputFormat.toLowerCase == "csv" && !isNumeric(key)) {
             logger.error(s"***ERROR*** Input Data Format is defined as CSV but the partition key $key is a String. It must be an integer.")
-            throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as CSV but the partition key ${partitionKey} is a String. It must be an integer.")
+            throw KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as CSV but the partition key ${partitionKey} is a String. It must be an integer.")
           }
           else if (inputFormat.toLowerCase == "json" && isNumeric(key)) {
             logger.error(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${partitionKey} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
-            throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${partitionKey} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
+            throw KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${partitionKey} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
           }
         case None =>
       }
 
       val inputFileAdapterDir: Option[String]= if (inputSetConfig.getOrElse("FileAdapterDirectory", null) == null) None else Some(inputSetConfig("FileAdapterDirectory").asInstanceOf[String])
 
-      val inputSet: InputSet = new InputSet(s"$appDir/data/$inputFilename", inputFormat, inputAdapterName, inputFileAdapterDir, partitionKey)
+      val inputSet: InputSet = InputSet(s"$appDir/data/$inputFilename", inputFormat, inputAdapterName, inputFileAdapterDir, partitionKey)
 
       // Get the output configuration and convert to map or throw exception
       val expectedResultsSetConfig = dataSetConfig.getOrElse("ExpectedResults", {
         logger.error("***ERROR*** DataSet Element Type 'ExpectedResults' must be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' must be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' must be defined.")
       }).asInstanceOf[Map[String, Any]]
 
       val expectedResultsFilename = expectedResultsSetConfig.getOrElse("Filename", {
         logger.error("***ERROR*** DataSet Element type 'ExpectedResults' requires 'Filename' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element type 'ExpectedResults' requires 'Filename' to be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element type 'ExpectedResults' requires 'Filename' to be defined.")
       }).asInstanceOf[String]
 
       val expectedResultsFormat = checkFormat(expectedResultsSetConfig.getOrElse("Format", {
         logger.error("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Format' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Format' to be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Format' to be defined.")
       }).asInstanceOf[String])
 
       val expectedResultsAdapterName = expectedResultsSetConfig.getOrElse("AdapterName", {
         logger.error("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'AdapterName' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'AdapterName' to be defined.")
+        throw KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'AdapterName' to be defined.")
       }).asInstanceOf[String]
 
       val outputFileAdapterDir: Option[String]= if (expectedResultsSetConfig.getOrElse("FileAdapterDirectory", null) == null) None else Some(inputSetConfig("FileAdapterDirectory").asInstanceOf[String])
 
       val expectedResultsSet: ExpectedResultsSet = new ExpectedResultsSet(s"$appDir/data/$expectedResultsFilename", expectedResultsFormat, expectedResultsAdapterName, outputFileAdapterDir)
 
-      dataSets :+= new DataSet(inputSet, expectedResultsSet)
+      dataSets :+= DataSet(inputSet, expectedResultsSet)
     })
-    return dataSets
+    dataSets
   }
 
   private def isNumeric(input: String): Boolean = {

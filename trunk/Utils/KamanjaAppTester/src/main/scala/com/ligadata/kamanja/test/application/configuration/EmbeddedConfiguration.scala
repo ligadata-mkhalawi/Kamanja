@@ -144,10 +144,10 @@ object EmbeddedConfiguration {
       |          "Name": "TestIn_1",
       |          "TypeString": "Input",
       |          "TenantId": "tenant1",
-      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$$",
+      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KamanjaKafkaConsumer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar"
+      |            "kafka-clients-0.9.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -158,10 +158,10 @@ object EmbeddedConfiguration {
       |          "Name": "TestOut_1",
       |          "TypeString": "Output",
       |          "TenantId": "tenant1",
-      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
+      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar"
+      |            "kafka-clients-0.9.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -172,10 +172,10 @@ object EmbeddedConfiguration {
       |          "Name": "TestFailedEvents_1",
       |          "TypeString": "Output",
       |          "TenantId": "tenant1",
-      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
+      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar"
+      |            "kafka-clients-0.9.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -186,10 +186,10 @@ object EmbeddedConfiguration {
       |          "Name": "TestMessageEvents_1",
       |          "TypeString": "Output",
       |          "TenantId": "tenant1",
-      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
+      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar"
+      |            "kafka-clients-0.9.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",
@@ -200,10 +200,10 @@ object EmbeddedConfiguration {
       |          "Name": "TestStatus_1",
       |          "TypeString": "Output",
       |          "TenantId": "System",
-      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$$",
+      |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
       |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
-      |            "kafka-clients-0.10.0.1.jar"
+      |            "kafka-clients-0.9.0.1.jar"
       |          ],
       |          "AdapterSpecificCfg": {
       |            "HostList": "$kafkaBrokerList",

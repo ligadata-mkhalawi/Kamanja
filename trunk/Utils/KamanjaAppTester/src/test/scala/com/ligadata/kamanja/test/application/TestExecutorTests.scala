@@ -1,9 +1,6 @@
 package com.ligadata.kamanja.test.application
 
-import com.ligadata.kamanja.test.application.TestExecutor
 import org.scalatest._
-
-import scala.io.Source
 
 class TestExecutorTests extends FlatSpec with BeforeAndAfterAll {
 
