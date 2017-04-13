@@ -516,11 +516,11 @@ object FileProcessor {
     fileAge = props.getOrElse(SmartFileAdapterConstants.FILE_AGE,"30m")
     fileAgeInt =
       if(fileAge.takeRight(1) == "s"){
-        fileAge.substring(0, fileAge.length-2).toInt * ONE_SECOND_IN_MILLIS
+        fileAge.substring(0, fileAge.length-1).toInt * ONE_SECOND_IN_MILLIS
       } else if(fileAge.takeRight(1) == "m"){
-        fileAge.substring(0, fileAge.length-2).toInt * ONE_MINUTE_IN_MILLIS
+        fileAge.substring(0, fileAge.length-1).toInt * ONE_MINUTE_IN_MILLIS
       }  else if(fileAge.takeRight(1) == "h"){
-        fileAge.substring(0, fileAge.length-2).toInt * ONE_HOUR_IN_MILLIS
+        fileAge.substring(0, fileAge.length-1).toInt * ONE_HOUR_IN_MILLIS
       } else{
         30 * ONE_MINUTE_IN_MILLIS // default value for file age is 30 minute
       }
@@ -620,19 +620,20 @@ object FileProcessor {
       logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       //////////////////////// new code from here
-      val processedPath = file.substring(0,file.lastIndexOf('/')-1)
-      if(processedPath.equals(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO)){
-        val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
-        if (createDate > timeDiff){
-          if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
-            fileQ += new EnqueuedFile(file, offset, createDate, partMap)
-          }
-        }
-      } else {
-        fileQ += new EnqueuedFile(file, offset, createDate, partMap)
-      }
+//      val processedPath = file.substring(0,file.lastIndexOf('/'))
+//      val MovedPath = props.getOrElse(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO, "")
+//      if(processedPath.equals(MovedPath)){
+//        val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
+//        if (createDate > timeDiff){
+//          if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
+//            fileQ += new EnqueuedFile(file, offset, createDate, partMap)
+//          }
+//        }
+//      } else {
+//        fileQ += new EnqueuedFile(file, offset, createDate, partMap)
+//      }
       //////////////////////// to here
-      //fileQ += new EnqueuedFile(file, offset, createDate, partMap)
+      fileQ += new EnqueuedFile(file, offset, createDate, partMap)
     }
   }
 
@@ -770,8 +771,24 @@ object FileProcessor {
                     if (thisFileOrigLength > 0 && FileProcessor.isValidFile(fileTuple._1)) {
                       logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
                       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
-                      enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
-                      bufferingQRemove(fileTuple._1)
+                      ////////////////new code
+                      val processedPath = fileTuple._1.substring(0,fileTuple._1.lastIndexOf('/'))
+                      val MovedPath = props.getOrElse(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO, "")
+                      if(processedPath.equals(MovedPath)){
+                        val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
+                        if (d.lastModified < timeDiff){
+                          if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
+                            enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
+                            bufferingQRemove(fileTuple._1)
+                          }
+                        }
+                      } else {
+                        enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
+                        bufferingQRemove(fileTuple._1)
+                      }
+                      /////////////// to here
+//                      enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
+//                      bufferingQRemove(fileTuple._1)
                     } else {
                       // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
                       if (thisFileOrigLength == 0) {
@@ -1585,11 +1602,11 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
       fileAgeInt =
         if(fileAge.takeRight(1) == "s"){
-        fileAge.substring(0, fileAge.length-2).toInt * ONE_SECOND_IN_MILLIS
+        fileAge.substring(0, fileAge.length-1).toInt * ONE_SECOND_IN_MILLIS
       } else if(fileAge.takeRight(1) == "m"){
-        fileAge.substring(0, fileAge.length-2).toInt * ONE_MINUTE_IN_MILLIS
+        fileAge.substring(0, fileAge.length-1).toInt * ONE_MINUTE_IN_MILLIS
       }  else if(fileAge.takeRight(1) == "h"){
-        fileAge.substring(0, fileAge.length-2).toInt * ONE_HOUR_IN_MILLIS
+        fileAge.substring(0, fileAge.length-1).toInt * ONE_HOUR_IN_MILLIS
       } else{
         30 * ONE_MINUTE_IN_MILLIS // default value for file age is 30 minute
       }
