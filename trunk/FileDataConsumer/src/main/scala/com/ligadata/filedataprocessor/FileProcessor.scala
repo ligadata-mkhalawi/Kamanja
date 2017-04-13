@@ -606,7 +606,7 @@ object FileProcessor {
     if(files.exists() && files.isDirectory) {
       val filesList = files.listFiles.filter(_.isFile).toList
       for(file <- filesList){
-        if (file.lastModified > time)
+        if (file.lastModified < time)
           size = size + 1
       }
       size
@@ -757,7 +757,8 @@ object FileProcessor {
 
 
               try {
-                val d = executeCallWithElapsed(new File(fileTuple._1), "Check file for buffering " + fileTuple._1)
+                val file = new File(fileTuple._1)
+                val d = executeCallWithElapsed(file, "Check file for buffering " + fileTuple._1)
                 // If the filesystem is accessible
                 if (d.exists) {
                   logger.info("FileProcessor: monitorBufferingFiles: Processing the file " + fileTuple._1)
@@ -780,6 +781,7 @@ object FileProcessor {
                           if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
                             enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
                             bufferingQRemove(fileTuple._1)
+                            file.setLastModified(Calendar.getInstance().getTimeInMillis);
                           }
                         }
                       } else {
