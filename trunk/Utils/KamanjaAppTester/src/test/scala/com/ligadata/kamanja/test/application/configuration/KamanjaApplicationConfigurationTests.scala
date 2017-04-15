@@ -91,7 +91,7 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
     assert(ds3.inputSet.file equals s"$testAppDir/data/inputFile3.csv")
     assert(ds3.inputSet.format equals "CSV")
     assert(ds3.inputSet.adapterName equals "TestIn_2")
-    assert(ds3.inputSet.partitionKey equals Some("1"))
+    assert(ds3.inputSet.partitionKey.isEmpty)
     assert(ds3.inputSet.fileAdapterDir equals Some("/whatever/directory/you/want"))
     assert(ds3.expectedResultsSet.adapterName equals "TestOut_2")
     assert(ds3.expectedResultsSet.format equals "CSV")

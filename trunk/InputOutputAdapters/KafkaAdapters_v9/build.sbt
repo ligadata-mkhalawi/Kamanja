@@ -13,7 +13,7 @@ assemblyOption in assembly ~= {
 val kamanjaVersion = "1.6.2"
 
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-$kamanjaVersion.jar"
 }
 
 
@@ -21,10 +21,8 @@ name := "KamanjaKafkaAdapters_0_9"
 
 version := "1.6.2"
 
-
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.9.0.1"
 
-libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"  % "test" classifier "test"
 //libraryDependencies += "org.scala-lang" %% "scala-library" % scalaVersion.value
 
 //libraryDependencies += "org.scala-lang" %% "scala-actors" % scalaVersion.value

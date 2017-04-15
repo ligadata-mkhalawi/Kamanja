@@ -21,7 +21,6 @@ case class TestExecutorException(message: String, cause: Throwable = null) exten
 
 object TestExecutor {
 
-  private val mdMan: MetadataManager = new MetadataManager
   private var logger: KamanjaAppLogger = _
   private val usage: String = "The following arguments are accepted:\n\t" +
     "--kamanja-dir (Required: the install directory of Kamanja)\n\t" +
@@ -32,7 +31,6 @@ object TestExecutor {
     "--help (Optional: Displays help text)"
 
   private type OptionMap = Map[Symbol, Any]
-  private var runEmbedded: Boolean = false
 
   def main(args: Array[String]): Unit = {
     if (args.length == 0) {
@@ -121,7 +119,7 @@ object TestExecutor {
                     consumerThread = new Thread(consumer)
                     consumerThread.start()
                     //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
-                    Thread sleep 1000
+                    Thread sleep 10000
                     adapterConfig
                   }
                   case a: SmartFileAdapterConfig => {
@@ -139,7 +137,7 @@ object TestExecutor {
             val setInputAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setInputAdapterName)(0).asInstanceOf[IOAdapter]
             val inputFile: File = new File(set.inputSet.file)
             if (!inputFile.exists()) {
-              throw new TestExecutorException(s"***ERROR*** Input Set File ${set.inputSet.file} does not exist.")
+              throw TestExecutorException(s"***ERROR*** Input Set File ${set.inputSet.file} does not exist.")
             }
             val inputAdapterConfig = setInputAdapter.adapterType match {
               case a@InputAdapter => {
@@ -162,7 +160,7 @@ object TestExecutor {
                           new FileInputStream(inputFile) getChannel, 0, Long.MaxValue)
                         adapterConfig
                       }
-                      case None => throw new TestExecutorException("***ERROR*** Input Adapter Type is a SmartFileConsumer but no FileAdapterDirectory has been specified in configuration.")
+                      case None => throw TestExecutorException("***ERROR*** Input Adapter Type is a SmartFileConsumer but no FileAdapterDirectory has been specified in configuration.")
                     }
                   }
                   case _ =>
@@ -183,7 +181,7 @@ object TestExecutor {
             val expectedResults = resultsManager.parseExpectedResults(set)
 
             logger.info("Waiting for output results...")
-            val results = Globals.waitForOutputResults(outputAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+            val results = Globals.waitForOutputResults(outputAdapterConfig, msgCount = expectedResults.length).orNull
             if (results == null) {
               testResult = false
               logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
@@ -244,7 +242,7 @@ object TestExecutor {
                 logger.info(s"Actual results match expected results")
               }
             }
-            consumer.shutdown
+            consumer.shutdown()
           })
 
           if (!testResult)
@@ -252,13 +250,14 @@ object TestExecutor {
           else
             logger.info(s"Application '${app.name}' testing passed")
 
-          eventConsumer.shutdown
-          errorConsumer.shutdown
+          eventConsumer.shutdown()
+          errorConsumer.shutdown()
 
           if (!appManager.removeApplicationMetadata(app)) {
-            logger.error(s"*** Failed to remove metadata from application '${app.name}'")
-            throw new Exception(s"*** Failed to remove metadata from application '${app.name}'")
+            logger.error(s"***ERROR*** Failed to remove metadata from application '${app.name}'")
+            throw new Exception(s"***ERROR*** Failed to remove metadata from application '${app.name}'")
           }
+          logger.info(s"Successfully removed application '${app.name}' metadata")
 
           if (KamanjaEnvironmentManager.isEmbedded) {
             KamanjaEnvironmentManager.stopServices
@@ -271,8 +270,6 @@ object TestExecutor {
   }
 
   private def optionMap(map: OptionMap, list: List[String]): OptionMap = {
-    def isSwitch(s: String) = (s(0) == '-')
-
     list match {
       case Nil => map
       case "--kamanja-dir" :: value :: tail =>
@@ -289,7 +286,7 @@ object TestExecutor {
         optionMap(map ++ Map('help -> true), tail)
       case opt => {
         println("***ERROR*** Unknown option " + opt)
-        return null
+        null
       }
     }
   }

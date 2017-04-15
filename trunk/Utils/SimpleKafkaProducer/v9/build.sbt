@@ -69,7 +69,7 @@ version := "1.6.2"
 //libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 //
 //libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
-libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.9.0.0"
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.9.0.1"
 
 
 coverageMinimum := 80

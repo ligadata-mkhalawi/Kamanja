@@ -1,9 +1,12 @@
-package com.ligadata.kafkaInputOutputAdapters_v10.embedded
+package com.ligadata.kafkaInputOutputAdapters_v9.embedded
 
+import java.io.File
 import java.io.FileNotFoundException
 import java.util.Properties
 
-import kafka.server.{KafkaConfig, KafkaServer}
+//import kafka.server.{KafkaConfig, KafkaServer}
+import kafka.server.KafkaConfig
+import kafka.server.KafkaServer
 import com.ligadata.test.utils._
 import org.apache.logging.log4j.{LogManager, Logger}
 
@@ -19,12 +22,12 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
   private val _port = if(port == -1) TestUtils.getAvailablePort else port
   final var kafkaServer: KafkaServer = _
 
-  def getHostname = hostname
-  def getPort = _port
-  def getBrokerId = brokerId
-  def getLogDir = logDir
-  def getZkConnStr = zkConnStr
-  def getKafkaConfig = kafkaConfig
+  def getHostname: String = hostname
+  def getPort: Int = _port
+  def getBrokerId: Int = brokerId
+  def getLogDir: File = logDir
+  def getZkConnStr: String = zkConnStr
+  def getKafkaConfig: KafkaConfig = kafkaConfig
 
   def setBrokerId(id: Int) = {
     brokerId = id
@@ -41,6 +44,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
   private def init(): Unit = {
     logger.info("[Embedded Kafka Broker]: Initializing Kafka Broker")
     val props = new Properties()
+
     props.put("host.name", "127.0.0.1")
     props.put("port", _port.toString)
     props.put("broker.id", brokerId.toString)
@@ -54,7 +58,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
     isInitialized = true
   }
 
-  def start: Unit = {
+  def start(): Unit = {
     if (!isInitialized) {
       init()
     }
@@ -66,7 +70,9 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
         }
       }
       catch {
-        case e: Exception => throw new EmbeddedKafkaException(s"[Embedded Kafka Broker]: Failed to start Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n", e)
+        case e: Exception =>
+          logger.error(s"[Embedded Kafka Broker]: Failed to start Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n", e)
+          throw EmbeddedKafkaException(s"[Embedded Kafka Broker]: Failed to start Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n", e)
       }
       isRunning = true
     }
@@ -114,10 +120,10 @@ class EmbeddedKafkaCluster {
   private var isRunning = false
   private var brokers: List[KafkaBroker] = List()
 
-  def getBrokers = brokers
+  def getBrokers: List[KafkaBroker] = brokers
 
-  def startCluster: Unit = {
-    if(brokers.length == 0){
+  def startCluster(): Unit = {
+    if(brokers.isEmpty){
       throw new Exception("[Embedded Kafka Cluster]: No brokers found to start")
     }
     brokers.foreach(broker => {
@@ -126,8 +132,8 @@ class EmbeddedKafkaCluster {
     isRunning = true
   }
 
-  def stopCluster: Unit = {
-    if (brokers.length == 0) {
+  def stopCluster(): Unit = {
+    if (brokers.isEmpty) {
       throw new Exception("[Embedded Kafka Cluster]: No brokers found to stop")
     }
     brokers.foreach(broker => broker.stop())
@@ -149,7 +155,7 @@ class EmbeddedKafkaCluster {
   def getBrokerList: String = {
     val sb = new StringBuilder
     brokers.foreach(broker => {
-      if(sb.length > 0) sb.append(",")
+      if(sb.nonEmpty) sb.append(",")
       sb.append(broker.getHostname).
         append(":").
         append(broker.getPort)

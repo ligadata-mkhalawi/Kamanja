@@ -68,7 +68,7 @@ class TestKafkaProducer {
     //val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
     //val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(props, null)
 
-    val adapterConfiguration = new AdapterConfiguration{
+    val adapterConfiguration = new AdapterConfiguration {
       Name = iOAdapterConfig.name
       className = iOAdapterConfig.className
       jarName = iOAdapterConfig.jarName
@@ -77,7 +77,7 @@ class TestKafkaProducer {
       tenantId = iOAdapterConfig.tenantId
     }
 
-    val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(adapterConfiguration, null)
+    val oAdapter = com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer.CreateOutputAdapter(adapterConfiguration, null)
 
     try {
       SimpleKafkaProducer.ProcessFile(oAdapter, Array(topicName), 1, file, "", 0, partKeys, new SimpleKafkaProducer.Stats, 0, dataFormat, false, 8, true)

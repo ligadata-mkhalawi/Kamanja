@@ -33,7 +33,7 @@ val Organization = "com.ligadata"
 val assembleDependencies = TaskKey[Unit]("assembleDependencies")
 
 assembleDependencies in Global := {
-  (packageBin in Compile in KafkaAdapters_v10).value
+  (packageBin in Compile in KafkaAdapters_v9).value
   (assembly in Test in ExtDependencyLibs).value
   (assembly in Test in ExtDependencyLibs2).value
   (assembly in Test in KamanjaInternalDeps).value
@@ -96,10 +96,10 @@ lazy val KamanjaManager = project.in(file("KamanjaManager")).configs(TestConfigs
 lazy val MessageCompiler = project.in(file("MessageCompiler")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(Metadata, MetadataBootstrap, Exceptions).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", VelocityMetrics)
 
 lazy val KafkaSimpleInputOutputAdapters = project.in(file("InputOutputAdapters/KafkaSimpleInputOutputAdapters")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters)
-  .settings(
+  /*.settings(
     parallelExecution in Test := false,
     test <<= (test in Test).dependsOn(assembleDependencies)
-  )
+  )*/
 
 lazy val InputOutputAdapterBase = project.in(file("InputOutputAdapters/InputOutputAdapterBase")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions, DataDelimiters, HeartBeat, KamanjaBase, ZooKeeperClient, StorageBase, StorageManager, TransactionService, VelocityMetrics)
 
@@ -151,7 +151,7 @@ lazy val GenerateMessage = project.in(file("Utils/GenerateMessage")).configs(Tes
 
 //lazy val InterfacesSamples = project.in(file("SampleApplication/InterfacesSamples")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageBase, Exceptions)
 
-lazy val SimpleKafkaProducer = project.in(file("Utils/SimpleKafkaProducer")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, KafkaSimpleInputOutputAdapters, KafkaAdapters_v10, KafkaAdapters_v9, KafkaAdapters_v8, Exceptions)
+lazy val SimpleKafkaProducer = project.in(file("Utils/SimpleKafkaProducer")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, KafkaSimpleInputOutputAdapters, KafkaAdapters_v9, KafkaAdapters_v10, KafkaAdapters_v8, Exceptions)
 
 lazy val OutputUtils = project.in(file("Utils/OutputUtils")).configs(TestConfigs.all: _*).settings(docSettings: _*).settings(TestSettings.settings: _*).settings(TestSettings.settings: _*).dependsOn(SaveContainerDataComponent, ZooKeeperLeaderLatch % "provided", VelocityMetrics)
 
@@ -288,7 +288,7 @@ lazy val KafkaAdapters_v10 = project.in(file("InputOutputAdapters/KafkaAdapters_
   .configs(TestConfigs.all: _*)
   .settings(docSettings: _*)
   .settings(TestSettings.settings: _*)
-  .dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaSimpleInputOutputAdapters % "provided", VelocityMetrics, KamanjaTestUtils)
+  .dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaSimpleInputOutputAdapters % "provided", VelocityMetrics)
 
 lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
   .configs(TestConfigs.all: _*)
@@ -300,8 +300,8 @@ lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
     testOnly <<= (testOnly in Test).dependsOn(assembleDependencies),
     test <<= (test in Test).dependsOn(assembleDependencies)
   )
-  .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", SimpleKafkaProducer % "compile->test",
-    KamanjaTestUtils, KafkaAdapters_v9 % "compile;compile->test",
+  .dependsOn(KafkaAdapters_v9 % "compile;compile->test", KamanjaManager % "compile->test", MetadataAPI % "compile->test",
+    SimpleKafkaProducer % "compile->test", KamanjaTestUtils,
     KamanjaInternalDeps % "provided", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided",
     KVInit)
 

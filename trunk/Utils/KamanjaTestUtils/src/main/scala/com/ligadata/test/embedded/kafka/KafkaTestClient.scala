@@ -6,7 +6,7 @@ import com.ligadata.test.utils.KamanjaTestLogger
 
 import kafka.admin.AdminUtils
 import kafka.common.TopicExistsException
-import kafka.utils._
+import kafka.utils.ZkUtils
 
 import org.I0Itec.zkclient.{ZkClient, ZkConnection}
 
@@ -42,7 +42,7 @@ class KafkaTestClient(zookeeperConn: String) extends KamanjaTestLogger {
     }
     catch {
       case e: TopicExistsException => logger.info("[Kafka test client]: Topic " + topicName + " already created. Continuing...")
-      case e: Exception => throw new KafkaTestClientException("[Kafka test client]: Failed to create topic '" + topicName + "' with error:\n" + e)
+      case e: Exception => throw KafkaTestClientException("[Kafka test client]: Failed to create topic '" + topicName + "' with error:\n" + e)
     }
     finally {
       if (zkClient != null) {

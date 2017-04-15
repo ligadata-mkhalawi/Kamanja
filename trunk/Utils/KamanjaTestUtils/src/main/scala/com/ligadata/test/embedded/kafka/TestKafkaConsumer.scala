@@ -12,9 +12,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
 
 class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with KamanjaTestLogger {
-  private var consumer: KafkaConsumer[String, String] = null
-
-  val props = new Properties() {
+ private val props = new Properties() {
     put("bootstrap.servers", config.adapterSpecificConfig.hostList)
     put("group.id", "kamanja-test-group")
     put("enable.auto.commit", "true")
@@ -26,25 +24,30 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
     //put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer")
   }
 
-  consumer = new KafkaConsumer[String, String](props)
+  private val consumer: KafkaConsumer[String, String] = new KafkaConsumer[String, String](props)
 
   /**
     * def run will subscribe to the topic specified in the KafkaAdapterConfig passed in at class construction
     * and seek to the end of the topic prior to retrieving records.
     */
-  def run: Unit = {
+  def run(): Unit = {
     try {
       consumer.subscribe(List(config.adapterSpecificConfig.topicName))
       val partitions = consumer.assignment()
       //consumer.seekToEnd(partitions)
-      partitions.foreach(partition => consumer.seek(partition, Long.MaxValue))
+      //partitions.foreach(partition => consumer.seekToEnd(partition))
+
+      partitions.foreach(partition => {
+        consumer.seek(partition, consumer.committed(partition).offset())
+      })
+
       while(true) {
         val records = consumer.poll(100).iterator()
         while(records.hasNext) {
           val record: ConsumerRecord[String, String] = records.next
-          logger.debug("[Test Kafka Consumer]: Record: partition: " + record.partition)
-          logger.debug("[Test Kafka Consumer]: Offset: " + record.offset)
-          logger.debug("[Test Kafka Consumer]: Value: " + record.value)
+          logger.debug("[Test Kafka Consumer]: Record partition: " + record.partition)
+          logger.debug("[Test Kafka Consumer]: Record offset:    " + record.offset)
+          logger.debug("[Test Kafka Consumer]: Record value:     " + record.value)
           val outputBuffer: ListBuffer[String] = new ListBuffer[String]
           if (Globals.modelOutputResult.exists(_._1 == config.adapterSpecificConfig.topicName)) {
             outputBuffer ++= Globals.modelOutputResult(config.adapterSpecificConfig.topicName)
@@ -68,8 +71,8 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
     }
   }
 
-  def shutdown: Unit = {
-    consumer.wakeup
+  def shutdown(): Unit = {
+    consumer.wakeup()
   }
 
 }

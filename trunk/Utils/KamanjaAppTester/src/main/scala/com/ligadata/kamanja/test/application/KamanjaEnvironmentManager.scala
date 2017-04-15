@@ -1,6 +1,6 @@
 package com.ligadata.kamanja.test.application
 
-import java.io.{File, PrintWriter}
+import java.io.File
 import java.util.NoSuchElementException
 
 import com.ligadata.MetadataAPI.ConfigUtils
@@ -12,7 +12,7 @@ import com.ligadata.test.configuration.cluster.nodes._
 import com.ligadata.test.configuration.cluster.python.PythonConfiguration
 import com.ligadata.test.configuration.cluster.zookeeper._
 import com.ligadata.test.embedded.zookeeper._
-import com.ligadata.kafkaInputOutputAdapters_v10.embedded._
+import com.ligadata.kafkaInputOutputAdapters_v9.embedded.{EmbeddedKafkaCluster, KafkaBroker}
 import com.ligadata.test.utils._
 import com.ligadata.MetadataAPI.test._
 import com.ligadata.Serialize.JsonSerializer
@@ -22,8 +22,6 @@ import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaA
 import com.ligadata.test.embedded.kafka._
 import org.json4s._
 import org.json4s.native.JsonMethods._
-
-import scala.io.Source
 
 case class KamanjaEnvironmentManagerException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
@@ -36,7 +34,6 @@ object KamanjaEnvironmentManager {
   private var embeddedZookeeper: EmbeddedZookeeper = _
   private var kafkaCluster: EmbeddedKafkaCluster = _
   private var zkClient: ZookeeperClient = _
-  private var clusterConfig: Cluster = _
   private var kafkaConsumer: TestKafkaConsumer = _
   var kamanjaConfigFile: String = _
   var clusterConfigFile: String = _
@@ -65,7 +62,7 @@ object KamanjaEnvironmentManager {
       }
       catch {
         case e: NoSuchElementException =>
-          throw new KamanjaEnvironmentManagerException("***ERROR*** Failed to discover environmental variable PYTHON_HOME. " +
+          throw KamanjaEnvironmentManagerException("***ERROR*** Failed to discover environmental variable PYTHON_HOME. " +
             "Please set it before running Kamanja Application Tester using embedded services.\n" +
             "EX: export PYTHON_HOME=/usr")
       }
@@ -87,7 +84,7 @@ object KamanjaEnvironmentManager {
         logger.error(s"***ERROR*** Failed to start embedded services")
         KamanjaEnvironmentManager.stopServices
         TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
-        throw new KamanjaEnvironmentManagerException(s"***ERROR*** Failed to start embedded services")
+        throw KamanjaEnvironmentManagerException(s"***ERROR*** Failed to start embedded services")
       }
     }
     else {
@@ -99,7 +96,7 @@ object KamanjaEnvironmentManager {
       val addConfigResult = mdMan.addConfig(new File(this.clusterConfigFile))
       if (addConfigResult != 0) {
         logger.error("***ERROR*** Attempted to upload cluster configuration but failed")
-        throw new KamanjaEnvironmentManagerException("***ERROR*** Attempted to upload cluster configuration but failed")
+        throw KamanjaEnvironmentManagerException("***ERROR*** Attempted to upload cluster configuration but failed")
       }
       logger.info("Cluster configuration successfully uploaded")
       kafkaConsumer = new TestKafkaConsumer(getOutputKafkaAdapterConfig)
@@ -107,8 +104,8 @@ object KamanjaEnvironmentManager {
   }
 
   def getAllAdapters: List[Adapter] = {
-    if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    if (!isInitialized) {
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val adaptersAPIResult = ConfigUtils.GetAllAdapters("JSON", Some("kamanja"))
     val adaptersResultData = mdMan.parseApiResult(adaptersAPIResult).resultData
@@ -129,9 +126,9 @@ object KamanjaEnvironmentManager {
           var adapterType: AdapterType = null
 
           // Converting the adapter type to an object for use in the configuration api under the KamanjaTestUtils project.
-          if(typeString.toLowerCase == "input")
+          if (typeString.toLowerCase == "input")
             adapterType = InputAdapter
-          else if(typeString.toLowerCase == "output")
+          else if (typeString.toLowerCase == "output")
             adapterType = OutputAdapter
 
           //Optional Fields
@@ -140,27 +137,25 @@ object KamanjaEnvironmentManager {
           val fieldDelimiter = adapter.getOrElse("FieldDelimiter", "").toString
           val valueDelimiter = adapter.getOrElse("ValueDelimiter", "").toString
 
-          if(className.toLowerCase.contains("kamanjakafkaconsumer")) {
+          if (className.toLowerCase.contains("kamanjakafkaconsumer") || className.toLowerCase.contains("kafkaproducer")) {
             val hostList = adapterSpecificCfg("HostList").toString
             val topicName = adapterSpecificCfg("TopicName").toString
-            adapterList :+= new KafkaAdapterConfig(name, adapterType, associatedMessage, keyValueDelimiter,
+            adapterList = adapterList :+ KafkaAdapterConfig(name, adapterType, associatedMessage, keyValueDelimiter,
               fieldDelimiter, valueDelimiter, className, jarName, dependencyJars,
-              new KafkaAdapterSpecificConfig(hostList, topicName), tenantId)
+              KafkaAdapterSpecificConfig(hostList, topicName), tenantId)
           }
         }
-        case "storage" => {
-          throw new KamanjaEnvironmentManagerException("Storage Adapters are currently unsupported.")
-        }
-        case _ => throw new KamanjaEnvironmentManagerException(s"Unrecognized Type String $typeString found.")
+        case "storage" => throw KamanjaEnvironmentManagerException("Storage Adapters are currently unsupported.")
+        case _ => throw KamanjaEnvironmentManagerException(s"Unrecognized Type String $typeString found.")
       }
     })
 
-    return adapterList
+    adapterList
   }
 
   def getZookeeperConfiguration: ZookeeperConfig = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val zookeeperInfoJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "ZooKeeperInfo").extract[String]
@@ -176,7 +171,7 @@ object KamanjaEnvironmentManager {
 
   def getAllTenants: List[TenantConfiguration] = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     var tenantList: List[TenantConfiguration] = List()
     val tenantInfoArr = MdMgr.GetMdMgr.GetAllTenantInfos
@@ -201,7 +196,7 @@ object KamanjaEnvironmentManager {
 
   def getSystemCatalog: StorageAdapter = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val sysCatalogJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "SystemCatalog").extract[String]
@@ -210,7 +205,7 @@ object KamanjaEnvironmentManager {
 
   def getAllNodes: List[NodeConfiguration] = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val nodesApiResultStr = ConfigUtils.GetAllNodes("JSON", Some("kamanja"))
     var nodeList: List[NodeConfiguration] = List()
@@ -235,7 +230,7 @@ object KamanjaEnvironmentManager {
 
   def getClusterCacheConfiguration: ClusterCacheConfig = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val clusterCacheJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "Cache").extract[String]
@@ -251,7 +246,7 @@ object KamanjaEnvironmentManager {
 
   def getEnvironmentContextConfiguration: EnvironmentContextConfig = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val envContextJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "EnvironmentContext").extract[String]
@@ -264,7 +259,7 @@ object KamanjaEnvironmentManager {
 
   def getPythonConfiguration: PythonConfiguration = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val pythonCfgJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "PYTHON_CONFIG").extract[String]
@@ -282,7 +277,7 @@ object KamanjaEnvironmentManager {
 
   def getClusterId: String = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
     val clusterId = (parse(JsonSerializer.SerializeCfgObjectListToJson("Clusters", clusters)) \\ "ClusterId").extract[String]
@@ -291,7 +286,7 @@ object KamanjaEnvironmentManager {
 
   def getMetadataManager: MetadataManager = {
     if(!isInitialized) {
-      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+      throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     return mdMan
   }
@@ -414,7 +409,7 @@ object KamanjaEnvironmentManager {
       val shutdownCode = embeddedKamanjaManager.shutdown(getZookeeperConfiguration, zkClient)
       if (shutdownCode != 0) {
         logger.error("***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
-        return false
+        false
       }
       else {
         logger.info("Kamanja stopped")
@@ -437,12 +432,12 @@ object KamanjaEnvironmentManager {
       logger.info("Starting Zookeeper...")
       embeddedZookeeper.startup
       logger.info("Zookeeper started")
-      return true
+      true
     }
     catch {
       case e: Exception => {
         logger.error("***ERROR*** Failed to start Zookeeper\n" + logger.getStackTraceAsString(e))
-        return false
+        false
       }
     }
   }
@@ -455,12 +450,12 @@ object KamanjaEnvironmentManager {
       logger.info("Stopping Zookeeper...")
       embeddedZookeeper.shutdown
       logger.info("Zookeeper stopped")
-      return true
+      true
     }
     catch {
       case e: Exception => {
         logger.error("***ERROR* Failed to stop Zookeeper\n" + logger.getStackTraceAsString(e))
-        return false
+        false
       }
     }
   }
@@ -473,12 +468,12 @@ object KamanjaEnvironmentManager {
       logger.info("Starting Kafka...")
       kafkaCluster.startCluster
       logger.info("Kafka started")
-      return true
+      true
     }
     catch {
       case e: Exception => {
         logger.error("***ERROR*** Failed to start Kafka\n" + logger.getStackTraceAsString(e))
-        return false
+        false
       }
     }
   }
@@ -491,55 +486,14 @@ object KamanjaEnvironmentManager {
       logger.info("Stopping Kafka...")
       kafkaCluster.stopCluster
       logger.info("Kafka stopped")
-      return true
+      true
     }
     catch {
       case e: Exception => {
         logger.error("***ERROR*** Failed to stop Kafka\n" + logger.getStackTraceAsString(e))
-        return false
+        false
       }
     }
-  }
-
-  private def startKafkaConsumer: Boolean = {
-    if (!isInitialized) {
-      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
-    }
-    try {
-      logger.info(s"Starting Kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'...")
-      val kafkaConsumerThread = new Thread(kafkaConsumer)
-      kafkaConsumerThread.start()
-      logger.info(s"Kafka consumer started against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'")
-      return true
-    }
-    catch {
-      case e: Exception => {
-        logger.error(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'\n${logger.getStackTraceAsString(e)}")
-        throw new Exception(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'", e)
-      }
-    }
-  }
-
-  private def stopKafkaConsumer: Boolean = {
-    if (!isInitialized) {
-      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
-    }
-    if (kafkaConsumer != null) {
-      try {
-        logger.info("Stopping Kafka consumer...")
-        kafkaConsumer.shutdown
-
-        logger.info("Kafka consumer stopped")
-        return true
-      }
-      catch {
-        case e: Exception => {
-          logger.error("***ERROR*** Failed to stop Kafka consumer\n" + logger.getStackTraceAsString(e))
-          throw new Exception("***ERROR*** Failed to stop Kafka consumer", e)
-        }
-      }
-    }
-    return true
   }
 
   private def createStorageAdapter(storageJsonStr: String): StorageAdapter = {
@@ -568,6 +522,6 @@ object KamanjaEnvironmentManager {
         storeType = new CassandraStore
     }
 
-    return new StorageConfiguration(storeType, schemaName, hostname)
+    StorageConfiguration(storeType, schemaName, hostname)
   }
 }

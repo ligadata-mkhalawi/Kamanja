@@ -55,6 +55,11 @@ testOptions in Test += Tests.Setup( () => {
   sbt.IO.write(new File(s"Utils/KamanjaAppTester/target/scala-$scalaV/test-classes/kamanjaInstall/config/library_list"), s"ExtDependencyLibs_$scalaV-${version.value}.jar\nKamanjaInternalDeps_$scalaV-${version.value}.jar\nExtDependencyLibs2_$scalaV-${version.value}.jar")
 })
 
+assemblyExcludedJars in assembly := {
+  val cp = (fullClasspath in assembly).value
+  cp filter { x => x.data.getName == "kafka-clients-0.10.0.1.jar" || x.data.getName == "log4j-1.2.17.jar" }
+}
+
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs@_*) => MergeStrategy.first
   // case PathList(ps @ _*) if ps.last endsWith ".html" => MergeStrategy.first

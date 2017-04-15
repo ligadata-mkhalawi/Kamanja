@@ -20,7 +20,7 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
 
   def start(): Unit = {
     if(!isInit) {
-      throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
+      throw EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
     }
     if(!isRunning) {
       try {
@@ -31,13 +31,13 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
       catch {
         case e: Exception => {
           logger.error("[Embedded Zookeeper Client]: Failed to start Curator Framework")
-          throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: Failed to start Curator Framework", e)
+          throw EmbeddedZookeeperException("[Embedded Zookeeper Client]: Failed to start Curator Framework", e)
         }
       }
     }
   }
 
-  def stop: Unit = {
+  def stop(): Unit = {
     if(isRunning) {
       try {
         logger.info("[Embedded Zookeeper Client]: Stopping Curator Framework")
@@ -47,7 +47,7 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
       catch {
         case e: Exception => {
           logger.error("[Embedded Zookeeper Client]: Failed to stop Curator Framework")
-          throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: Failed to stop Curator Framework")
+          throw EmbeddedZookeeperException("[Embedded Zookeeper Client]: Failed to stop Curator Framework")
         }
       }
     }
@@ -55,7 +55,7 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
 
   def doesNodeExist(znodePath:String): Boolean = {
     if(!isInit) {
-      throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
+      throw EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
     }
     if(!isRunning){
       this.start()
@@ -64,17 +64,17 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
       logger.debug("[Embedded Zookeeper Client]: Checking if zookeeper node path '" + znodePath + "' exists")
       if (zkc.checkExists().forPath(znodePath) == null) {
         logger.debug("[Embedded Zookeeper Client]: Zookeeper node path '" + znodePath + "' doesn't exist")
-        return false
+        false
       }
       else {
         //logger.debug("[Embedded Zookeeper Client]: Zookeeper node path found with data: " + zkc.checkExists().forPath(znodePath))
-        return true
+        true
       }
     }
     catch {
       case e: Exception => {
         logger.error(s"[Embedded Zookeeper Client]: Failed to verify node '$znodePath' exists", e)
-        throw new EmbeddedZookeeperException(s"[Embedded Zookeeper Client]: Failed to verify node '$znodePath' exists", e)
+        throw EmbeddedZookeeperException(s"[Embedded Zookeeper Client]: Failed to verify node '$znodePath' exists", e)
       }
     }
   }

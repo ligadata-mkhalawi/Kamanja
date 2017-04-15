@@ -30,7 +30,6 @@ class KamanjaApplicationManager(baseDir: String) {
 
     def setMetadataElementName(element: MetadataElement, apiResult: ApiResult): Unit = {
       val mdNameArray = apiResult.description.split(":")(1).split('.')
-      val arrayLen = mdNameArray.length
       element.version = mdNameArray(mdNameArray.length - 1)
       element.name = mdNameArray(mdNameArray.length - 2)
       element.namespace = mdNameArray.reverse.dropWhile(_ == element.version).dropWhile(_ == element.name).reverse.mkString(".")
@@ -59,7 +58,7 @@ class KamanjaApplicationManager(baseDir: String) {
                   "--ignorerecords", opts.ignoreRecords.get,
                   "--deserializer", opts.deserializer.get,
                   "--optionsjson",
-                  s"""{"alwaysQuoteFields": ${opts.alwaysQuoteFields.get}, "fieldDelimiter": ${opts.fieldDelimiter.get}, "valueDelimiter": ${opts.valueDelimiter.get}""".stripMargin
+                  s"""{"alwaysQuoteFields": ${opts.alwaysQuoteFields.get}, "fieldDelimiter": "${opts.fieldDelimiter.get}", "valueDelimiter": "${opts.valueDelimiter.get}"}""".stripMargin
                 )) != 0) {
                   logger.error(s"***ERROR*** Failed to upload data from Key-Value file")
                   throw TestExecutorException(s"***ERROR*** Failed to upload data from Key-Value file")
@@ -139,52 +138,54 @@ class KamanjaApplicationManager(baseDir: String) {
   def removeApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
     var metadataFailedToRemove: List[String] = List()
     var removeStatus: Boolean = true
-      kamanjaApp.metadataElements.foreach(element => {
-        var apiResult: ApiResult = null
-        try {
-          element match {
-            case e: MessageElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
-            case e: ContainerElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
-            case e: ScalaModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
-            case e: JavaModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
-            case e: KPmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
-            case e: PmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(element.elementType, element.namespace, element.name, element.version)
-            case e: ModelConfigurationElement =>
-            case e: AdapterMessageBindingElement =>
-              val result = KamanjaEnvironmentManager.mdMan.removeBindings(element.filename)
-              if (result == 0)
-                apiResult = new ApiResult(result, "RemoveAdapterMessageBindings", "null", s"Successfully removed all adapter message bindings from file ${element.filename}")
-              else apiResult = new ApiResult(result, "RemoveAdapterMessageBindings", "null", s"Fail to remove all adapter message bindings from file ${element.filename}")
-          }
+    kamanjaApp.metadataElements.foreach(element => {
+      var apiResult: ApiResult = null
+      try {
+        element match {
+          case e: MessageElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(e.elementType, e.namespace, e.name, e.version)
+          case e: ContainerElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(e.elementType, e.namespace, e.name, e.version)
+          case e: ScalaModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(e.elementType, e.namespace, e.name, e.version)
+          case e: JavaModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(e.elementType, e.namespace, e.name, e.version)
+          case e: KPmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(e.elementType, e.namespace, e.name, e.version)
+          case e: PmmlModelElement => apiResult = KamanjaEnvironmentManager.mdMan.remove(e.elementType, e.namespace, e.name, e.version)
+          case e: ModelConfigurationElement =>
+          case e: AdapterMessageBindingElement =>
+            val result = KamanjaEnvironmentManager.mdMan.removeBindings(e.filename)
+            if (result == 0)
+              apiResult = new ApiResult(result, "RemoveAdapterMessageBindings", "null", s"Successfully removed all adapter message bindings from file ${element.filename}")
+            else apiResult = new ApiResult(result, "RemoveAdapterMessageBindings", "null", s"Fail to remove all adapter message bindings from file ${element.filename}")
         }
-        catch {
-          case e: com.ligadata.MetadataAPI.test.MetadataManagerException =>
-            logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
-            removeStatus = false
-            metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
-          case e: Exception =>
-            logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
-            metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
-            removeStatus = false
+      }
+      catch {
+        case e: com.ligadata.MetadataAPI.test.MetadataManagerException =>
+          logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
+          removeStatus = false
+          metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
+        case e: Exception =>
+          logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult' and exception:\n$e")
+          metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
+          removeStatus = false
+      }
+      if (apiResult != null) {
+        println("APIResult:\n" + apiResult.toString)
+        if (apiResult.statusCode != 0) {
+          logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult'")
+          metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
+          removeStatus = false
         }
-        if(apiResult != null) {
-          if (apiResult.statusCode != 0) {
-            logger.error(s"***ERROR*** Failed to remove '${element.elementType}' from file '${element.filename}' with result '$apiResult'")
-            metadataFailedToRemove :+= s"Metadata Type: ${element.elementType}; FileName: ${element.filename}"
-            removeStatus = false
-          }
-          else
-            logger.info(s"${element.elementType} '${element.namespace}.${element.name}.${element.version}' successfully removed")
-        }
-      })
-    if(metadataFailedToRemove.length > 0) {
+        else
+          logger.info(s"${element.elementType} '${element.namespace}.${element.name}.${element.version}' successfully removed")
+      }
+    })
+
+    if (metadataFailedToRemove.nonEmpty) {
       logger.warn("***WARN*** Failed to remove metadata:")
       metadataFailedToRemove.foreach(md => {
         logger.warn(s"\t$md")
       })
     }
 
-    return removeStatus
+    removeStatus
   }
 
   /** Given a directory, this will return a list of directories contained with the baseDir/tests
@@ -197,10 +198,10 @@ class KamanjaApplicationManager(baseDir: String) {
   private def getApplicationDirectories(dir: String): List[File] = {
     val d = new File(dir)
     if(d.exists && d.isDirectory) {
-      return d.listFiles.filter(_.isDirectory).toList
+      d.listFiles.filter(_.isDirectory).toList
     }
     else
-      return List[File]()
+      List[File]()
   }
 
   /** Given a List of Application Directories, this will search each directory for an applicable configuration file.
@@ -224,18 +225,18 @@ class KamanjaApplicationManager(baseDir: String) {
           }
         })
 
-        if (dirFiles.length == 0) {
+        if (dirFiles.isEmpty) {
           logger.warn(s"***WARN*** Failed to discover any configuration files in application directory '${d.getName}'. This application will not be tested.")
         }
         else if (dirFiles.length > 1) {
           logger.warn(s"***WARN*** Multiple configuration files found. Using the first file found '${dirFiles(0)}'")
         }
         else {
-          applicationConfigFiles = applicationConfigFiles :+ dirFiles(0)
+          applicationConfigFiles = applicationConfigFiles :+ dirFiles.head
         }
       }
     })
-    return applicationConfigFiles.toList
+    applicationConfigFiles.toList
   }
 
   /** Returns a list of KamanjaApplication given a test directory by getting a list of application folders within the test directory and creating a KamanjaApplication instance for each config file.
@@ -256,11 +257,11 @@ class KamanjaApplicationManager(baseDir: String) {
         apps = apps :+ appConfig.initializeApplication(appDirs(count).getAbsolutePath, appConfigFile.getAbsolutePath)
         count = count + 1
       })
-      return apps.toList
+      apps.toList
     }
     else {
       logger.error("***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
-      throw new KamanjaApplicationException(s"***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
+      throw KamanjaApplicationException(s"***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
     }
   }
 }

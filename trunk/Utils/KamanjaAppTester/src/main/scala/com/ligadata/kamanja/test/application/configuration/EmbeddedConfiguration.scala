@@ -145,7 +145,7 @@ object EmbeddedConfiguration {
       |          "TypeString": "Input",
       |          "TenantId": "tenant1",
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KamanjaKafkaConsumer$$",
-      |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      |          "JarName": "kamanjakafkaadapters_0_9_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
       |            "kafka-clients-0.9.0.1.jar"
       |          ],
@@ -159,7 +159,7 @@ object EmbeddedConfiguration {
       |          "TypeString": "Output",
       |          "TenantId": "tenant1",
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
-      |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      |          "JarName": "kamanjakafkaadapters_0_9_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
       |            "kafka-clients-0.9.0.1.jar"
       |          ],
@@ -173,7 +173,7 @@ object EmbeddedConfiguration {
       |          "TypeString": "Output",
       |          "TenantId": "tenant1",
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
-      |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      |          "JarName": "kamanjakafkaadapters_0_9_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
       |            "kafka-clients-0.9.0.1.jar"
       |          ],
@@ -187,7 +187,7 @@ object EmbeddedConfiguration {
       |          "TypeString": "Output",
       |          "TenantId": "tenant1",
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
-      |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      |          "JarName": "kamanjakafkaadapters_0_9_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
       |            "kafka-clients-0.9.0.1.jar"
       |          ],
@@ -201,7 +201,7 @@ object EmbeddedConfiguration {
       |          "TypeString": "Output",
       |          "TenantId": "System",
       |          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer$$",
-      |          "JarName": "kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      |          "JarName": "kamanjakafkaadapters_0_9_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
       |          "DependencyJars": [
       |            "kafka-clients-0.9.0.1.jar"
       |          ],
