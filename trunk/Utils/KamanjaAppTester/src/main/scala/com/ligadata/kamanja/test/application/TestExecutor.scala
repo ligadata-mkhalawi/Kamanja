@@ -14,6 +14,7 @@ import com.ligadata.tools.test._
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 import com.ligadata.test.configuration.cluster.adapters.{KafkaAdapterConfig, SmartFileAdapterConfig}
 import com.ligadata.test.configuration.cluster.adapters.interfaces.{Adapter, IOAdapter}
+import org.joda.time.DateTime
 
 import scala.util.control.Breaks._
 
@@ -82,7 +83,8 @@ object TestExecutor {
             if (!appManager.addApplicationMetadata(app)) {
               logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
               appManager.removeApplicationMetadata(app)
-              throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+              logger.close
+              throw TestExecutorException(s"***ERROR*** Failed to add metadata for application '${app.name}'")
             }
             logger.info(s"All metadata successfully added")
           }
@@ -110,7 +112,8 @@ object TestExecutor {
             val outputAdapterConfig = setExpectedResultsAdapter.adapterType match {
               case a@InputAdapter =>
                 logger.error("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
-                throw new Exception("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
+                logger.close
+                throw TestExecutorException("***ERROR*** The Adapter Name given in Expected Results configuration corresponds to an input adapter. Please configure an adapter name that corresponds to an output adapter.")
               case a@OutputAdapter => {
                 setExpectedResultsAdapter match {
                   case a: KafkaAdapterConfig => {
@@ -123,11 +126,14 @@ object TestExecutor {
                     adapterConfig
                   }
                   case a: SmartFileAdapterConfig => {
-                    throw new TestExecutorException("***ERROR*** SmartFileProducer is not yet supported as an output adapter in the Kamanja application tester.")
+                    logger.close
+                    logger.error("***ERROR*** SmartFileProducer is not yet supported as an output adapter in the Kamanja application tester.")
+                    throw TestExecutorException("***ERROR*** SmartFileProducer is not yet supported as an output adapter in the Kamanja application tester.")
                   }
                   case _ =>
-                    logger.error("***ERROR Only Kafka adapters are supported.")
-                    throw new Exception("***ERROR Only Kafka adapters are supported.")
+                    logger.error("***ERROR*** Only Kafka adapters are supported.")
+                    logger.close
+                    throw TestExecutorException("***ERROR*** Only Kafka adapters are supported.")
                 }
               }
             }
@@ -137,6 +143,8 @@ object TestExecutor {
             val setInputAdapter: IOAdapter = KamanjaEnvironmentManager.getAllAdapters.filter(_.name == setInputAdapterName)(0).asInstanceOf[IOAdapter]
             val inputFile: File = new File(set.inputSet.file)
             if (!inputFile.exists()) {
+              logger.error(s"***ERROR*** Input Set File ${set.inputSet.file} does not exist.")
+              logger.close
               throw TestExecutorException(s"***ERROR*** Input Set File ${set.inputSet.file} does not exist.")
             }
             val inputAdapterConfig = setInputAdapter.adapterType match {
@@ -153,29 +161,45 @@ object TestExecutor {
                     set.inputSet.fileAdapterDir match {
                       case Some(d) => {
                         val adapterConfig = a.asInstanceOf[SmartFileAdapterConfig]
-                        logger.info(s"Copying data file ${set.inputSet.file} to directory ${set.inputSet.fileAdapterDir}")
+                        logger.info(s"Copying data file ${set.inputSet.file} to directory $d")
                         val dir = new File(d)
-                        dir.mkdirs()
-                        new FileOutputStream(dir) getChannel() transferFrom(
-                          new FileInputStream(inputFile) getChannel, 0, Long.MaxValue)
+                        if(!dir.exists()) {
+                          logger.error(s"***ERROR*** File Adapter Directory ${dir.getAbsolutePath} does not exist.")
+                          logger.close
+                          throw TestExecutorException(s"***ERROR*** File Adapter Directory ${dir.getAbsolutePath} does not exist.")
+                        }
+
+                        try {
+                          //org.apache.commons.io.FileUtils.copyFileToDirectory(inputFile, dir)
+                          org.apache.commons.io.FileUtils.copyFile(inputFile, new File(dir, inputFile.getName + "_" + DateTime.now))
+                        }
+                        catch {
+                          case e: Exception =>
+                            logger.error(s"***ERROR*** Failed to copy file $inputFile to directory ${dir.getAbsolutePath} with exception:\n$e")
+                            appManager.removeApplicationMetadata(app)
+                            logger.close
+                            throw TestExecutorException(s"***ERROR*** Failed to copy file $inputFile to directory ${dir.getAbsolutePath}", e)
+                        }
                         adapterConfig
                       }
-                      case None => throw TestExecutorException("***ERROR*** Input Adapter Type is a SmartFileConsumer but no FileAdapterDirectory has been specified in configuration.")
+                      case None => {
+                        logger.error("***ERROR*** Input Adapter Type is a SmartFileConsumer but no FileAdapterDirectory has been specified in configuration.")
+                        logger.close
+                        throw TestExecutorException("***ERROR*** Input Adapter Type is a SmartFileConsumer but no FileAdapterDirectory has been specified in configuration.")
+                      }
                     }
                   }
                   case _ =>
                     logger.error("***ERROR*** Only Kafka adapters are supported.")
-                    throw new Exception("***ERROR*** Only Kafka adapters are supported.")
+                    logger.close
+                    throw TestExecutorException("***ERROR*** Only Kafka adapters are supported.")
                 }
               }
               case a@OutputAdapter =>
                 logger.error("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
-                throw new Exception("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
+                logger.close
+                throw TestExecutorException("***ERROR*** The Adapter Name given in Input Set Configuration corresponds to an output adapter. Please configure an adapter name that corresponds to an input adapter.")
             }
-
-            //val producer = new TestKafkaProducer
-            //logger.info(s"Pushing data from file ${set.inputSet.file} in format ${set.inputSet.format}")
-            //producer.inputMessages(inputAdapterConfig, set.inputSet.file, set.inputSet.format, set.inputSet.partitionKey.getOrElse("1"))
 
             //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
             val expectedResults = resultsManager.parseExpectedResults(set)
@@ -185,7 +209,7 @@ object TestExecutor {
             if (results == null) {
               testResult = false
               logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
-              val errors = Globals.waitForOutputResults(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+              val errors = Globals.waitForOutputResults(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).orNull
               if (errors != null) {
                 errors.foreach(error => {
                   logger.info(s"Error Message: " + error)
@@ -195,7 +219,7 @@ object TestExecutor {
                 logger.warn(s"***WARN*** Failed to discover messages in error queue")
                 logger.warn(s"Checking message event queue")
 
-                val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+                val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).orNull
                 if (events != null) {
 
                   events.foreach(event => {
@@ -255,7 +279,8 @@ object TestExecutor {
 
           if (!appManager.removeApplicationMetadata(app)) {
             logger.error(s"***ERROR*** Failed to remove metadata from application '${app.name}'")
-            throw new Exception(s"***ERROR*** Failed to remove metadata from application '${app.name}'")
+            logger.close
+            throw TestExecutorException(s"***ERROR*** Failed to remove metadata from application '${app.name}'")
           }
           logger.info(s"Successfully removed application '${app.name}' metadata")
 
@@ -266,6 +291,7 @@ object TestExecutor {
         }
       })
     }
+    logger.info("All testing complete")
     logger.close
   }
 

@@ -121,7 +121,7 @@ object KamanjaEnvironmentManager {
         case "input" | "output" => {
           val className: String = adapter("ClassName").toString
           val dependencyJars: List[String] = adapter("DependencyJars").asInstanceOf[List[String]]
-          val adapterSpecificCfg = parse(adapter("AdapterSpecificCfg").toString).extract[Map[String, String]]
+          val adapterSpecificCfg = parse(adapter("AdapterSpecificCfg").toString).extract[Map[String, Any]]
           val jarName = adapter("JarName").toString
           var adapterType: AdapterType = null
 
@@ -144,8 +144,15 @@ object KamanjaEnvironmentManager {
               fieldDelimiter, valueDelimiter, className, jarName, dependencyJars,
               KafkaAdapterSpecificConfig(hostList, topicName), tenantId)
           }
+          else if(className.toLowerCase.contains("smartfileconsumer")) {
+            adapterList = adapterList :+ SmartFileAdapterConfig(name, adapterType, className, jarName, dependencyJars, null, tenantId)
+          }
+          else {
+            logger.error(s"***ERROR Adapter with classname $className is not supported.")
+            throw KamanjaEnvironmentManagerException(s"***ERROR*** Adapter with classname $className is not supported.")
+          }
         }
-        case "storage" => throw KamanjaEnvironmentManagerException("Storage Adapters are currently unsupported.")
+        case "storage" => throw KamanjaEnvironmentManagerException("***ERROR*** Storage Adapters are currently unsupported. Please remove them from your cluster configuration and try again.")
         case _ => throw KamanjaEnvironmentManagerException(s"Unrecognized Type String $typeString found.")
       }
     })
@@ -281,42 +288,68 @@ object KamanjaEnvironmentManager {
     }
     val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
     val clusterId = (parse(JsonSerializer.SerializeCfgObjectListToJson("Clusters", clusters)) \\ "ClusterId").extract[String]
-    return clusterId
+    clusterId
   }
 
   def getMetadataManager: MetadataManager = {
     if(!isInitialized) {
       throw KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
-    return mdMan
+    mdMan
   }
 
   def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
       throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
     }
-    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testin_1")(0).asInstanceOf[KafkaAdapterConfig]
+    getAllAdapters.foreach(adapter => {
+      adapter match {
+        case a: KafkaAdapterConfig => if (a.adapterSpecificConfig.topicName.toLowerCase == "testin_1") return a
+        case _ =>
+      }
+    })
+    null
   }
 
   def getOutputKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
       throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
     }
-    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testout_1")(0).asInstanceOf[KafkaAdapterConfig]
+
+    getAllAdapters.foreach(adapter => {
+      adapter match {
+        case a: KafkaAdapterConfig => if (a.adapterSpecificConfig.topicName.toLowerCase == "testout_1") return a
+        case _ =>
+      }
+    })
+    null
   }
 
   def getErrorKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
       throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
     }
-    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testfailedevents_1")(0).asInstanceOf[KafkaAdapterConfig]
+    getAllAdapters.foreach(adapter => {
+      adapter match {
+        case a: KafkaAdapterConfig => if(a.adapterSpecificConfig.topicName.toLowerCase == "testfailedevents_1") return a
+        case _ =>
+      }
+    })
+    null
   }
 
   def getEventKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
       throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
     }
-    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testmessageevents_1")(0).asInstanceOf[KafkaAdapterConfig]
+
+    getAllAdapters.foreach(adapter => {
+      adapter match {
+        case a: KafkaAdapterConfig => if(a.adapterSpecificConfig.topicName.toLowerCase == "testmessageevents_1") return a
+        case _ =>
+      }
+    })
+    null
   }
 
   //////////////////////////////////////////
