@@ -767,7 +767,7 @@ object FileProcessor {
                         val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
                         val numberOfFile = getFileInDirectory(processedPath, timeDiff)
                         if (d.lastModified < timeDiff && numberOfFile <= fileCount){
-                            file.setLastModified(Calendar.getInstance().getTimeInMillis)
+                          file.setLastModified(Calendar.getInstance().getTimeInMillis)
                         } else {
                           reprocessOrNewFlag = false
                         }
@@ -834,6 +834,16 @@ object FileProcessor {
                       bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
                     }
                     if (logger.isWarnEnabled) logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue for file " + fileTuple._1, ioe)
+                    try {
+                      if(processedPath.equals(MovedPath)){
+                        moveFileToErrorDir(fileTuple._1)
+                        bufferingQRemove(fileTuple._1)
+                      }
+                    } catch {
+                      case e: Throwable => {
+                        logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                      }
+                    }
                   }
                 }
                 case e: Throwable => {
@@ -856,6 +866,16 @@ object FileProcessor {
                       bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
                     }
                     logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
+                    try {
+                      if(processedPath.equals(MovedPath)){
+                        moveFileToErrorDir(fileTuple._1)
+                        bufferingQRemove(fileTuple._1)
+                      }
+                    } catch {
+                      case e: Throwable => {
+                        logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                      }
+                    }
                   }
                 }
               }
