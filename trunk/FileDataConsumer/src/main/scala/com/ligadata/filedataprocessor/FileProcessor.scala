@@ -1630,7 +1630,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
       }
 
       if(fileAge == null || fileAge.length == 0){
-        logger.warn("SMART_FILE_CONSUMER (" + partitionId + ") file age did not specified. The default value is 30 minute")
+        logger.warn("SMART_FILE_CONSUMER (" + partitionId + ") fileAge did not specify. The default value is 30 minute")
         fileAge = "30m"
       }
 
@@ -1646,7 +1646,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
       }
 
       if(fileCount == 0){
-        logger.warn("SMART_FILE_CONSUMER (" + partitionId + ") file count did not specified. Th default value is 100")
+        logger.warn("SMART_FILE_CONSUMER (" + partitionId + ") numberOfFiles did not specify. Th default value is 100")
       }
       kafkaTopic = props.getOrElse(SmartFileAdapterConstants.KAFKA_TOPIC, null)
 
