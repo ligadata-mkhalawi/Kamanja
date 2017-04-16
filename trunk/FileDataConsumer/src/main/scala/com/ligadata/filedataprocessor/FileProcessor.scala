@@ -163,6 +163,7 @@ object FileProcessor {
   private val ONE_SECOND_IN_MILLIS = 1000
   private val ONE_MINUTE_IN_MILLIS = 60000
   private val ONE_HOUR_IN_MILLIS = 3600000
+  private var errorMoveDir: String = ""
 
   private def testFailure(thisCause: String) = {
     var bigCheck = FileProcessor.testRand.nextInt(100)
@@ -526,6 +527,7 @@ object FileProcessor {
       }
 
     fileCount = props.getOrElse(SmartFileAdapterConstants.FILE_COUNT,"100").toInt
+    errorMoveDir = props.getOrElse(SmartFileAdapterConstants.ERROR_DIR, null)
   }
 
   def markFileProcessing(fileName: String, offset: Int, createDate: Long): Unit = {
@@ -619,20 +621,6 @@ object FileProcessor {
     fileQLock.synchronized {
       logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
-      //////////////////////// new code from here
-//      val processedPath = file.substring(0,file.lastIndexOf('/'))
-//      val MovedPath = props.getOrElse(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO, "")
-//      if(processedPath.equals(MovedPath)){
-//        val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
-//        if (createDate > timeDiff){
-//          if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
-//            fileQ += new EnqueuedFile(file, offset, createDate, partMap)
-//          }
-//        }
-//      } else {
-//        fileQ += new EnqueuedFile(file, offset, createDate, partMap)
-//      }
-      //////////////////////// to here
       fileQ += new EnqueuedFile(file, offset, createDate, partMap)
     }
   }
@@ -754,7 +742,8 @@ object FileProcessor {
               var thisFileFailures: Int = fileTuple._2._3
               var thisFileStarttime: Long = fileTuple._2._2
               var thisFileOrigLength: Long = fileTuple._2._1
-
+              val processedPath = fileTuple._1.substring(0,fileTuple._1.lastIndexOf('/'))
+              val MovedPath = props.getOrElse(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO, "")
 
               try {
                 val file = new File(fileTuple._1)
@@ -773,18 +762,17 @@ object FileProcessor {
                       logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
                       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
                       ////////////////new code
-                      val processedPath = fileTuple._1.substring(0,fileTuple._1.lastIndexOf('/'))
-                      val MovedPath = props.getOrElse(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO, "")
-                      if(processedPath.equals(MovedPath)){
+                      var reprocessOrNewFlag = true // it is always true for new file
+                      if(processedPath.equals(MovedPath)){ // this condition for reprocessing
                         val timeDiff = System.currentTimeMillis/*Calendar.getInstance().getTimeInMillis*/ - fileAgeInt
-                        if (d.lastModified < timeDiff){
-                          if(getFileInDirectory(processedPath, timeDiff) <= fileCount){
-                            enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
-                            bufferingQRemove(fileTuple._1)
-                            file.setLastModified(Calendar.getInstance().getTimeInMillis);
-                          }
+                        val numberOfFile = getFileInDirectory(processedPath, timeDiff)
+                        if (d.lastModified < timeDiff && numberOfFile <= fileCount){
+                            file.setLastModified(Calendar.getInstance().getTimeInMillis)
+                        } else {
+                          reprocessOrNewFlag = false
                         }
-                      } else {
+                      }
+                      if(reprocessOrNewFlag){ // it is always true for new file
                         enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
                         bufferingQRemove(fileTuple._1)
                       }
@@ -797,13 +785,19 @@ object FileProcessor {
                         val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
                         if (diff > bufferTimeout) {
                           if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): Detected that " + d.toString + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-                          moveFile(fileTuple._1) // This internally call fileCacheRemove
+                          if(processedPath.equals(MovedPath))
+                            moveFileToErrorDir(fileTuple._1)
+                          else
+                            moveFile(fileTuple._1) // This internally call fileCacheRemove
                           bufferingQRemove(fileTuple._1)
                         }
                       } else {
                         //Invalid File - due to content type
                         logger.error("SMART FILE CONSUMER (global): Moving out " + fileTuple._1 + " with invalid file type ")
-                        moveFile(fileTuple._1) // This internally call fileCacheRemove
+                        if(processedPath.equals(MovedPath))
+                          moveFileToErrorDir(fileTuple._1)
+                        else
+                          moveFile(fileTuple._1) // This internally call fileCacheRemove
                         bufferingQRemove(fileTuple._1)
                       }
                     }
@@ -824,7 +818,10 @@ object FileProcessor {
                   if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
                     if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", ioe)
                     try {
-                      moveFile(fileTuple._1)
+                      if(processedPath.equals(MovedPath))
+                        moveFileToErrorDir(fileTuple._1)
+                      else
+                        moveFile(fileTuple._1)
                       bufferingQRemove(fileTuple._1)
                     } catch {
                       case e: Throwable => {
@@ -844,7 +841,10 @@ object FileProcessor {
                   if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
                     logger.error("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                     try {
-                      moveFile(fileTuple._1)
+                      if(processedPath.equals(MovedPath))
+                        moveFileToErrorDir(fileTuple._1)
+                      else
+                        moveFile(fileTuple._1)
                       bufferingQRemove(fileTuple._1)
                     } catch {
                       case e: Throwable => {
@@ -1209,6 +1209,7 @@ object FileProcessor {
       // Do we need to introduct try ... catch for this while loop? What happens to throw errors?
       var isWatchedFileSystemAccesible = true
       var isTargetFileSystemAccesible = true
+      var isErrorFileSystemAccesible = true
       var d1: File = null
       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global): Scanning for problem files")
 
@@ -1250,8 +1251,25 @@ object FileProcessor {
         }
       }
 
+      // Target Directory must be available if it is used (it may not be). If it is not, we dont need to restart the watcher
+      try {
+        var d3: File = null
+        if (errorMoveDir != null) {
+          d3 = new File(errorMoveDir)
+          isErrorFileSystemAccesible = (d3.canRead && d3.canWrite)
+        }
+      } catch {
+        case fio: IOException => {
+          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: ERROR", fio)
+          isErrorFileSystemAccesible = false
+        }
+        case e: Throwable => {
+          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: ERROR", e)
+          isErrorFileSystemAccesible = false
+        }
+      }
 
-      if (isWatchedFileSystemAccesible && isTargetFileSystemAccesible) {
+      if (isWatchedFileSystemAccesible && isTargetFileSystemAccesible && isErrorFileSystemAccesible) {
         if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global): File system is accessible, perform cleanup for problem files")
         /*  if (afterErrorConditions) {
              try {
@@ -1364,6 +1382,20 @@ object FileProcessor {
       testFailure("TEST EXCEPTION... Failing to Move File")
 
       executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get(targetMoveDir + "/" + fileStruct(fileStruct.size - 1)), REPLACE_EXISTING), "Moving File " + fileName)
+      fileCacheRemove(fileName)
+    } else {
+      if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER File has been deleted" + fileName);
+    }
+  }
+
+  private def moveFileToErrorDir(fileName: String): Unit = {
+    val fileStruct = fileName.split("/")
+    if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER Moving File" + fileName + " to " + errorMoveDir)
+    if (Paths.get(fileName).toFile().exists()) {
+
+      testFailure("TEST EXCEPTION... Failing to Move File")
+
+      executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get(errorMoveDir + "/" + fileStruct(fileStruct.size - 1)), REPLACE_EXISTING), "Moving File " + fileName)
       fileCacheRemove(fileName)
     } else {
       if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER File has been deleted" + fileName);
